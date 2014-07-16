@@ -1,1 +1,7 @@
-Bundle-Version: 1.0.0.${tstamp}
+-sub:  \
+	*.bnd
+-buildpath:  \
+	jade.jadeOsgi;version=1.0,\
+	osgi.core;version=5.0,\
+	jena-bundle-2.7.2;version=2.7,\
+	consert-model;version=1.0
