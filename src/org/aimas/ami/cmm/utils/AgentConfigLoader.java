@@ -35,6 +35,10 @@ public class AgentConfigLoader {
 		configure();
 	}
 	
+	public ResourceManager getResourceManager() {
+		return cmmResourceManager;
+	}
+	
 	private void configure() throws CMMConfigException {
 		// STEP 1: validate resource manager
 		validate();
@@ -62,6 +66,8 @@ public class AgentConfigLoader {
 		}
 	}
 	
+	
+	
 	private OntDocumentManager setupDocumentManager() throws CMMConfigException {
 		Locator cmmLocator = cmmResourceManager.getResourceLocator();
 		
@@ -83,6 +89,17 @@ public class AgentConfigLoader {
         	throw new CMMConfigException("Error reading CMM document manager file " + CMM_DOCMGR_FILE, e); 
         }
     }
+	
+	
+	public OntModel loadAppConfiguration() throws CMMConfigException {
+		// We know it has to be one or the other because we passed the configure()
+		if (cmmResourceManager.hasResource(CMM_CONFIG_FILE_TTL)) {
+			return load(CMM_CONFIG_FILE_TTL);
+		}
+		else {
+			return load(CMM_CONFIG_FILE_RDF);
+		}
+	}
 	
 	
 	public OntModel load(String filenameOrURI) throws CMMConfigException {
