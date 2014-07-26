@@ -5,21 +5,21 @@ import org.aimas.ami.cmm.agent.onto.*;
 
 /**
 * Message sent by an OrgMgr to a local (on the same machine) CtxSensor or CtxUser agent when the mobile machine they are running on enters a new ContextDomain.
-* Protege name: DomainDetection
+* Protege name: DomainDetected
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
-public class DefaultDomainDetection implements DomainDetection {
+public class DefaultDomainDetected implements DomainDetected {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 
-  public DefaultDomainDetection() {
+  public DefaultDomainDetected() {
     this._internalInstanceName = "";
   }
 
-  public DefaultDomainDetection(String instance_name) {
+  public DefaultDomainDetected(String instance_name) {
     this._internalInstanceName = instance_name;
   }
 

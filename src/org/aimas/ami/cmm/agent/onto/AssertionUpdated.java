@@ -4,11 +4,11 @@ package org.aimas.ami.cmm.agent.onto;
 
 /**
 * The message used by a CtxSensor or CtxUser agent to inform the delivery of a new ContextAssertion to a CtxCoord agent.
-* Protege name: AssertionUpdate
+* Protege name: AssertionUpdated
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
-public interface AssertionUpdate extends jade.content.Concept {
+public interface AssertionUpdated extends jade.content.Predicate {
 
    /**
    * Indicates the ContextAssertion description for which this TaskingCommand is intended.

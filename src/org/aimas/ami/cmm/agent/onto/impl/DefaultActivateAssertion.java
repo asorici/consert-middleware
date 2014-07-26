@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * Message sent by a CtxQueryHandler to the CtxCoord to which he is associated when a ContextAssertion for which the query handler receives a query does not exist in the ContextStore.
 * Protege name: ActivateAssertion
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public class DefaultActivateAssertion implements ActivateAssertion {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 

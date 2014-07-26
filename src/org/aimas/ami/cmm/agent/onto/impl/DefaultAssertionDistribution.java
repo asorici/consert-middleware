@@ -8,11 +8,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * A set of AssertionAssignments that a OrgMgr sends to a CtxSensor or CtxUser that has announced its presence and capabilities.
 * Protege name: AssertionDistribution
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
 public class DefaultAssertionDistribution implements AssertionDistribution {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 
@@ -33,10 +33,10 @@ public class DefaultAssertionDistribution implements AssertionDistribution {
    * Protege name: assignment
    */
    private List assignment = new ArrayList();
-   public void addAssignment(String elem) { 
+   public void addAssignment(AssertionAssignment elem) { 
      assignment.add(elem);
    }
-   public boolean removeAssignment(String elem) {
+   public boolean removeAssignment(AssertionAssignment elem) {
      boolean result = assignment.remove(elem);
      return result;
    }

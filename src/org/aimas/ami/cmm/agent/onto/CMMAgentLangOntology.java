@@ -6,11 +6,11 @@ import jade.content.schema.*;
 
 /** file: CMMAgentLangOntology.java
  * @author OntologyBeanGenerator v4.1
- * @version 2014/07/14, 15:42:54
+ * @version 2014/07/25, 19:43:09
  */
 public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   //NAME
   public static final String ONTOLOGY_NAME = "CMMAgentLang";
@@ -22,10 +22,26 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
 
 
    // VOCABULARY
+    public static final String QUERY_DOMAIN_UPPER_BOUND="domain_upper_bound";
+    public static final String QUERY_QUERYTYPE="queryType";
+    public static final String QUERY_QUERYCONTENT="queryContent";
+    public static final String QUERY_DOMAIN_LOWER_BOUND="domain_lower_bound";
+    public static final String QUERY="Query";
+    public static final String DOMAINDETECTED_DOMAIN="domain";
+    public static final String DOMAINDETECTED="DomainDetected";
     public static final String ISPRESENT_AGENT="agent";
     public static final String ISPRESENT="IsPresent";
+    public static final String ASSERTIONUPDATED_ASSERTIONCONTENT="assertionContent";
+    public static final String ASSERTIONUPDATED_ASSERTION="assertion";
+    public static final String ASSERTIONUPDATED="AssertionUpdated";
+    public static final String ASSERTIONDISTRIBUTION_ASSIGNMENT="assignment";
+    public static final String ASSERTIONDISTRIBUTION="AssertionDistribution";
+    public static final String QUERYBASE_QUERYHANDLER="queryHandler";
+    public static final String QUERYBASE="QueryBase";
     public static final String ACTIVATEASSERTION_ASSERTION="assertion";
     public static final String ACTIVATEASSERTION="ActivateAssertion";
+    public static final String ENABLEASSERTIONS_CAPABILITY="capability";
+    public static final String ENABLEASSERTIONS="EnableAssertions";
     public static final String STOPSENDING="StopSending";
     public static final String RESOLVEQUERYBASE_FORQUERY="forQuery";
     public static final String RESOLVEQUERYBASE="ResolveQueryBase";
@@ -45,14 +61,6 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     public static final String CONNECTTODOMAIN="ConnectToDomain";
     public static final String PUBLISHASSERTIONS_CAPABILITY="capability";
     public static final String PUBLISHASSERTIONS="PublishAssertions";
-    public static final String QUERY_DOMAIN_UPPER_BOUND="domain_upper_bound";
-    public static final String QUERY_QUERYTYPE="queryType";
-    public static final String QUERY_QUERYCONTENT="queryContent";
-    public static final String QUERY_DOMAIN_LOWER_BOUND="domain_lower_bound";
-    public static final String QUERY="Query";
-    public static final String ASSERTIONUPDATE_ASSERTIONCONTENT="assertionContent";
-    public static final String ASSERTIONUPDATE_ASSERTION="assertion";
-    public static final String ASSERTIONUPDATE="AssertionUpdate";
     public static final String CONTEXTDOMAIN_DOMAINDIMENSION="domainDimension";
     public static final String CONTEXTDOMAIN_DOMAINENTITY="domainEntity";
     public static final String CONTEXTDOMAIN_DOMAINVALUE="domainValue";
@@ -63,12 +71,6 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     public static final String ASSERTIONASSIGNMENT_CAPABILITY="capability";
     public static final String ASSERTIONASSIGNMENT_COORDINATOR="coordinator";
     public static final String ASSERTIONASSIGNMENT="AssertionAssignment";
-    public static final String DOMAINDETECTION_DOMAIN="domain";
-    public static final String DOMAINDETECTION="DomainDetection";
-    public static final String ASSERTIONDISTRIBUTION_ASSIGNMENT="assignment";
-    public static final String ASSERTIONDISTRIBUTION="AssertionDistribution";
-    public static final String QUERYBASE_QUERYHANDLER="queryHandler";
-    public static final String QUERYBASE="QueryBase";
 
   /**
    * Constructor
@@ -78,22 +80,12 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     try { 
 
     // adding Concept(s)
-    ConceptSchema queryBaseSchema = new ConceptSchema(QUERYBASE);
-    add(queryBaseSchema, org.aimas.ami.cmm.agent.onto.QueryBase.class);
-    ConceptSchema assertionDistributionSchema = new ConceptSchema(ASSERTIONDISTRIBUTION);
-    add(assertionDistributionSchema, org.aimas.ami.cmm.agent.onto.AssertionDistribution.class);
-    ConceptSchema domainDetectionSchema = new ConceptSchema(DOMAINDETECTION);
-    add(domainDetectionSchema, org.aimas.ami.cmm.agent.onto.DomainDetection.class);
     ConceptSchema assertionAssignmentSchema = new ConceptSchema(ASSERTIONASSIGNMENT);
     add(assertionAssignmentSchema, org.aimas.ami.cmm.agent.onto.AssertionAssignment.class);
     ConceptSchema assertionDescriptionSchema = new ConceptSchema(ASSERTIONDESCRIPTION);
     add(assertionDescriptionSchema, org.aimas.ami.cmm.agent.onto.AssertionDescription.class);
     ConceptSchema contextDomainSchema = new ConceptSchema(CONTEXTDOMAIN);
     add(contextDomainSchema, org.aimas.ami.cmm.agent.onto.ContextDomain.class);
-    ConceptSchema assertionUpdateSchema = new ConceptSchema(ASSERTIONUPDATE);
-    add(assertionUpdateSchema, org.aimas.ami.cmm.agent.onto.AssertionUpdate.class);
-    ConceptSchema querySchema = new ConceptSchema(QUERY);
-    add(querySchema, org.aimas.ami.cmm.agent.onto.Query.class);
 
     // adding AgentAction(s)
     AgentActionSchema publishAssertionsSchema = new AgentActionSchema(PUBLISHASSERTIONS);
@@ -118,20 +110,29 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     add(resolveQueryBaseSchema, org.aimas.ami.cmm.agent.onto.ResolveQueryBase.class);
     AgentActionSchema stopSendingSchema = new AgentActionSchema(STOPSENDING);
     add(stopSendingSchema, org.aimas.ami.cmm.agent.onto.StopSending.class);
+    AgentActionSchema enableAssertionsSchema = new AgentActionSchema(ENABLEASSERTIONS);
+    add(enableAssertionsSchema, org.aimas.ami.cmm.agent.onto.EnableAssertions.class);
     AgentActionSchema activateAssertionSchema = new AgentActionSchema(ACTIVATEASSERTION);
     add(activateAssertionSchema, org.aimas.ami.cmm.agent.onto.ActivateAssertion.class);
 
     // adding AID(s)
 
     // adding Predicate(s)
+    PredicateSchema queryBaseSchema = new PredicateSchema(QUERYBASE);
+    add(queryBaseSchema, org.aimas.ami.cmm.agent.onto.QueryBase.class);
+    PredicateSchema assertionDistributionSchema = new PredicateSchema(ASSERTIONDISTRIBUTION);
+    add(assertionDistributionSchema, org.aimas.ami.cmm.agent.onto.AssertionDistribution.class);
+    PredicateSchema assertionUpdatedSchema = new PredicateSchema(ASSERTIONUPDATED);
+    add(assertionUpdatedSchema, org.aimas.ami.cmm.agent.onto.AssertionUpdated.class);
     PredicateSchema isPresentSchema = new PredicateSchema(ISPRESENT);
     add(isPresentSchema, org.aimas.ami.cmm.agent.onto.IsPresent.class);
+    PredicateSchema domainDetectedSchema = new PredicateSchema(DOMAINDETECTED);
+    add(domainDetectedSchema, org.aimas.ami.cmm.agent.onto.DomainDetected.class);
+    PredicateSchema querySchema = new PredicateSchema(QUERY);
+    add(querySchema, org.aimas.ami.cmm.agent.onto.Query.class);
 
 
     // adding fields
-    queryBaseSchema.add(QUERYBASE_QUERYHANDLER, (ConceptSchema)getSchema(BasicOntology.AID), 1, ObjectSchema.UNLIMITED);
-    assertionDistributionSchema.add(ASSERTIONDISTRIBUTION_ASSIGNMENT, (TermSchema)getSchema(BasicOntology.STRING), 1, ObjectSchema.UNLIMITED);
-    domainDetectionSchema.add(DOMAINDETECTION_DOMAIN, contextDomainSchema, ObjectSchema.MANDATORY);
     assertionAssignmentSchema.add(ASSERTIONASSIGNMENT_COORDINATOR, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     assertionAssignmentSchema.add(ASSERTIONASSIGNMENT_CAPABILITY, assertionDescriptionSchema, 1, ObjectSchema.UNLIMITED);
     assertionDescriptionSchema.add(ASSERTIONDESCRIPTION_ASSERTIONTYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
@@ -139,12 +140,6 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     contextDomainSchema.add(CONTEXTDOMAIN_DOMAINVALUE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     contextDomainSchema.add(CONTEXTDOMAIN_DOMAINENTITY, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     contextDomainSchema.add(CONTEXTDOMAIN_DOMAINDIMENSION, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
-    assertionUpdateSchema.add(ASSERTIONUPDATE_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
-    assertionUpdateSchema.add(ASSERTIONUPDATE_ASSERTIONCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
-    querySchema.add(QUERY_DOMAIN_LOWER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
-    querySchema.add(QUERY_QUERYCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
-    querySchema.add(QUERY_QUERYTYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
-    querySchema.add(QUERY_DOMAIN_UPPER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
     publishAssertionsSchema.add(PUBLISHASSERTIONS_CAPABILITY, assertionDescriptionSchema, 1, ObjectSchema.UNLIMITED);
     connectToDomainSchema.add(CONNECTTODOMAIN_DOMAIN, contextDomainSchema, ObjectSchema.MANDATORY);
     applyConfigurationSchema.add(APPLYCONFIGURATION_CONFIGCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
@@ -153,8 +148,18 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     registerUserSchema.add(REGISTERUSER_USER, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     execTaskSchema.add(EXECTASK_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
     resolveQueryBaseSchema.add(RESOLVEQUERYBASE_FORQUERY, querySchema, ObjectSchema.MANDATORY);
+    enableAssertionsSchema.add(ENABLEASSERTIONS_CAPABILITY, assertionDescriptionSchema, 1, ObjectSchema.UNLIMITED);
     activateAssertionSchema.add(ACTIVATEASSERTION_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
+    queryBaseSchema.add(QUERYBASE_QUERYHANDLER, (ConceptSchema)getSchema(BasicOntology.AID), 1, ObjectSchema.UNLIMITED);
+    assertionDistributionSchema.add(ASSERTIONDISTRIBUTION_ASSIGNMENT, assertionAssignmentSchema, 1, ObjectSchema.UNLIMITED);
+    assertionUpdatedSchema.add(ASSERTIONUPDATED_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
+    assertionUpdatedSchema.add(ASSERTIONUPDATED_ASSERTIONCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     isPresentSchema.add(ISPRESENT_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
+    domainDetectedSchema.add(DOMAINDETECTED_DOMAIN, contextDomainSchema, ObjectSchema.MANDATORY);
+    querySchema.add(QUERY_DOMAIN_LOWER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
+    querySchema.add(QUERY_QUERYCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    querySchema.add(QUERY_QUERYTYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    querySchema.add(QUERY_DOMAIN_UPPER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
 
     // adding name mappings
 

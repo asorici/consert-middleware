@@ -5,7 +5,7 @@ package org.aimas.ami.cmm.agent.onto;
 /**
 * Protege name: ContextDomain
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
 public interface ContextDomain extends jade.content.Concept {
 

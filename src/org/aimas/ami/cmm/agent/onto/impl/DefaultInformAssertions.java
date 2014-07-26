@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * A request sent by the OrgMgr agent to a CtxSensor or CtxUser agent that has announced its presence to the remote manager.
 * Protege name: InformAssertions
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public class DefaultInformAssertions implements InformAssertions {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 

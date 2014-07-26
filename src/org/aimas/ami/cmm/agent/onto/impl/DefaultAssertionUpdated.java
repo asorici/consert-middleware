@@ -5,21 +5,21 @@ import org.aimas.ami.cmm.agent.onto.*;
 
 /**
 * The message used by a CtxSensor or CtxUser agent to inform the delivery of a new ContextAssertion to a CtxCoord agent.
-* Protege name: AssertionUpdate
+* Protege name: AssertionUpdated
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
-public class DefaultAssertionUpdate implements AssertionUpdate {
+public class DefaultAssertionUpdated implements AssertionUpdated {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 
-  public DefaultAssertionUpdate() {
+  public DefaultAssertionUpdated() {
     this._internalInstanceName = "";
   }
 
-  public DefaultAssertionUpdate(String instance_name) {
+  public DefaultAssertionUpdated(String instance_name) {
     this._internalInstanceName = instance_name;
   }
 

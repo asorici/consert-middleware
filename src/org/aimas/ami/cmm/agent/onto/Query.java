@@ -6,9 +6,9 @@ package org.aimas.ami.cmm.agent.onto;
 * Base class for queries submitted by a CtxUser agent to a CtxQueryHandler.
 * Protege name: Query
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:54
+* @version 2014/07/25, 19:43:09
 */
-public interface Query extends jade.content.Concept {
+public interface Query extends jade.content.Predicate {
 
    /**
    * The URI of the ContextDomain value that defines the lower bound of the domain to pose the query to in the ContextDomain hieararchy.

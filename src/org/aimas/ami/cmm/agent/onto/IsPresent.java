@@ -10,7 +10,7 @@ package org.aimas.ami.cmm.agent.onto;
    CtxCoord
 * Protege name: IsPresent
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public interface IsPresent extends jade.content.Predicate {
 

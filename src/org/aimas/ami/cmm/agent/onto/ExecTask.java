@@ -6,7 +6,7 @@ package org.aimas.ami.cmm.agent.onto;
 * The base class for tasking commands that a CtxSensor agent can receive from a CtxCoord agent.
 * Protege name: ExecTask
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public interface ExecTask extends jade.content.AgentAction {
 

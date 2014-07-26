@@ -3,9 +3,10 @@ package org.aimas.ami.cmm.agent.onto;
 
 
 /**
+* The message sent by a CtxUser to a CtxQueryHandler to register a new query/subscription client.
 * Protege name: RegisterUser
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public interface RegisterUser extends jade.content.AgentAction {
 

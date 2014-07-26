@@ -4,13 +4,14 @@ package org.aimas.ami.cmm.agent.onto.impl;
 import org.aimas.ami.cmm.agent.onto.*;
 
 /**
+* The message sent by a CtxUser to a CtxQueryHandler to register a new query/subscription client.
 * Protege name: RegisterUser
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/14, 15:42:55
+* @version 2014/07/25, 19:43:09
 */
 public class DefaultRegisterUser implements RegisterUser {
 
-  private static final long serialVersionUID = 6722885266148375100L;
+  private static final long serialVersionUID = -8749049500310255927L;
 
   private String _internalInstanceName = null;
 
