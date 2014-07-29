@@ -4,11 +4,18 @@ package org.aimas.ami.cmm.agent.onto;
 
 /**
 * Base class for queries submitted by a CtxUser agent to a CtxQueryHandler.
-* Protege name: Query
+* Protege name: UserQuery
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
-public interface Query extends jade.content.Predicate {
+public interface UserQuery extends jade.content.Predicate {
+
+   /**
+   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
+   * Protege name: queryTarget
+   */
+   public void setQueryTarget(String value);
+   public String getQueryTarget();
 
    /**
    * The URI of the ContextDomain value that defines the lower bound of the domain to pose the query to in the ContextDomain hieararchy.
@@ -25,17 +32,17 @@ public interface Query extends jade.content.Predicate {
    public String getQueryContent();
 
    /**
-   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
-   * Protege name: queryType
-   */
-   public void setQueryType(String value);
-   public String getQueryType();
-
-   /**
    * The URI of the ContextDomain value that defines the upper bound (closest to the root) of the domain to pose the query to in the ContextDomain hieararchy.
    * Protege name: domain-upper-bound
    */
    public void setDomain_upper_bound(String value);
    public String getDomain_upper_bound();
+
+   /**
+   * In the case of a SUBSCRIBE message this optional field mentions the interval (in seconds) at which to send results of the submitted subscription query.
+   * Protege name: repeatInterval
+   */
+   public void setRepeatInterval(int value);
+   public int getRepeatInterval();
 
 }

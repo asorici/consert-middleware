@@ -7,7 +7,7 @@ import jade.util.leap.*;
 * The message a CtxSensor or CtxUser sends to a CtxCoord agent proposing his capability of sending the ContextAssertions he is in charge of.
 * Protege name: PublishAssertions
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
 public interface PublishAssertions extends jade.content.AgentAction {
 

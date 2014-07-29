@@ -6,7 +6,7 @@ import jade.util.leap.*;
 /**
 * Protege name: QueryBase
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
 public interface QueryBase extends jade.content.Predicate {
 

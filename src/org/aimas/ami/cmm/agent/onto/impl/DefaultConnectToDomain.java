@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * Message sent by a CtxUser to a CtxSensor that forces it to connect to a given OrgMgr agent of a new ContextDomain as decided by the CtxUser.
 * Protege name: ConnectToDomain
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
 public class DefaultConnectToDomain implements ConnectToDomain {
 
-  private static final long serialVersionUID = -8749049500310255927L;
+  private static final long serialVersionUID = 7138998227437283033L;
 
   private String _internalInstanceName = null;
 

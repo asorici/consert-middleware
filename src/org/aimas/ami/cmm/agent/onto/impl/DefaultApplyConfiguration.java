@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * Message sent by the OrgMgr to a CtxSensor shared between multiple applications when one of those applications is installed, becomes active or inactive.
 * Protege name: ApplyConfiguration
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
 public class DefaultApplyConfiguration implements ApplyConfiguration {
 
-  private static final long serialVersionUID = -8749049500310255927L;
+  private static final long serialVersionUID = 7138998227437283033L;
 
   private String _internalInstanceName = null;
 

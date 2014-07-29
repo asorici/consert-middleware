@@ -4,26 +4,22 @@ package org.aimas.ami.cmm.agent.onto.impl;
 import org.aimas.ami.cmm.agent.onto.*;
 
 /**
-* The message by which: 
- - a CtxSensor/CtxUser announces its presence to a  
-   remote OrgMgr  
- - a CtxQueryHandler announces its presence to a 
-   CtxCoord
-* Protege name: IsPresent
+* The message by which a CtxSensor/CtxUser announces its presence to a remote OrgMgr
+* Protege name: SensorPresent
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
-public class DefaultIsPresent implements IsPresent {
+public class DefaultSensorPresent implements SensorPresent {
 
-  private static final long serialVersionUID = -8749049500310255927L;
+  private static final long serialVersionUID = 7138998227437283033L;
 
   private String _internalInstanceName = null;
 
-  public DefaultIsPresent() {
+  public DefaultSensorPresent() {
     this._internalInstanceName = "";
   }
 
-  public DefaultIsPresent(String instance_name) {
+  public DefaultSensorPresent(String instance_name) {
     this._internalInstanceName = instance_name;
   }
 

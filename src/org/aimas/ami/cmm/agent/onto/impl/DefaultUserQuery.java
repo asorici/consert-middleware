@@ -5,27 +5,39 @@ import org.aimas.ami.cmm.agent.onto.*;
 
 /**
 * Base class for queries submitted by a CtxUser agent to a CtxQueryHandler.
-* Protege name: Query
+* Protege name: UserQuery
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
-public class DefaultQuery implements Query {
+public class DefaultUserQuery implements UserQuery {
 
-  private static final long serialVersionUID = -8749049500310255927L;
+  private static final long serialVersionUID = 7138998227437283033L;
 
   private String _internalInstanceName = null;
 
-  public DefaultQuery() {
+  public DefaultUserQuery() {
     this._internalInstanceName = "";
   }
 
-  public DefaultQuery(String instance_name) {
+  public DefaultUserQuery(String instance_name) {
     this._internalInstanceName = instance_name;
   }
 
   public String toString() {
     return _internalInstanceName;
   }
+
+   /**
+   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
+   * Protege name: queryTarget
+   */
+   private String queryTarget;
+   public void setQueryTarget(String value) { 
+    this.queryTarget=value;
+   }
+   public String getQueryTarget() {
+     return this.queryTarget;
+   }
 
    /**
    * The URI of the ContextDomain value that defines the lower bound of the domain to pose the query to in the ContextDomain hieararchy.
@@ -52,18 +64,6 @@ public class DefaultQuery implements Query {
    }
 
    /**
-   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
-   * Protege name: queryType
-   */
-   private String queryType;
-   public void setQueryType(String value) { 
-    this.queryType=value;
-   }
-   public String getQueryType() {
-     return this.queryType;
-   }
-
-   /**
    * The URI of the ContextDomain value that defines the upper bound (closest to the root) of the domain to pose the query to in the ContextDomain hieararchy.
    * Protege name: domain-upper-bound
    */
@@ -73,6 +73,18 @@ public class DefaultQuery implements Query {
    }
    public String getDomain_upper_bound() {
      return this.domain_upper_bound;
+   }
+
+   /**
+   * In the case of a SUBSCRIBE message this optional field mentions the interval (in seconds) at which to send results of the submitted subscription query.
+   * Protege name: repeatInterval
+   */
+   private int repeatInterval;
+   public void setRepeatInterval(int value) { 
+    this.repeatInterval=value;
+   }
+   public int getRepeatInterval() {
+     return this.repeatInterval;
    }
 
 }

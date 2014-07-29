@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * The message used by a CtxSensor or CtxUser agent to inform the delivery of a new ContextAssertion to a CtxCoord agent.
 * Protege name: AssertionUpdated
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/25, 19:43:09
+* @version 2014/07/29, 17:38:36
 */
 public class DefaultAssertionUpdated implements AssertionUpdated {
 
-  private static final long serialVersionUID = -8749049500310255927L;
+  private static final long serialVersionUID = 7138998227437283033L;
 
   private String _internalInstanceName = null;
 
