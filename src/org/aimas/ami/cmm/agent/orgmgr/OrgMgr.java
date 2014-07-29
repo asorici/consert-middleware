@@ -14,15 +14,15 @@ import jade.wrapper.AgentController;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.CtxCoord;
-import org.aimas.ami.cmm.agent.CtxQueryHandler;
-import org.aimas.ami.cmm.agent.CtxUser;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
+import org.aimas.ami.cmm.agent.queryhandler.CtxQueryHandler;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
+import org.aimas.ami.cmm.agent.user.CtxUser;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
 import org.aimas.ami.cmm.vocabulary.OrgConf;
@@ -113,7 +113,8 @@ public class OrgMgr extends df implements CMMInitListener {
 	
 	
 	private void doBehaviourRegistration() {
-	    // TODO Auto-generated method stub
+	    // 1) Domain Inform Responder
+		addBehaviour(new DomainInformResponder(this));
     }
 
 
