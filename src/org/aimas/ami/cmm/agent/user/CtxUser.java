@@ -19,8 +19,8 @@ import org.aimas.ami.cmm.agent.onto.ContextDomain;
 import org.aimas.ami.cmm.agent.onto.DomainDescription;
 import org.aimas.ami.cmm.agent.onto.InformDomain;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultInformDomain;
+import org.aimas.ami.cmm.api.ApplicationUserAdaptor;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
-import org.aimas.ami.cmm.resources.ApplicationUserAdaptor;
 import org.osgi.framework.BundleContext;
 
 import com.hp.hpl.jena.ontology.OntModel;

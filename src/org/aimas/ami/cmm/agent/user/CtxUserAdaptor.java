@@ -2,9 +2,9 @@ package org.aimas.ami.cmm.agent.user;
 
 import jade.util.Event;
 
+import org.aimas.ami.cmm.api.ApplicationUserAdaptor;
 import org.aimas.ami.cmm.api.DisconnectedQueryHandlerException;
 import org.aimas.ami.cmm.api.QueryNotificationHandler;
-import org.aimas.ami.cmm.resources.ApplicationUserAdaptor;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 
 import com.hp.hpl.jena.query.Query;
