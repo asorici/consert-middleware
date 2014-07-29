@@ -5,7 +5,7 @@ import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.SetUpdateMode;
 import org.aimas.ami.cmm.agent.onto.StartSending;
 import org.aimas.ami.cmm.agent.onto.StopSending;
-import org.aimas.ami.cmm.resources.sensing.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.resources.ContextAssertionAdaptor;
 
 public class AssertionManager {
 	public static final String TIME_BASED 		= 	"time-based";

@@ -1,9 +1,8 @@
-package org.aimas.ami.cmm.resources.sensing;
+package org.aimas.ami.cmm.resources;
 
 import jade.core.behaviours.Behaviour;
 
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
-import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
 
 public interface ContextAssertionAdaptor {

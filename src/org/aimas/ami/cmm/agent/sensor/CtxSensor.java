@@ -61,10 +61,8 @@ public class CtxSensor extends CMMAgent {
     	// ======== STEP 1:	retrieve the initialization arguments and set CMM agent language
     	Object[] initArgs = getArguments();
     	
-    	String agentSpecURI = null;
-    	
     	// first argument is always the URI of the AgentSpecification resource in the 
-    	agentSpecURI = (String)initArgs[0];
+    	String agentSpecURI = (String)initArgs[0];
     	
     	// second one is always the application unique identifier
     	appIdentifier = (String)initArgs[1];
@@ -74,8 +72,8 @@ public class CtxSensor extends CMMAgent {
     		localOrgMgr = (AID)initArgs[2];
     	}
     	
-    	getContentManager().registerLanguage(cmmCodec); 
-    	getContentManager().registerOntology(cmmOntology);
+    	// register the CMMAgent-Lang ontology
+    	registerCMMAgentLang();
     	
     	// ======== STEP 2a: configure the agent according to its specification	
     	try {
@@ -96,14 +94,14 @@ public class CtxSensor extends CMMAgent {
     		sensedAssertionsManager = new SensingManager(this, sensorSpecification.getSensingPolicies());
     		
     		// after this step initialization of the CtxSensor is complete, so we signal a successful init
-    		signalInitOutcome(true);
+    		signalInitializationOutcome(true);
     		
     		// last thing we do in this step is switch our state to ACTIVE
     		sensorState = SensorState.ACTIVE; 
     	}
     	catch(CMMConfigException e) {
     		// if we have a local OrgMgr we must signal our initialization failure
-    		signalInitOutcome(false);
+    		signalInitializationOutcome(false);
     	}
     	
     	// ======== STEP 2b: if there is a local OrgMgr register with it as part of the DF
@@ -126,7 +124,7 @@ public class CtxSensor extends CMMAgent {
      * If there is a local OrgMgr (which acts as DF) register the sensing service with it
      */
 	private void registerSensorService() {
-	    registerAgentService(appIdentifier);
+	    registerAgentService(appIdentifier, null);
     }
 
 
@@ -190,26 +188,6 @@ public class CtxSensor extends CMMAgent {
 	        e.printStackTrace();
         }
     }
-
-
-	private void signalInitOutcome(boolean success) {
-		final boolean initSuccessful = success;
-		if (localOrgMgr != null) {
-			addBehaviour(new OneShotBehaviour(this) {
-                private static final long serialVersionUID = 1L;
-
-				@Override
-				public void action() {
-					ACLMessage initCompleteMsg = new ACLMessage(ACLMessage.INFORM);
-					initCompleteMsg.addReceiver(localOrgMgr);
-					initCompleteMsg.setContent("initConfirm:" + initSuccessful);
-					
-					myAgent.send(initCompleteMsg);
-				}
-			});
-		}
-    }
-	
 	
 	@Override
 	public AgentType getAgentType() {

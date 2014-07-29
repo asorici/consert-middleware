@@ -6,10 +6,13 @@ import jade.content.onto.Ontology;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.ServiceException;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.Property;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
 import jade.osgi.OSGIBridgeHelper;
 
 import org.aimas.ami.cmm.agent.config.AgentSpecification;
@@ -27,7 +30,7 @@ public abstract class CMMAgent extends Agent {
 	
 	
 	/* Administrative helper stuff */
-	protected OSGIBridgeHelper helper;
+	protected OSGIBridgeHelper osgiHelper;
 	protected Bundle resourceBundle;
 	protected AgentConfigLoader configurationLoader;	
 	
@@ -42,7 +45,7 @@ public abstract class CMMAgent extends Agent {
 	protected AID localOrgMgr;
 	
 	public OSGIBridgeHelper getOSGiBridge() {
-		return helper;
+		return osgiHelper;
 	}
 	
 	public AgentConfigLoader getConfigurationLoader() {
@@ -62,6 +65,15 @@ public abstract class CMMAgent extends Agent {
 	}
 	
 	/**
+	 * Register CMMAgent-Lang Ontology
+	 */
+	protected void registerCMMAgentLang() {
+		getContentManager().registerLanguage(cmmCodec);
+		getContentManager().registerOntology(cmmOntology);
+	}
+	
+	
+	/**
 	 * Get the OSGi helper, find the CMM resource bundle and build the agent's
 	 * configuration loader.
 	 * 
@@ -69,7 +81,7 @@ public abstract class CMMAgent extends Agent {
 	 */
 	protected void doResourceAccessConfiguration() throws CMMConfigException {
 		try {
-			helper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
+			osgiHelper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
 		}
 		catch (ServiceException e) {
 			throw new CMMConfigException(
@@ -77,7 +89,7 @@ public abstract class CMMAgent extends Agent {
 			        e);
 		}
 		
-		BundleContext context = helper.getBundleContext();
+		BundleContext context = osgiHelper.getBundleContext();
 		
 		// Iterate through the installed bundles to find our "cmm-resources"
 		for (Bundle candidate : context.getBundles()) {
@@ -95,12 +107,35 @@ public abstract class CMMAgent extends Agent {
 		        resourceBundle));
 	}
 	
+	
+	protected void signalInitializationOutcome(boolean success) {
+		final boolean initSuccessful = success;
+		if (localOrgMgr != null) {
+			addBehaviour(new OneShotBehaviour(this) {
+                private static final long serialVersionUID = 1L;
+
+				@Override
+				public void action() {
+					ACLMessage initCompleteMsg = new ACLMessage(ACLMessage.INFORM);
+					initCompleteMsg.addReceiver(localOrgMgr);
+					initCompleteMsg.setContent("initConfirm:" + initSuccessful);
+					
+					myAgent.send(initCompleteMsg);
+				}
+			});
+		}
+    }
+	
+	
 	/**
 	 * Register the specific type (sensor, user, queryHandler, CtxCoord) of this
 	 * CMMAgent with the local OrgMgr (acting as DF) within the range of the
 	 * given <code>appIdentifier</code>.
+	 * @param appIdentifier	The unique application identifier for which this agent is registering its service 
+	 * @param serviceProperties A CMMAgent service specific list of properties (e.g. isPrimary for CtxQueryHandler). 
+	 *  Man be null if no specific properties are required.
 	 */
-	protected void registerAgentService(String appIdentifier) {
+	protected void registerAgentService(String appIdentifier, Property[] serviceProperties) {
     	if (localOrgMgr != null) {
     		DFAgentDescription dfd = new DFAgentDescription();
     		dfd.setName(getAID());
@@ -110,6 +145,12 @@ public abstract class CMMAgent extends Agent {
     		sd.setName(appIdentifier);	// the name of the service is the appIdentifier string
     		sd.addLanguages(cmmCodec.getName());
     		sd.addOntologies(cmmOntology.getName());
+    		
+    		if (serviceProperties != null) {
+    			for (Property p : serviceProperties) {
+    				sd.addProperties(p);
+    			}
+    		}
     		
     		try {
     			DFService.register(this, localOrgMgr, dfd);
