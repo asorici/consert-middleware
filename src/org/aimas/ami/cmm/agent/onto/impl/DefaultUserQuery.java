@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * Base class for queries submitted by a CtxUser agent to a CtxQueryHandler.
 * Protege name: UserQuery
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public class DefaultUserQuery implements UserQuery {
 
-  private static final long serialVersionUID = 7138998227437283033L;
+  private static final long serialVersionUID = 5438106203733924709L;
 
   private String _internalInstanceName = null;
 
@@ -28,18 +28,6 @@ public class DefaultUserQuery implements UserQuery {
   }
 
    /**
-   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
-   * Protege name: queryTarget
-   */
-   private String queryTarget;
-   public void setQueryTarget(String value) { 
-    this.queryTarget=value;
-   }
-   public String getQueryTarget() {
-     return this.queryTarget;
-   }
-
-   /**
    * The URI of the ContextDomain value that defines the lower bound of the domain to pose the query to in the ContextDomain hieararchy.
    * Protege name: domain-lower-bound
    */
@@ -49,6 +37,18 @@ public class DefaultUserQuery implements UserQuery {
    }
    public String getDomain_lower_bound() {
      return this.domain_lower_bound;
+   }
+
+   /**
+   * The type of query submitted by a CtxUser: local (to its direct CtxQueryHandler) or domain-based
+   * Protege name: queryTarget
+   */
+   private String queryTarget;
+   public void setQueryTarget(String value) { 
+    this.queryTarget=value;
+   }
+   public String getQueryTarget() {
+     return this.queryTarget;
    }
 
    /**

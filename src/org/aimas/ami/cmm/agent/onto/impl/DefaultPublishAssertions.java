@@ -8,11 +8,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * The message a CtxSensor or CtxUser sends to a CtxCoord agent proposing his capability of sending the ContextAssertions he is in charge of.
 * Protege name: PublishAssertions
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public class DefaultPublishAssertions implements PublishAssertions {
 
-  private static final long serialVersionUID = 7138998227437283033L;
+  private static final long serialVersionUID = 5438106203733924709L;
 
   private String _internalInstanceName = null;
 
@@ -33,10 +33,10 @@ public class DefaultPublishAssertions implements PublishAssertions {
    * Protege name: capability
    */
    private List capability = new ArrayList();
-   public void addCapability(AssertionDescription elem) { 
+   public void addCapability(AssertionCapability elem) { 
      capability.add(elem);
    }
-   public boolean removeCapability(AssertionDescription elem) {
+   public boolean removeCapability(AssertionCapability elem) {
      boolean result = capability.remove(elem);
      return result;
    }

@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * The message by which a CtxQueryHandler announces its presence to a CtxCoord.
 * Protege name: QueryHandlerPresent
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public class DefaultQueryHandlerPresent implements QueryHandlerPresent {
 
-  private static final long serialVersionUID = 7138998227437283033L;
+  private static final long serialVersionUID = 5438106203733924709L;
 
   private String _internalInstanceName = null;
 

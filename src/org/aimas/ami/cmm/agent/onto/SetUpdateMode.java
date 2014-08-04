@@ -6,7 +6,7 @@ package org.aimas.ami.cmm.agent.onto;
 * Tasking command that tells a CtxSensor agent what the desired update mode (time-based, change-based) for the given ContextAssertion is.
 * Protege name: SetUpdateMode
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public interface SetUpdateMode extends ExecTask {
 

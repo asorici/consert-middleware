@@ -7,11 +7,11 @@ import org.aimas.ami.cmm.agent.onto.*;
 * Tasking command that tells a CtxSensor agent to stop sending updates of the given ContextAssertion.
 * Protege name: StopSending
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public class DefaultStopSending implements StopSending {
 
-  private static final long serialVersionUID = 7138998227437283033L;
+  private static final long serialVersionUID = 5438106203733924709L;
 
   private String _internalInstanceName = null;
 

@@ -6,7 +6,7 @@ package org.aimas.ami.cmm.agent.onto;
 * The message by which a CtxSensor/CtxUser announces its presence to a remote OrgMgr
 * Protege name: SensorPresent
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public interface SensorPresent extends jade.content.Predicate {
 

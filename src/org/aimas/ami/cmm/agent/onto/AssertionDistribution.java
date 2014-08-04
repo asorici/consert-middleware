@@ -7,7 +7,7 @@ import jade.util.leap.*;
 * A set of AssertionAssignments that a OrgMgr sends to a CtxSensor or CtxUser that has announced its presence and capabilities.
 * Protege name: AssertionDistribution
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public interface AssertionDistribution extends jade.content.Predicate {
 

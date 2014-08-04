@@ -6,7 +6,7 @@ import jade.util.leap.*;
 /**
 * Protege name: AssertionDescription
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/29, 17:38:36
+* @version 2014/07/31, 13:46:14
 */
 public interface AssertionDescription extends jade.content.Concept {
 
