@@ -20,8 +20,9 @@ import org.osgi.framework.ServiceReference;
 import com.hp.hpl.jena.ontology.OntModel;
 
 public class AgentActivator implements BundleActivator {
-	private static final String RESOURCE_BUNDLE_NAME = "cmm-resources";
-	private static final String JADE_BUNDLE_NAME = "jadeOsgi";
+	public static final String RESOURCE_BUNDLE_SYMBOLIC_NAME = "consert-engine.resources";
+	public static final String JADE_BUNDLE_SYMBOLIC_NAME = "jade.jadeOsgi";
+	public static final String AGENT_BUNDLE_SYMBOLIC_NAME = "consert-middleware.agent-bundle";
 	
 	private AgentFactoryService agentFactory;
 	
@@ -47,14 +48,14 @@ public class AgentActivator implements BundleActivator {
 		Bundle resourceBundle = null;
 		
 		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(RESOURCE_BUNDLE_NAME)) {
+			if (candidate.getSymbolicName().equals(RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
 				resourceBundle = candidate;
 				break;
 			}
 		}
 		
 		if (resourceBundle == null) 
-			throw new CMMConfigException("The " + RESOURCE_BUNDLE_NAME + " bundle could not be found");
+			throw new CMMConfigException("The " + RESOURCE_BUNDLE_SYMBOLIC_NAME + " bundle could not be found");
 		
 		AgentConfigLoader configLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
 		OntModel cmmConfigModel = configLoader.loadAppConfiguration();
@@ -113,7 +114,7 @@ public class AgentActivator implements BundleActivator {
 		Bundle jadeBundle = null;
 		
 		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(JADE_BUNDLE_NAME)) {
+			if (candidate.getSymbolicName().equals(JADE_BUNDLE_SYMBOLIC_NAME)) {
 				jadeBundle = candidate;
 				break;
 			}
@@ -139,7 +140,7 @@ public class AgentActivator implements BundleActivator {
 		JadeRuntimeService jrs = (JadeRuntimeService) context.getService(jadeRef);
 		
 		String orgMgrName = orgMgrSpec.getAgentAddress().getLocalName();
-		AgentController orgMgrController = jrs.createNewAgent(orgMgrName, OrgMgr.class.getName(), null);
+		AgentController orgMgrController = jrs.createNewAgent(orgMgrName, OrgMgr.class.getName(), null, AGENT_BUNDLE_SYMBOLIC_NAME);
 		orgMgrController.start();
 		
 		return true;

@@ -63,10 +63,12 @@ public class CtxCoord extends CMMAgent {
     		localOrgMgr = (AID)initArgs[2];
     	}
     	
+    	System.out.println("Agent " + getName() + " starting: " + "spec: " + agentSpecURI + ", appId: " + appIdentifier + ", localOrgMgr: " + localOrgMgr);
+    	
     	// register the CMMAgent-Lang ontology
     	registerCMMAgentLang();
     	
-    	// ======== STEP 2: configure the agent according to its specification	
+    	// ======== STEP 2a: configure the agent according to its specification	
     	try {
 	    	// configure access to resource
     		doResourceAccessConfiguration();
@@ -83,22 +85,36 @@ public class CtxCoord extends CMMAgent {
     		agentSpecification = CoordinatorSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		coordinatorSpecification = (CoordinatorSpecification)agentSpecification;
     		
+    		System.out.println("["+ getName() + "]: " + "Configuration has been parsed.");
+    		
     		setupManagementStructures();
+    		
+    		System.out.println("["+ getName() + "]: " + "Management structures setup.");
     	}
     	catch(CMMConfigException e) {
     		// if we have a local OrgMgr we must signal our initialization failure
+    		e.printStackTrace();
     		signalInitializationOutcome(false);
     		return;
     	}
     	
+    	// STEP 2b: register CtxCoord service
+    	registerCoordinatorService();
+    	
     	// ======== STEP 3:	setup the CtxUser specific permanent behaviours
     	setupCoordinatorBehaviours();
     	
+    	System.out.println("["+ getName() + "]: " + "Done agent setup. Signaling outcome.");
     	
     	// after this step initialization of the CtxSensor is complete, so we signal a successful init
 		signalInitializationOutcome(true);
 	}
 	
+	private void registerCoordinatorService() {
+		registerAgentService(appIdentifier, null);
+		System.out.println("["+ getName() + "]: " + "Coordinator service registered.");
+    }
+
 	private void setupManagementStructures() throws CMMConfigException {
         // setup the SensorManager
 		sensorManager = new SensorManager(this);

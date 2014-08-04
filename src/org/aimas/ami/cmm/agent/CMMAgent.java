@@ -26,8 +26,6 @@ import org.osgi.framework.BundleContext;
 public abstract class CMMAgent extends Agent {
 	private static final long serialVersionUID = 6980230538089503193L;
 	
-	public static final String RESOURCE_BUNDLE_NAME = "cmm-resources";
-	
 	
 	/* Administrative helper stuff */
 	protected OSGIBridgeHelper osgiHelper;
@@ -93,7 +91,7 @@ public abstract class CMMAgent extends Agent {
 		
 		// Iterate through the installed bundles to find our "cmm-resources"
 		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(RESOURCE_BUNDLE_NAME)) {
+			if (candidate.getSymbolicName().equals(AgentActivator.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
 				resourceBundle = candidate;
 				break;
 			}
@@ -103,12 +101,14 @@ public abstract class CMMAgent extends Agent {
 		// loader
 		// and load the CMM configuration for located at the standard location:
 		// etc/cmm/cmm-config.ttl
-		configurationLoader = new AgentConfigLoader(new BundleResourceManager(
-		        resourceBundle));
+		configurationLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
+		
+		System.out.println("["+ getName() + "]: " + "Access to CMM resources configured.");
 	}
 	
 	
 	protected void signalInitializationOutcome(boolean success) {
+		System.out.println("[" + getName() + "]:" + "Sending INIT SUCCESS message to OrgMgr");
 		final boolean initSuccessful = success;
 		if (localOrgMgr != null) {
 			addBehaviour(new OneShotBehaviour(this) {
@@ -152,12 +152,15 @@ public abstract class CMMAgent extends Agent {
     			}
     		}
     		
+    		long start = System.currentTimeMillis();
     		try {
     			DFService.register(this, localOrgMgr, dfd);
     		}
     		catch (FIPAException fe) {
     			fe.printStackTrace();
     		}
+    		long end = System.currentTimeMillis();
+    		System.out.println("[" + getName() + "]: " + "It took " + (end - start) + " ms to register agent service.");
     	}
     }
 	
