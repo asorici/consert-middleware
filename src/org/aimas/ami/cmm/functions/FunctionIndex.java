@@ -63,7 +63,7 @@ public class FunctionIndex {
 	 * {@link FunctionRegistry} of the Jena API.
 	 * @param configModel The ontology model containing the Function definitions
 	 */
-	static void registerCustomFunctions(OntModel configModel) {
+	public static void registerCustomFunctions(OntModel configModel) {
 		// register SPIN system functions and templates 
 		SPINModuleRegistry.get().init();
 		
