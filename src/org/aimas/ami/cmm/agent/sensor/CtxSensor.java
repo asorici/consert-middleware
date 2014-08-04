@@ -14,9 +14,11 @@ import java.util.Map;
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
+import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.PublishAssertions;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultPublishAssertions;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
 
@@ -167,8 +169,16 @@ public class CtxSensor extends CMMAgent {
 		Map<String, AssertionManager> managedAssertions = sensedAssertionsManager.managedAssertions;
 		for (AssertionManager assertionManager : managedAssertions.values()) {
 			AssertionDescription assertionDesc = assertionManager.getAssertionDescription();
+			String updateMode = assertionManager.getUpdateMode();
+			int updateRate = assertionManager.getUpdateRate();
+			
 			if (assertionDesc != null) {
-				publishContent.addCapability(assertionDesc);
+				AssertionCapability capability = new DefaultAssertionCapability();
+				capability.setAssertion(assertionDesc);
+				capability.setAvailableUpdateMode(updateMode);
+				capability.setAvailableUpdateRate(updateRate);
+				
+				publishContent.addCapability(capability);
 			}
 		}
 		

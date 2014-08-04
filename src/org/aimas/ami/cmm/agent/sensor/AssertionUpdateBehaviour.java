@@ -32,7 +32,9 @@ public class AssertionUpdateBehaviour extends OneShotBehaviour {
 		SensorSpecification sensorSpec = sensorAgent.getSensorSpecification();
 		AID coordinatorAID = sensorSpec.getAssignedCoordinatorAddress().getAID();
 		
-		String conversationId = sensorAgent.getName() + "-AssertionUpdate-" + System.currentTimeMillis();
+		String conversationId = sensorAgent.getName() + "-AssertionUpdate-" 
+				+ System.currentTimeMillis() + "-" + getCnt();
+		
 		ACLMessage updateMsg = new ACLMessage(ACLMessage.INFORM);
 		updateMsg.addReceiver(coordinatorAID);
 		updateMsg.setConversationId(conversationId);
@@ -51,4 +53,8 @@ public class AssertionUpdateBehaviour extends OneShotBehaviour {
         }
 	}
 	
+	private static int counter = 0;
+	private static synchronized int getCnt() {
+		return counter++;
+	}
 }

@@ -17,9 +17,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
+import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
 import org.aimas.ami.cmm.agent.onto.UserQuery;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultEnableAssertions;
 import org.aimas.ami.contextrep.engine.api.ContextResultSet;
@@ -397,7 +399,11 @@ public class UserQueryHandler {
 				
 				AssertionDescription assertionDesc = new DefaultAssertionDescription();
 				assertionDesc.setAssertionType(assertionResURI);
-				msgContent.addCapability(assertionDesc);
+				
+				AssertionCapability capability = new DefaultAssertionCapability();
+				capability.setAssertion(assertionDesc);
+				
+				msgContent.addCapability(capability);
 			}
 			
 			try {

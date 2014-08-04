@@ -7,6 +7,7 @@ import jade.content.onto.UngroundedException;
 import jade.lang.acl.ACLMessage;
 import jade.proto.ProposeInitiator;
 
+import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
 import org.aimas.ami.cmm.agent.onto.PublishAssertions;
@@ -40,8 +41,8 @@ public class PublishAssertionsBehaviour extends ProposeInitiator {
 	        if (ce instanceof EnableAssertions) {
 	        	EnableAssertions enabledAssertions = (EnableAssertions)ce;
 	        	for (int i = 0; i < enabledAssertions.getCapability().size(); i++) {
-	        		AssertionDescription enabledAssertion = (AssertionDescription)enabledAssertions.getCapability().get(i);
-	        		String assertionResURI = enabledAssertion.getAssertionType();
+	        		AssertionCapability enabledAssertion = (AssertionCapability)enabledAssertions.getCapability().get(i);
+	        		String assertionResURI = enabledAssertion.getAssertion().getAssertionType();
 	        		
 	        		sensingManager.getAssertionManager(assertionResURI).setUpdateEnabled(true);
 	        	}
