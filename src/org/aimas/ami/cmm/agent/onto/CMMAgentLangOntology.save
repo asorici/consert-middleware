@@ -8,14 +8,14 @@ import jade.content.schema.*;
  * @author OntologyBeanGenerator v4.1
  * @version 2014/07/31, 13:46:14
  */
-public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
+public class CopyOfCMMAgentLangOntology extends jade.content.onto.Ontology  {
 
   private static final long serialVersionUID = 5438106203733924709L;
 
   //NAME
   public static final String ONTOLOGY_NAME = "CMMAgentLang";
   // The singleton instance of this ontology
-  private static Ontology theInstance = new CMMAgentLangOntology();
+  private static Ontology theInstance = new CopyOfCMMAgentLangOntology();
   public static Ontology getInstance() {
      return theInstance;
   }
@@ -85,7 +85,7 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
   /**
    * Constructor
   */
-  private CMMAgentLangOntology(){ 
+  private CopyOfCMMAgentLangOntology(){ 
     super(ONTOLOGY_NAME, BasicOntology.getInstance());
     try { 
 
