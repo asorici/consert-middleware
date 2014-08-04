@@ -22,6 +22,10 @@ public class AgentSpecification {
 		return agentAddress;
 	}
 	
+	public String getAgentLocalName() {
+		return agentAddress.getLocalName();
+	}
+	
 	public String getAgentName() {
 		return agentAddress.getAID().getName();
 	}

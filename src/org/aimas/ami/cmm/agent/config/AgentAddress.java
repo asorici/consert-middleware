@@ -8,13 +8,13 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 public class AgentAddress {
-	private static AID agentIdentifier;
-	
 	private String agentLocalName;
 	private String agentMTPHost;
 	private int agentMTPPort;
 	
 	private CMMAgentContainer agentContainer;
+	private AID agentID;
+	
 	
 	public AgentAddress(String agentLocalName, String agentMTPHost, int agentMTPPort, CMMAgentContainer agentContainer) {
 	    this.agentLocalName = agentLocalName;
@@ -41,25 +41,25 @@ public class AgentAddress {
     }
 	
 	public AID getAID() {
-		if (agentIdentifier == null) {
+		if (agentID == null) {
 			// If we don't have an agent container, we assume the local name suffices 
 			// to construct the correct global AID
 			if (agentContainer == null) {
 				AID aid = new AID(agentLocalName, false);
 				aid.addAddresses(getMTPAddress());
 				
-				agentIdentifier = aid;
+				agentID = aid;
 			}
 			
 			// Otherwise, use the platform name from the Container to construct the global AID
 			String globalAgentName = agentLocalName + "@" + agentContainer.getPlatformName();
-			AID aid = new AID(globalAgentName, false);
+			AID aid = new AID(globalAgentName, true);
 			aid.addAddresses(getMTPAddress());
 			
-			agentIdentifier = aid;
+			agentID = aid;
 		}
 		
-		return agentIdentifier;
+		return agentID;
 	}
 	
 	public String getMTPAddress() {
