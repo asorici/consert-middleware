@@ -88,6 +88,9 @@ public class CoordConf {
     public final static Property transferRateArg = m_model.createProperty( ARG.NS + "transferRate" );
     public final static Property updateModeArg = m_model.createProperty( ARG.NS + "updateMode" );
     
+    // commandRule
+    public final static Property hasCommandRule = m_model.createProperty( NS + "hasCommandRule" );
+    
     
     // Vocabulary Individuals
   	/////////////////////////
