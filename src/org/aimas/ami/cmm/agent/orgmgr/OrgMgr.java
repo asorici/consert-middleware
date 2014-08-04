@@ -12,7 +12,7 @@ import jade.osgi.OSGIBridgeHelper;
 import jade.osgi.service.runtime.JadeRuntimeService;
 import jade.wrapper.AgentController;
 
-import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.AgentActivator;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
@@ -90,6 +90,8 @@ public class OrgMgr extends df implements CMMInitListener {
 		// STEP 2: start managed agents in required order: CtxCoord, CtxQueryHandler, CtxSensor, CtxUser.
 		// We do this by registering a CMM initialization SequentialBehavior: in each child behavior the 
 		// agent must send a confirmation of successful initialization
+		System.out.println("Registering CMM INIT Behaviour");
+		
 		CMMInitBehaviour initBehaviour = new CMMInitBehaviour(this, this);
 		addBehaviour(initBehaviour);
     }
@@ -168,7 +170,7 @@ public class OrgMgr extends df implements CMMInitListener {
 		
 		// Iterate through the installed bundles to find our "cmm-resources"
 		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(CMMAgent.RESOURCE_BUNDLE_NAME)) {
+			if (candidate.getSymbolicName().equals(AgentActivator.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
 				resourceBundle = candidate;
 				break;
 			}
@@ -193,6 +195,7 @@ public class OrgMgr extends df implements CMMInitListener {
 	        doManagedAgentConfiguration(cmmConfigModel, context);
         }
         catch (Exception e) {
+        	e.printStackTrace();
         	throw new CMMConfigException("Failed to configure and initialize CMM Agents", e);
         }
     }
@@ -237,8 +240,10 @@ public class OrgMgr extends df implements CMMInitListener {
 			// Prepare the arguments
 			Object[] args = new Object[] {coordSpecRes.getURI(), appIdentifier, orgMgrAID};
 			
-			AgentController coordController = 
-					jrs.createNewAgent(coordSpec.getAgentName(), CtxCoord.class.getName(), args);
+			
+			AgentController coordController = jrs.createNewAgent(coordSpec.getAgentLocalName(), CtxCoord.class.getName(), 
+					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
+			
 			
 			agentManager.addManagedCoordinator(coordSpec.getAgentName(), coordSpec, coordController);
 		}
@@ -261,7 +266,8 @@ public class OrgMgr extends df implements CMMInitListener {
 			
 			// Prepare the arguments
 			Object[] args = new Object[] {queryHandlerSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController queryController = jrs.createNewAgent(queryHandlerSpec.getAgentName(), CtxQueryHandler.class.getName(), args);
+			AgentController queryController = jrs.createNewAgent(queryHandlerSpec.getAgentLocalName(), CtxQueryHandler.class.getName(), 
+					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
 			
 			agentManager.addManagedQueryHandler(queryHandlerSpec.getAgentName(), queryHandlerSpec, queryController);
 		}
@@ -284,7 +290,8 @@ public class OrgMgr extends df implements CMMInitListener {
 			
 			// Prepare the arguments
 			Object[] args = new Object[] {sensorSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController sensorController = jrs.createNewAgent(sensorSpec.getAgentName(), CtxSensor.class.getName(), args);
+			AgentController sensorController = jrs.createNewAgent(sensorSpec.getAgentLocalName(), CtxSensor.class.getName(), 
+					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
 			
 			agentManager.addManagedSensor(sensorSpec.getAgentName(), sensorSpec, sensorController);
 		}
@@ -307,7 +314,8 @@ public class OrgMgr extends df implements CMMInitListener {
 			
 			// Prepare the arguments
 			Object[] args = new Object[] {userSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController userController = jrs.createNewAgent(userSpec.getAgentName(), CtxUser.class.getName(), args);
+			AgentController userController = jrs.createNewAgent(userSpec.getAgentLocalName(), CtxUser.class.getName(), 
+					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
 			
 			agentManager.addManagedUser(userSpec.getAgentName(), userSpec, userController);
 		}

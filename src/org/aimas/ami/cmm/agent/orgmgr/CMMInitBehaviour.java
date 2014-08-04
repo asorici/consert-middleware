@@ -6,6 +6,7 @@ import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
+import jade.proto.SimpleAchieveREInitiator;
 import jade.wrapper.StaleProxyException;
 
 import java.util.List;
@@ -93,14 +94,20 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     private static class AgentInitBehaviour extends SimpleBehaviour {
         private static final long serialVersionUID = 2701478816359859719L;
 		
+        private static final int REQUEST_START = 0;
+        private static final int AWAIT_CONFIRM = 1;
+        
+        private int state = REQUEST_START;
+        private boolean finished = false;
+    	private int exitCode = INIT_SUCCESS;
+    	private long endingTime = 0;
+    	
         private OrgMgr orgMgr;
     	private ManagedAgentWrapper<?> cmmAgentWrapper;
     	private long timeoutThreshold;
     	
+    	private MessageTemplate initConfirmationTemplate;
     	private Exception initError;
-    	
-    	private boolean finished = false;
-    	private int exitCode = INIT_SUCCESS;
     	
     	public AgentInitBehaviour(OrgMgr orgMgr, ManagedAgentWrapper<?> cmmAgentWrapper, long timeoutThreshold) {
     		super(orgMgr);
@@ -120,57 +127,89 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     	
 		@Override
         public void action() {
-			if (!cmmAgentWrapper.isActive()) {
-				// 1) start the agent
-				try {
-	                cmmAgentWrapper.start();
-				}
-                catch (StaleProxyException e) {
-	                // we have failed to initialize miserably
-                	exitCode = INIT_FAILURE;
-                	finished = true;
-                	
-                	initError = e;
-                }
-				
-				// 2) wait for the confirmation message which is an INFORM from the corresponding 
-				// CMM Agent of the form initConfirm:true or initConfirm:false
-				final AID cmmAgentAID = cmmAgentWrapper.getAgentSpecification().getAgentAddress().getAID();
-				MessageTemplate initConfirmationTemplate = new MessageTemplate(new MatchExpression() {
-					@Override
-					public boolean match(ACLMessage msg) {
-						if (msg.getPerformative() != ACLMessage.INFORM) {
-							return false;
+			switch(state){
+				case REQUEST_START: {
+					if (!cmmAgentWrapper.isActive()) {
+						// 1a) start the agent
+						try {
+							System.out.println("Starting agent: " + cmmAgentWrapper.agentSpecification.getAgentLocalName());
+							cmmAgentWrapper.start();
+							state = AWAIT_CONFIRM;
 						}
+		                catch (StaleProxyException e) {
+			                // we have failed to initialize miserably
+		                	exitCode = INIT_FAILURE;
+		                	finished = true;
+		                	
+		                	initError = e;
+		                	break;
+		                }
 						
-						if (!msg.getSender().equals(cmmAgentAID)) {
-							return false;
+						// 1b) create confirmation message template
+						final AID cmmAgentAID = cmmAgentWrapper.getAgentSpecification().getAgentAddress().getAID();
+						initConfirmationTemplate = new MessageTemplate(new MatchExpression() {
+							@Override
+							public boolean match(ACLMessage msg) {
+								if (msg.getPerformative() != ACLMessage.INFORM) {
+									return false;
+								}
+								
+								if (!msg.getSender().equals(cmmAgentAID)) {
+									return false;
+								}
+								
+								String[] msgComponents = msg.getContent().split(":");
+								if (!msgComponents[0].equals("initConfirm") || msgComponents.length != 2) {
+									return false;
+								}
+								
+								return true;
+							}
+						});
+						
+						// 1c) set the endingTime if there is a timeoutThreshold
+						if (timeoutThreshold != 0) {
+							endingTime = System.currentTimeMillis() + timeoutThreshold;
 						}
-						
-						String[] msgComponents = msg.getContent().split(":");
-						if (!msgComponents[0].equals("initConfirm") || msgComponents.length != 2) {
-							return false;
-						}
-						
-						return true;
 					}
-				});
-				
-				// attempt to receive a initConfirm message for the given time threshold
-				ACLMessage confirmMessage = orgMgr.blockingReceive(initConfirmationTemplate, timeoutThreshold);
-				if (confirmMessage == null) {
-					exitCode = INIT_SUCCESS;
-				}
-				else {
-					boolean initialized = initSuccessful(confirmMessage);
-					exitCode = initialized ? INIT_SUCCESS : INIT_FAILURE;
+					else {
+						// agent is already active, so we don't need to do anything
+						exitCode = INIT_SUCCESS;
+						finished = true;
+					}
+					
+					break;
 				}
 				
-				finished = true;
-			}
-			else {
-				exitCode = INIT_SUCCESS;
-				finished = true;
+				case AWAIT_CONFIRM: {
+					// 2) attempt to receive a initConfirm message within given time threshold
+					ACLMessage confirmMessage = orgMgr.receive(initConfirmationTemplate);
+					if (confirmMessage != null) {
+						boolean initialized = initSuccessful(confirmMessage);
+						exitCode = initialized ? INIT_SUCCESS : INIT_FAILURE;
+						finished = true;
+					}
+					else {
+						if (timeoutThreshold > 0) {
+							long blockTime = endingTime - System.currentTimeMillis();
+							  
+						    if(blockTime <= 0) {
+						    	// timeout Expired - we can end here and report a failure
+						    	exitCode = INIT_FAILURE;
+						    	finished = true;
+						    }
+						    else { 
+						    	//timeout not yet expired.
+						    	block(blockTime);
+						    }
+						}
+						else {
+							block();
+						}
+						
+						break;
+					}
+				}
 			}
         }
 		
