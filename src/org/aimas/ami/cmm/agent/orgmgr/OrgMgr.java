@@ -13,13 +13,13 @@ import jade.osgi.service.runtime.JadeRuntimeService;
 import jade.wrapper.AgentController;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.CtxCoord;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
+import org.aimas.ami.cmm.agent.coordinator.CtxCoord;
 import org.aimas.ami.cmm.agent.queryhandler.CtxQueryHandler;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
 import org.aimas.ami.cmm.agent.user.CtxUser;
