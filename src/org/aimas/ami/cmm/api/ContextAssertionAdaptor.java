@@ -1,9 +1,10 @@
-package org.aimas.ami.cmm.resources;
+package org.aimas.ami.cmm.api;
 
 import jade.core.behaviours.Behaviour;
 
-import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
+
+import com.hp.hpl.jena.update.UpdateRequest;
 
 public interface ContextAssertionAdaptor {
 	// ======== ContextAssertion Capabilities ======== //
@@ -23,23 +24,23 @@ public interface ContextAssertionAdaptor {
 	 * @return The description (URI of ContextAssertion and, optionally, 
 	 * the URIs of provided ContextAnnotations) for the ContextAssertion managed by this adaptor.
 	 */
-	public AssertionDescription getProvidedAssertion();
+	public ContextAssertionDescription getProvidedAssertion();
 	
 	// =========== ContextAssertion Update =========== //
 	/** 
-	 * Register the CtxSensor instance which commands this AssertionAdaptor and to which it 
+	 * Register the ApplicationSensingAdaptor instance which commands this AssertionAdaptor and to which it 
 	 * will be sending updates.
-	 * @param sensorAgent the CtxSensor agent that handles the ContextAssertion sensing update.  
+	 * @param sensingAdaptor the ApplicationSensingAdaptor that handles the ContextAssertion sensing update.  
 	 */
-	public void registerSensorAgent(CtxSensor sensorAgent);
+	public void registerSensingAdaptor(ApplicationSensingAdaptor sensingAdaptor);
 	
 	/** 
-	 * Deliver an update of the ContextAssertion to a CtxSensor agent. 
-	 * This method is expected to produce a {@link SenseNotification} {@link Behaviour} 
-	 * that is added to specified {@link CtxSensor} agent.
-	 * @param sensorAgent the CtxSensor agent that handles the ContextAssertion sensing update.  
+	 * Deliver an update of the ContextAssertion to a ApplicationSensingAdaptor instance. 
+	 * This method is expected to produce an {@link UpdateRequest} that contains the content and annotation update
+	 * of the ContextAssertion that this adaptor manages.
+	 * @param sensorAdaptor the ApplicationSensingAdaptor agent that handles the ContextAssertion sensing update.  
 	 */
-	public void deliverUpdate(CtxSensor sensorAgent);
+	public UpdateRequest deliverUpdate(ApplicationSensingAdaptor sensingAdaptor);
 	
 	
 	// ========== TASKING Commands Handling ========== //
