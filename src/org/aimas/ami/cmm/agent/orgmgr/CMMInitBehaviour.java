@@ -6,11 +6,11 @@ import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
-import jade.proto.SimpleAchieveREInitiator;
 import jade.wrapper.StaleProxyException;
 
 import java.util.List;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
@@ -169,7 +169,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
 						
 						// 1c) set the endingTime if there is a timeoutThreshold
 						if (timeoutThreshold != 0) {
-							endingTime = System.currentTimeMillis() + timeoutThreshold;
+							endingTime = CMMAgent.currentTimeMillis() + timeoutThreshold;
 						}
 					}
 					else {
@@ -191,7 +191,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
 					}
 					else {
 						if (timeoutThreshold > 0) {
-							long blockTime = endingTime - System.currentTimeMillis();
+							long blockTime = endingTime - CMMAgent.currentTimeMillis();
 							  
 						    if(blockTime <= 0) {
 						    	// timeout Expired - we can end here and report a failure

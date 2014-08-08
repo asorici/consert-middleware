@@ -73,6 +73,9 @@ public class CommandManager implements ApplicationControlAdaptor {
 		
 		// Configure CONSERT Engine
 		configureCONSERTEngine();
+		
+		// Build the Command Rule Index
+		commandRuleIndex = new CommandRuleIndex(this, controlModel);
 	}
 	
 	

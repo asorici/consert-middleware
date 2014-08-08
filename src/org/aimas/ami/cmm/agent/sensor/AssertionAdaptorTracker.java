@@ -1,6 +1,6 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import org.aimas.ami.cmm.resources.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;

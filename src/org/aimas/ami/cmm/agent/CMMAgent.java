@@ -15,22 +15,36 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.osgi.OSGIBridgeHelper;
 
+import java.util.Calendar;
+
 import org.aimas.ami.cmm.agent.config.AgentSpecification;
 import org.aimas.ami.cmm.agent.onto.CMMAgentLangOntology;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
+import org.aimas.ami.contextrep.resources.SystemTimeService;
+import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 public abstract class CMMAgent extends Agent {
 	private static final long serialVersionUID = 6980230538089503193L;
 	
-	
 	/* Administrative helper stuff */
 	protected OSGIBridgeHelper osgiHelper;
 	protected Bundle resourceBundle;
-	protected AgentConfigLoader configurationLoader;	
+	protected AgentConfigLoader configurationLoader;
+	
+	private static TimeService timeService;
+	
+	public static long currentTimeMillis() {
+		return timeService.getCurrentTimeMillis();
+	}
+	
+	public static Calendar now() {
+		return timeService.getCalendarInstance();
+	}
 	
 	/* Agent Specification */
 	protected AgentSpecification agentSpecification;
@@ -103,7 +117,18 @@ public abstract class CMMAgent extends Agent {
 		// etc/cmm/cmm-config.ttl
 		configurationLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
 		
-		System.out.println("["+ getName() + "]: " + "Access to CMM resources configured.");
+		// Lastly, we search for the TimeService that provides the real (or simulated) time, if it was
+		// not already loaded (we store as a class variable, so every agent in a bundle will have the same
+		// instance of the timeService).
+		if (timeService == null) {
+			ServiceReference<TimeService> timeServiceRef = context.getServiceReference(TimeService.class);
+			if (timeServiceRef == null) {
+				timeService = new SystemTimeService();
+			}
+			else {
+				timeService = context.getService(timeServiceRef);
+			}
+		}
 	}
 	
 	
@@ -152,15 +177,14 @@ public abstract class CMMAgent extends Agent {
     			}
     		}
     		
-    		long start = System.currentTimeMillis();
+    		dfd.addServices(sd);
+    		
     		try {
     			DFService.register(this, localOrgMgr, dfd);
     		}
     		catch (FIPAException fe) {
     			fe.printStackTrace();
     		}
-    		long end = System.currentTimeMillis();
-    		System.out.println("[" + getName() + "]: " + "It took " + (end - start) + " ms to register agent service.");
     	}
     }
 	

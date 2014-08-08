@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
@@ -263,7 +264,7 @@ public class SensorManager implements InsertionResultNotifier {
 			taskRequest.setConversationId(conversationId);
 			
 			// set reply deadling
-			long deadline = System.currentTimeMillis() + TASKING_TIMEOUT;
+			long deadline = CMMAgent.currentTimeMillis() + TASKING_TIMEOUT;
 			Date deadlineDate = new Date(deadline);
 			taskRequest.setReplyByDate(deadlineDate);
 			

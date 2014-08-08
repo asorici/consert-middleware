@@ -35,7 +35,7 @@ public class ConnectToCoordinatorBehaviour extends SimpleAchieveREInitiator {
 		presenceContent.setIsPrimary(spec.isPrimary());
 		
 		try {
-	        ctxQueryAgent.getContentManager().fillContent(connectRequest, (QueryHandlerPresent)presenceContent);
+	        ctxQueryAgent.getContentManager().fillContent(connectRequest, presenceContent);
         }
         catch (Exception e) {
         	e.printStackTrace();

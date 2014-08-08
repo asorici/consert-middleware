@@ -5,7 +5,9 @@ import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.SetUpdateMode;
 import org.aimas.ami.cmm.agent.onto.StartSending;
 import org.aimas.ami.cmm.agent.onto.StopSending;
-import org.aimas.ami.cmm.resources.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
+import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.api.ContextAssertionDescription;
 
 public class AssertionManager {
 	public static final String TIME_BASED 		= 	"time-based";
@@ -58,7 +60,16 @@ public class AssertionManager {
     public AssertionDescription getAssertionDescription() {
     	ContextAssertionAdaptor assertionAdaptor = assertionAdaptorTracker.getService();
 	    if (assertionAdaptor != null) {
-	    	return assertionAdaptor.getProvidedAssertion();
+	    	ContextAssertionDescription desc = assertionAdaptor.getProvidedAssertion();
+	    	
+	    	DefaultAssertionDescription info = new DefaultAssertionDescription();
+	    	info.setAssertionType(desc.getContextAssertionURI());
+	    	
+	    	for (String annotationURI : desc.getSupportedAnnotationURIs()) {
+	    		info.addAnnotationType(annotationURI);
+	    	}
+	    	
+	    	return info;
 	    }
 	    
 	    return null;
