@@ -38,6 +38,7 @@ public class SensorManager implements InsertionResultNotifier {
 	private Map<AID, SensorDescription> registeredSensors;
 	private Map<Resource, List<AID>> assertionProviderMap;
 	private List<TaskingCommand> pendingCommands;
+	private Map<UpdateRequest, Resource> pendingInsertions;
 	
 	public SensorManager(CtxCoord ctxCoordinator) throws CMMConfigException {
 		this.coordAgent = ctxCoordinator;
@@ -45,6 +46,7 @@ public class SensorManager implements InsertionResultNotifier {
 		registeredSensors = new HashMap<AID, SensorDescription>();
 		assertionProviderMap = new HashMap<Resource, List<AID>>();
 		pendingCommands = new LinkedList<TaskingCommand>();
+		pendingInsertions = new HashMap<UpdateRequest, Resource>();
 		
 		setupInsertService();
 	}
@@ -121,14 +123,24 @@ public class SensorManager implements InsertionResultNotifier {
 		String assertionContent = assertionUpdate.getAssertionContent();
 		UpdateRequest updateRequest = UpdateFactory.create(assertionContent, Syntax.syntaxSPARQL_11);
 		
+		pendingInsertions.put(updateRequest, assertionRes);
 		engineInsertionAdaptor.insert(updateRequest, this);
 	}
 	
 	@Override
     public void notifyInsertionResult(InsertResult insertResult) {
-	    if (insertResult.hasConstraintViolations()) {
+		if (insertResult.hasConstraintViolations()) {
 	    	System.out.println("OH OH!!! We're in trouuuuble !!!");
 	    }
+		
+		// If no errors occurred, remove the updated Assertion from the pending inserts and notify the 
+		// command manager of its update.
+		if (!insertResult.hasConstraintViolations() && !insertResult.hasExecError()) {
+			Resource updatedAssertionResource = pendingInsertions.remove(insertResult.getInsertRequest());
+			if (updatedAssertionResource != null) {
+				coordAgent.getCommandManager().notifyAssertionUpdated(updatedAssertionResource);
+			}
+		}
     }
 	
 	// INTERNAL SENSOR MANAGEMENT
@@ -279,16 +291,19 @@ public class SensorManager implements InsertionResultNotifier {
 		@Override
 		protected void handleNotUnderstood(ACLMessage msg) {
 			taskingCommand.handleFailure(msg);
+			removeCommand(taskingCommand);
 	    }
 		
 		@Override
 		protected void handleRefuse(ACLMessage msg) {
 			taskingCommand.handleFailure(msg);
+			removeCommand(taskingCommand);
 		}
 		
 		@Override
 		protected void handleFailure(ACLMessage msg) {
 			taskingCommand.handleFailure(msg);
+			removeCommand(taskingCommand);
 		}
 		
 		@Override
@@ -300,6 +315,8 @@ public class SensorManager implements InsertionResultNotifier {
 			else {
 				taskingCommand.handleFailure(msg);
 			}
+			
+			removeCommand(taskingCommand);
 		}
 	}
 	

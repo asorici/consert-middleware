@@ -8,7 +8,7 @@ import jade.proto.states.MsgReceiver;
 
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 
-public class SensorUpdateBehaviour extends MsgReceiver {
+public class SensorUpdateReceiver extends MsgReceiver {
     private static final long serialVersionUID = 9159640468516161996L;
 	private CtxCoord coordAgent;
 	
@@ -44,7 +44,7 @@ public class SensorUpdateBehaviour extends MsgReceiver {
 		});
     }
 	
-	public SensorUpdateBehaviour(CtxCoord coordAgent) {
+	public SensorUpdateReceiver(CtxCoord coordAgent) {
 		super(coordAgent, prepareTemplate(coordAgent), MsgReceiver.INFINITE, null, null);
 	}
 	

@@ -23,7 +23,7 @@ import org.aimas.ami.cmm.agent.onto.impl.DefaultSetUpdateMode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
-public class SensorPublishBehaviour extends ProposeResponder {
+public class SensorPublishResponder extends ProposeResponder {
     private static final long serialVersionUID = 5021316588422631253L;
     
     private CtxCoord coordAgent;
@@ -48,7 +48,7 @@ public class SensorPublishBehaviour extends ProposeResponder {
     }
     
     
-    public SensorPublishBehaviour(CtxCoord coordAgent) {
+    public SensorPublishResponder(CtxCoord coordAgent) {
 		super(coordAgent, prepareTemplate(coordAgent));
 		this.coordAgent = coordAgent;
 	}
@@ -158,9 +158,6 @@ public class SensorPublishBehaviour extends ProposeResponder {
 				AssertionState state = sensorManager.getSensorDescription(sensorAgent).getAssertionState(assertionDesc);
 				state.setUpdateMode(updateMode);
 				state.setUpdateRate(updateRate);
-			
-				// finally, remove this command from the pending queue
-				sensorManager.removeCommand(this);
 			}
 			
 			@Override
