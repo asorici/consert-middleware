@@ -52,6 +52,7 @@ public class CoordConf {
     public final static Resource AssertionSpecificInferenceStatistic = m_model.createResource( NS + "AssertionSpecificInferenceStatistic" );
     public final static Resource AssertionSpecificQueryStatistic = m_model.createResource( NS + "AssertionSpecificQueryStatistic" );
     public final static Resource GeneralStatistic = m_model.createResource( NS + "GeneralStatistic" );
+    public final static Resource LastDerivation = m_model.createResource( NS + "LastDerivation" );
     
     
     // Vocabulary properties
@@ -71,7 +72,6 @@ public class CoordConf {
     public final static Property hasInferenceSchedulingType = m_model.createProperty( NS + "hasInferenceSchedulingType" );
     public final static Property hasParameterValue = m_model.createProperty( NS + "hasParameterValue" );
     public final static Property isDerivedAssertion = m_model.createProperty( NS + "isDerivedAssertion" );
-    public final static Property lastDerivation = m_model.createProperty( NS + "lastDerivation" );
     public final static Property nrDerivations = m_model.createProperty( NS + "nrDerivations" );
     public final static Property nrQueries = m_model.createProperty( NS + "nrQueries" );
     public final static Property nrSuccessfulDerivations = m_model.createProperty( NS + "nrSuccessfulDerivations" );
