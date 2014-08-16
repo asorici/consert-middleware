@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
+import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
@@ -195,6 +196,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 		protected void handleAllResultNotifications(Vector resultNotifications) {
 			Map<Resource, Boolean> enablingMap = new HashMap<Resource, Boolean>();
 			
+			// Go through all the responses to the enabling request
 			for (int i = 0; i < resultNotifications.size(); i++) {
 				ACLMessage resultMessage = (ACLMessage)resultNotifications.get(i);
 				
@@ -202,18 +204,29 @@ public class EnableAssertionResponder extends AchieveREResponder {
 					Resource enabledAssertionRes = extractAssertionResource(resultMessage);
 					
 					if (enabledAssertionRes != null) {
+						// If it is an affirmative reply, add it to the enabled map
 						enablingMap.put(enabledAssertionRes, true);
+						
+						// and mark it as such in CtxCoordinator sensor state manager for this sensor agent
+						SensorDescription sensorDesc = coordAgent.getSensorManager().getSensorDescription(resultMessage.getSender());
+						AssertionDescription assertionDesc = sensorDesc.getAssertionByURI(enabledAssertionRes.getURI());
+						if (assertionDesc != null) {
+							sensorDesc.getAssertionState(assertionDesc).setUpdatesEnabled(true);
+						}
 					}
 				}
 			}
 			
-			// in the end, if all are enabled set the RESULT_NOTIFICATION_KEY in the parent behaviour as
-			// an INFORM DONE message, otherwise as a failure message
+			// In the end, if all are enabled set the RESULT_NOTIFICATION_KEY in the parent behaviour as
+			// an INFORM DONE message, otherwise as a failure message.
+			// For each required assertion that is enabled, mark this fact in the CONSERT Engine
 			boolean allEnabled = true;
 			for (Resource requiredAssertionRes : requiredAssertions) {
 				if (!enablingMap.get(requiredAssertionRes)) {
 					allEnabled = false;
-					break;
+				}
+				else {
+					coordAgent.getCommandManager().getEngineCommandAdaptor().setAssertionActive(requiredAssertionRes, true);
 				}
 			}
 			
