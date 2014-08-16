@@ -128,10 +128,10 @@ public class CtxCoord extends CMMAgent {
 	
 	private void setupCoordinatorBehaviours() {
         // Register sensor publish responder
-		addBehaviour(new SensorPublishBehaviour(this));
+		addBehaviour(new SensorPublishResponder(this));
 		
 		// Register the sensor update receiver
-		addBehaviour(new SensorUpdateBehaviour(this));
+		addBehaviour(new SensorUpdateReceiver(this));
         
 		// Register the QueryHandler registration behaviour
 		addBehaviour(new RegisterQueryHandlerResponder(this));
