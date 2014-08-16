@@ -21,4 +21,10 @@ public class QuerySchedulingCommandResult extends CommandResult {
 		
 		return false;
     }
+
+	@Override
+    public void apply(CommandManager commandManager) {
+	    // TODO: we need to create an INFORM message (ontology concept has to be yet created) for all 
+		// registered CtxQueryHandlers to notify them that the query scheduling policy has changed.
+    }
 }

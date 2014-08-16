@@ -30,7 +30,15 @@ public class CommandRuleIndex {
 	    this.commandManager = commandManager;
 	    createIndex(controlModel);
     }
-
+	
+	public List<OntProperty> getCommandRuleProperties() {
+		return commandRuleProperties;
+	}
+	
+	public List<CommandRule> getCommandRules(OntProperty commandRuleProperty) {
+		return commandRuleMap.get(commandRuleProperty);
+	}
+	
 	private void createIndex(OntModel controlModel) {
 	    // First, register all SPIN rule templates and functions defined in this controlModel
 		FunctionIndex.registerCustomFunctions(controlModel);

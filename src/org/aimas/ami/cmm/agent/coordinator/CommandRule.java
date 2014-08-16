@@ -31,7 +31,11 @@ public class CommandRule {
 	    this.commandWrapper = commandWrapper;
 	    this.bindings = bindings;
     }
-
+	
+	public Set<Resource> getReferencedAssertions() {
+		return referencedAssertions;
+	}
+	
 	public List<CommandResult> execute(Model queryModel) {
 		Model newTriples = ModelFactory.createDefaultModel();
 		

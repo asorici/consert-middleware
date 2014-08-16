@@ -20,4 +20,9 @@ public class InferenceSchedulingCommandResult extends CommandResult {
 		
 		return false;
     }
+
+	@Override
+    public void apply(CommandManager commandManager) {
+	    commandManager.getEngineCommandAdaptor().setInferenceSchedulingType(schedulingType);   
+    }
 }
