@@ -111,6 +111,7 @@ public class AgentConfigLoader {
 			// create the agent configuration OntModel
 			OntModel agentConfModel = ModelFactory.createOntologyModel(agentConfModelSpec);
 			agentConfModel.add(cmmDocManager.getFileManager().loadModel(filenameOrURI));
+			cmmDocManager.loadImports(agentConfModel);
 			
 			return agentConfModel;
 		} 
