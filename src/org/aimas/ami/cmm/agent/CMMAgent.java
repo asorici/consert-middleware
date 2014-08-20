@@ -31,12 +31,20 @@ import org.osgi.framework.ServiceReference;
 public abstract class CMMAgent extends Agent {
 	private static final long serialVersionUID = 6980230538089503193L;
 	
+	/* The codec and ontology settings for a CMM agent */
+	public static final Codec cmmCodec = new SLCodec(true);
+	public static final Ontology cmmOntology = CMMAgentLangOntology.getInstance();
+	
 	/* Administrative helper stuff */
 	protected OSGIBridgeHelper osgiHelper;
 	protected Bundle resourceBundle;
 	protected AgentConfigLoader configurationLoader;
 	
 	private static TimeService timeService;
+	
+	public static void setTimeService(TimeService timeService) {
+		CMMAgent.timeService = timeService;
+	}
 	
 	public static long currentTimeMillis() {
 		return timeService.getCurrentTimeMillis();
@@ -48,10 +56,6 @@ public abstract class CMMAgent extends Agent {
 	
 	/* Agent Specification */
 	protected AgentSpecification agentSpecification;
-	
-	/* The codec and ontology settings for a CMM agent */
-    protected Codec cmmCodec = new SLCodec();
-    protected Ontology cmmOntology = CMMAgentLangOntology.getInstance();
 	
 	/* The (optional) local OrgMgr instance */
 	protected AID localOrgMgr;
@@ -66,14 +70,6 @@ public abstract class CMMAgent extends Agent {
 	
 	public AgentSpecification getAgentSpecification() {
 		return agentSpecification;
-	}
-	
-	public Codec getCMMCodec() {
-		return cmmCodec;
-	}
-	
-	public Ontology getCMMOntology() {
-		return cmmOntology;
 	}
 	
 	/**
