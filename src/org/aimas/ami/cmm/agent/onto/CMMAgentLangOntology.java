@@ -44,7 +44,7 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     public static final String QUERYBASE="QueryBase";
     public static final String DOMAINDESCRIPTION_DOMAIN="domain";
     public static final String DOMAINDESCRIPTION="DomainDescription";
-    public static final String ENABLEASSERTIONS_CAPABILITY="capability";
+    public static final String ENABLEASSERTIONS_ENABLEDCAPABILITY="enabledCapability";
     public static final String ENABLEASSERTIONS="EnableAssertions";
     public static final String STOPSENDING="StopSending";
     public static final String RESOLVEQUERYBASE_FORQUERY="forQuery";
@@ -168,7 +168,7 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     registerUserSchema.add(REGISTERUSER_USER, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     execTaskSchema.add(EXECTASK_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
     resolveQueryBaseSchema.add(RESOLVEQUERYBASE_FORQUERY, userQuerySchema, ObjectSchema.MANDATORY);
-    enableAssertionsSchema.add(ENABLEASSERTIONS_CAPABILITY, assertionCapabilitySchema, 1, ObjectSchema.UNLIMITED);
+    enableAssertionsSchema.add(ENABLEASSERTIONS_ENABLEDCAPABILITY, assertionCapabilitySchema, 0, ObjectSchema.UNLIMITED);
     domainDescriptionSchema.add(DOMAINDESCRIPTION_DOMAIN, contextDomainSchema, ObjectSchema.MANDATORY);
     queryBaseSchema.add(QUERYBASE_QUERYHANDLER, (ConceptSchema)getSchema(BasicOntology.AID), 1, ObjectSchema.UNLIMITED);
     assertionDistributionSchema.add(ASSERTIONDISTRIBUTION_ASSIGNMENT, assertionAssignmentSchema, 1, ObjectSchema.UNLIMITED);

@@ -75,6 +75,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 	private void setup(CoordinatorSpecification specification) throws CMMConfigException {
 		// First retrieve the Coordinator Policy and setup all control parameters
 		AgentPolicy controlPolicy = specification.getControlPolicy();
+		
 		OntModel controlModel = coordAgent.getConfigurationLoader().load(controlPolicy.getFileNameOrURI());
 		controlParameters = new ControlParameters(controlModel);
 				
@@ -159,7 +160,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 		return assertionChangedTracker.get(resource);
 	}
 	
-	void setCommandRuleServiceState(boolean active) {
+	void setCommandRuleServiceActive(boolean active) {
 		if (!active && commandExecutionService != null) {
 			commandExecutionService.shutdown();
 		}

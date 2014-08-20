@@ -31,21 +31,21 @@ public class DefaultEnableAssertions implements EnableAssertions {
 
    /**
    * The type of ContextAssertion that a CtxSensor or CtxUser can provide.
-   * Protege name: capability
+   * Protege name: enabledCapability
    */
-   private List capability = new ArrayList();
-   public void addCapability(AssertionCapability elem) { 
-     capability.add(elem);
+   private List enabledCapability = new ArrayList();
+   public void addEnabledCapability(AssertionCapability elem) { 
+     enabledCapability.add(elem);
    }
-   public boolean removeCapability(AssertionCapability elem) {
-     boolean result = capability.remove(elem);
+   public boolean removeEnabledCapability(AssertionCapability elem) {
+     boolean result = enabledCapability.remove(elem);
      return result;
    }
-   public void clearAllCapability() {
-     capability.clear();
+   public void clearAllEnabledCapability() {
+     enabledCapability.clear();
    }
-   public Iterator getAllCapability() {return capability.iterator(); }
-   public List getCapability() {return capability; }
-   public void setCapability(List l) {capability = l; }
+   public Iterator getAllEnabledCapability() {return enabledCapability.iterator(); }
+   public List getEnabledCapability() {return enabledCapability; }
+   public void setEnabledCapability(List l) {enabledCapability = l; }
 
 }

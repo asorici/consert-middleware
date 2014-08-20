@@ -1,12 +1,13 @@
 package org.aimas.ami.cmm.agent.queryhandler;
 
-import jade.content.ContentElement;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
 import jade.proto.AchieveREResponder;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.RegisterUser;
 
 public class UserRegistrationBehaviour extends AchieveREResponder {
@@ -23,8 +24,8 @@ public class UserRegistrationBehaviour extends AchieveREResponder {
 			}
 			
 			private boolean matchesLanguage(ACLMessage msg) {
-				return msg.getLanguage().equals(ctxQueryAgent.getCMMCodec().getName()) &&
-						msg.getOntology().equals(ctxQueryAgent.getCMMOntology().getName());
+				return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
+						msg.getOntology().equals(CMMAgent.cmmOntology.getName());
 			}
 			
 			private boolean matchesContent(ACLMessage msg) {
@@ -33,13 +34,14 @@ public class UserRegistrationBehaviour extends AchieveREResponder {
 				}
 				
 				try {
-	                ContentElement ce = ctxQueryAgent.getContentManager().extractContent(msg);
-	                if (!(ce instanceof RegisterUser)) {
+	                Action actionContent = (Action)ctxQueryAgent.getContentManager().extractContent(msg);
+	                if (!(actionContent.getAction() instanceof RegisterUser)) {
 	                	return false;
 	                }
 				}
                 catch (Exception e) {
-	                return false;
+	                e.printStackTrace();
+                	return false;
                 }
                 
 				

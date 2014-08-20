@@ -45,6 +45,8 @@ public class CommandRuleIndex {
 		
 		// Then, identify all subProperties of hasCommandRule and form an ordered index thereof
 		OntProperty hasCommandRule = controlModel.getOntProperty(CoordConf.hasCommandRule.getURI());
+		System.out.println(hasCommandRule);
+		
 		List<? extends OntProperty> ruleProperties = hasCommandRule.listSubProperties(true).toList();
 		commandRuleProperties = orderCommmandRules(ruleProperties);
 		

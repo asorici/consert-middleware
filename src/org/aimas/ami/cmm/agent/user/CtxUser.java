@@ -1,5 +1,6 @@
 package org.aimas.ami.cmm.agent.user;
 
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
@@ -186,16 +187,20 @@ public class CtxUser extends CMMAgent {
 		// when entering a Context Domain
 		if (localOrgMgr != null) {
 			ACLMessage informDomainMsg = new ACLMessage(ACLMessage.REQUEST);
-			informDomainMsg.setLanguage(getCMMCodec().getName());
-			informDomainMsg.setOntology(getCMMOntology().getName());
+			informDomainMsg.setLanguage(CMMAgent.cmmCodec.getName());
+			informDomainMsg.setOntology(CMMAgent.cmmOntology.getName());
 			informDomainMsg.addReceiver(localOrgMgr);
 			
-			InformDomain content = new DefaultInformDomain();
-			content.setAppIdentifier(appIdentifier);
+			InformDomain informDomain = new DefaultInformDomain();
+			informDomain.setAppIdentifier(appIdentifier);
+			
 			try {
-	            getContentManager().fillContent(informDomainMsg, content);
+	            Action informDomainAction = new Action(localOrgMgr, informDomain);
+				getContentManager().fillContent(informDomainMsg, informDomainAction);
             }
-            catch (Exception e) {}
+            catch (Exception e) {
+            	e.printStackTrace();
+            }
 			
 			addBehaviour(new SimpleAchieveREInitiator(this, informDomainMsg) {
                 private static final long serialVersionUID = 1L;
@@ -208,7 +213,9 @@ public class CtxUser extends CMMAgent {
 	                    
 	                    applicationAdaptor.setDomainValue(domain.getDomainValue());
                 	}
-                    catch (Exception e) {}
+                    catch (Exception e) {
+                    	e.printStackTrace();
+                    }
                 }
 			});
 		}

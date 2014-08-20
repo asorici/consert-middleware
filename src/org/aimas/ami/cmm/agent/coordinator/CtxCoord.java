@@ -114,7 +114,7 @@ public class CtxCoord extends CMMAgent {
 		registerAgentService(appIdentifier, null);
 		System.out.println("["+ getName() + "]: " + "Coordinator service registered.");
     }
-
+	
 	private void setupManagementStructures() throws CMMConfigException {
         // setup the SensorManager
 		sensorManager = new SensorManager(this);
@@ -139,7 +139,7 @@ public class CtxCoord extends CMMAgent {
 		// Register the EnableAssertion responder
 		addBehaviour(new EnableAssertionResponder(this));
 		
-		// Register the Provisioning Management Behaviour
-		// TODO
+		// Start the provisioning management service
+		commandManager.setCommandRuleServiceActive(true);
     }
 }

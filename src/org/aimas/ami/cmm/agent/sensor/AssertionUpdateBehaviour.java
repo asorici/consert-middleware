@@ -6,6 +6,7 @@ import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 
@@ -38,8 +39,8 @@ public class AssertionUpdateBehaviour extends OneShotBehaviour {
 		ACLMessage updateMsg = new ACLMessage(ACLMessage.INFORM);
 		updateMsg.addReceiver(coordinatorAID);
 		updateMsg.setConversationId(conversationId);
-		updateMsg.setLanguage(sensorAgent.getCMMCodec().getName());
-		updateMsg.setOntology(sensorAgent.getCMMOntology().getName());
+		updateMsg.setLanguage(CMMAgent.cmmCodec.getName());
+		updateMsg.setOntology(CMMAgent.cmmOntology.getName());
 		
 		try {
 	        sensorAgent.getContentManager().fillContent(updateMsg, assertionUpdate);

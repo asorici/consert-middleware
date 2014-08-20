@@ -16,11 +16,11 @@ public interface EnableAssertions extends jade.content.AgentAction {
    * The type of ContextAssertion that a CtxSensor or CtxUser can provide.
    * Protege name: capability
    */
-   public void addCapability(AssertionCapability elem);
-   public boolean removeCapability(AssertionCapability elem);
-   public void clearAllCapability();
-   public Iterator getAllCapability();
-   public List getCapability();
-   public void setCapability(List l);
+   public void addEnabledCapability(AssertionCapability elem);
+   public boolean removeEnabledCapability(AssertionCapability elem);
+   public void clearAllEnabledCapability();
+   public Iterator getAllEnabledCapability();
+   public List getEnabledCapability();
+   public void setEnabledCapability(List l);
 
 }

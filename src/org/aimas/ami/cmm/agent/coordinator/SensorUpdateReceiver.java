@@ -6,6 +6,7 @@ import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
 import jade.proto.states.MsgReceiver;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 
 public class SensorUpdateReceiver extends MsgReceiver {
@@ -27,7 +28,7 @@ public class SensorUpdateReceiver extends MsgReceiver {
 				if (!coordAgent.getSensorManager().isRegistered(msg.getSender()))
 					return false;
 				
-				if (!msg.getOntology().equals(coordAgent.getCMMOntology().getName())) 
+				if (!msg.getOntology().equals(CMMAgent.cmmOntology.getName())) 
 					return false;
 				
 				try {

@@ -1,6 +1,7 @@
 package org.aimas.ami.cmm.agent.queryhandler;
 
 import jade.content.ContentElement;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.behaviours.SenderBehaviour;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
@@ -390,8 +392,8 @@ public class UserQueryHandler {
 			
 			enableAssertionsMsg.addReceiver(spec.getAssignedCoordinatorAddress().getAID());
 			enableAssertionsMsg.setConversationId(conversationId);
-			enableAssertionsMsg.setLanguage(manager.getCtxQueryAgent().getCMMCodec().getName());
-			enableAssertionsMsg.setLanguage(manager.getCtxQueryAgent().getCMMOntology().getName());
+			enableAssertionsMsg.setLanguage(CMMAgent.cmmCodec.getName());
+			enableAssertionsMsg.setOntology(CMMAgent.cmmOntology.getName());
 			
 			EnableAssertions msgContent = new DefaultEnableAssertions();
 			for (ContextAssertion ca : inactiveAssertions) {
@@ -403,11 +405,12 @@ public class UserQueryHandler {
 				AssertionCapability capability = new DefaultAssertionCapability();
 				capability.setAssertion(assertionDesc);
 				
-				msgContent.addCapability(capability);
+				msgContent.addEnabledCapability(capability);
 			}
 			
 			try {
-	            manager.getCtxQueryAgent().getContentManager().fillContent(enableAssertionsMsg, msgContent);
+				Action enableAssertionsAction = new Action(spec.getAssignedCoordinatorAddress().getAID(), msgContent);
+	            manager.getCtxQueryAgent().getContentManager().fillContent(enableAssertionsMsg, enableAssertionsAction);
             }
             catch (Exception e) {
 	            e.printStackTrace();

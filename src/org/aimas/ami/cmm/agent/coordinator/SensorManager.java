@@ -1,5 +1,6 @@
 package org.aimas.ami.cmm.agent.coordinator;
 
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.domain.FIPANames.InteractionProtocol;
 import jade.lang.acl.ACLMessage;
@@ -267,8 +268,8 @@ public class SensorManager implements InsertionResultNotifier {
 		protected ACLMessage prepareRequest(ACLMessage msg) {
 			ACLMessage taskRequest = new ACLMessage(ACLMessage.REQUEST);
 			taskRequest.addReceiver(ctxSensor);
-			taskRequest.setLanguage(ctxCoord.getCMMCodec().getName());
-			taskRequest.setOntology(ctxCoord.getCMMOntology().getName());
+			taskRequest.setLanguage(CMMAgent.cmmCodec.getName());
+			taskRequest.setOntology(CMMAgent.cmmOntology.getName());
 			taskRequest.setProtocol(InteractionProtocol.FIPA_REQUEST);
 			
 			// set conversation id
@@ -281,7 +282,8 @@ public class SensorManager implements InsertionResultNotifier {
 			taskRequest.setReplyByDate(deadlineDate);
 			
 			try {
-	            ctxCoord.getContentManager().fillContent(taskRequest, taskingCommand.getTask());
+				Action taskingCommandAction = new Action(ctxSensor, taskingCommand.getTask());
+	            ctxCoord.getContentManager().fillContent(taskRequest, taskingCommandAction);
             }
             catch (Exception e) {}
 			

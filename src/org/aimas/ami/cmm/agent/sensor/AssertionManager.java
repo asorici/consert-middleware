@@ -32,7 +32,6 @@ public class AssertionManager {
 	private SensingManager sensingManager;
 	private AssertionAdaptorTracker assertionAdaptorTracker;
 	
-	
 	/**
 	 * @param assertionResourceURI
 	 * @param updateMode
@@ -48,6 +47,7 @@ public class AssertionManager {
 	    this.sensingManager = sensingManager;
 	    this.assertionAdaptorTracker = assertionAdaptorTracker;
 	    assertionAdaptorTracker.setAssertionManager(this);
+	    assertionAdaptorTracker.open(true);
 	    
 	    ContextAssertionAdaptor assertionAdaptor = assertionAdaptorTracker.getService();
 	    if (assertionAdaptor != null) {
@@ -99,8 +99,6 @@ public class AssertionManager {
     public boolean isActive() {
     	return active;
     }
-    
-    
     
     public String getAssertionResourceURI() {
 		return assertionResourceURI;

@@ -9,6 +9,7 @@ import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
 import jade.proto.AchieveREResponder;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.QueryHandlerPresent;
 
 public class RegisterQueryHandlerResponder extends AchieveREResponder {
@@ -28,7 +29,7 @@ public class RegisterQueryHandlerResponder extends AchieveREResponder {
 				if (msg.getPerformative() != ACLMessage.REQUEST) 
 					return false;
 				
-				if (!msg.getOntology().equals(coordAgent.getCMMOntology().getName())) 
+				if (!msg.getOntology().equals(CMMAgent.cmmOntology.getName())) 
 					return false;
 				
 				try {

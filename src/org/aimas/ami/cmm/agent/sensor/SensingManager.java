@@ -1,6 +1,7 @@
 package org.aimas.ami.cmm.agent.sensor;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ import org.osgi.framework.BundleContext;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class SensingManager {
 	CtxSensor sensorAgent;
@@ -36,17 +38,15 @@ public class SensingManager {
 	    for (SensingPolicy sensingPolicy : sensingPolicies) {
 	    	Resource assertionRes = sensingPolicy.getContextAssertionRes();
 	    	String adaptorClassName = sensingPolicy.getAssertionAdaptorClass();
-	    	
-	    	// Access the assertion adaptor service instance via ServiceTracker
-	    	BundleContext context = sensorAgent.getOSGiBridge().getBundleContext();
-	    	AssertionAdaptorTracker adaptorTracker = new AssertionAdaptorTracker(context, adaptorClassName);
-	    	
 	    	String configureDoc = sensingPolicy.getFileNameOrURI();
+	    	
+	    	// Retrieve the ContextAssertion-specific sensing policy, the one that specifies
+	    	// update mode, update rate and the list of physical sensor IDs to which it applies
 	    	OntModel sensingConfigModel = sensorAgent.getConfigurationLoader().load(configureDoc);
 	    	Resource assertionSenseSpec = 
 	    		sensingConfigModel.listResourcesWithProperty(CoordConf.forContextAssertion, assertionRes).next();
 	    	
-	    	// Retrieve the updateMode and updateRate assertion update specifications
+	    	// Get the updateMode and updateRate assertion update specifications
 	    	String updateMode = assertionSenseSpec.getPropertyResourceValue(SensorConf.hasUpdateMode).getLocalName();
 	    	int updateRate = 0;
 	    	
@@ -54,6 +54,22 @@ public class SensingManager {
 	    	if (updateRateStmt != null) {
 	    		updateRate = updateRateStmt.getInt();
 	    	}
+	    	
+	    	// Get the physical (sensorID, type) list which is used, together with the adaptorClassName,
+	    	// to identify the matching ContextAssertionAdaptor implementation
+	    	StmtIterator sensorIdIt = assertionSenseSpec.listProperties(SensorConf.appliesTo);
+	    	List<String> sensorIdList = new LinkedList<String>();
+	    	for (; sensorIdIt.hasNext(); ) {
+	    		Resource sensorIdRes = sensorIdIt.next().getResource();
+	    		Resource instanceIDRes = sensorIdRes.getPropertyResourceValue(SensorConf.instanceID);
+	    		Resource instanceType = sensorIdRes.getPropertyResourceValue(SensorConf.instanceType);
+	    		
+	    		sensorIdList.add(instanceIDRes.getURI() + " " + instanceType.getURI());
+	    	}
+	    	
+	    	// Access the assertion adaptor service instance via ServiceTracker
+	    	BundleContext context = sensorAgent.getOSGiBridge().getBundleContext();
+	    	AssertionAdaptorTracker adaptorTracker = new AssertionAdaptorTracker(context, adaptorClassName, sensorIdList);
 	    	
 	    	// When we create the assertion manager updates are not yet enabled.
 	    	// Enabling will be done by the CtxSensor agent, once it gets the OK from the CtxCoord

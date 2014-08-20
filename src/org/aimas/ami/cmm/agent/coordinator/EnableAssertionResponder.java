@@ -1,6 +1,6 @@
 package org.aimas.ami.cmm.agent.coordinator;
 
-import jade.content.ContentElement;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.domain.FIPAAgentManagement.FailureException;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
@@ -52,12 +53,12 @@ public class EnableAssertionResponder extends AchieveREResponder {
 				if (!coordAgent.getQueryHandlerManager().isRegistered(msg.getSender()))
 					return false;
 				
-				if (!msg.getOntology().equals(coordAgent.getCMMOntology().getName())) 
+				if (!msg.getOntology().equals(CMMAgent.cmmOntology.getName())) 
 					return false;
 				
 				try {
-	                ContentElement ce = coordAgent.getContentManager().extractContent(msg);
-	                if (ce == null || !(ce instanceof EnableAssertions)) 
+	                Action contentAction = (Action)coordAgent.getContentManager().extractContent(msg);
+	                if (contentAction == null || !(contentAction.getAction() instanceof EnableAssertions)) 
 	                	return false;
 				}
                 catch (Exception e) {
@@ -81,8 +82,9 @@ public class EnableAssertionResponder extends AchieveREResponder {
 	        CommandHandler engineCommandAdaptor = coordAgent.getCommandManager().getEngineCommandAdaptor();
 	        StatsHandler engineStatsAdaptor = coordAgent.getCommandManager().getEngineStatsAdaptor();
 	        
-			EnableAssertions enableRequest = (EnableAssertions)coordAgent.getContentManager().extractContent(request);
-	        List requiredAssertions = enableRequest.getCapability();
+	        Action contentAction = (Action)coordAgent.getContentManager().extractContent(request);
+			EnableAssertions enableRequest = (EnableAssertions)contentAction.getAction();
+	        List requiredAssertions = enableRequest.getEnabledCapability();
 	        
 	        for (int i = 0; i < requiredAssertions.size(); i++) {
 	        	AssertionCapability requiredAssertion = (AssertionCapability)requiredAssertions.get(i);
@@ -176,8 +178,8 @@ public class EnableAssertionResponder extends AchieveREResponder {
 		
 		private ACLMessage createEnableMessage(AID sensor, StartSending enableRequest) {
 			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-			msg.setLanguage(coordAgent.getCMMCodec().getName());
-			msg.setOntology(coordAgent.getCMMOntology().getName());
+			msg.setLanguage(CMMAgent.cmmCodec.getName());
+			msg.setOntology(CMMAgent.cmmOntology.getName());
 			
 			String conversationId = coordAgent.getName() + "-StartSending-" 
 					+ System.currentTimeMillis() + "-" + (counter++);

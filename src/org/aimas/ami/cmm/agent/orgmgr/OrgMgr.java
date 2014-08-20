@@ -13,6 +13,7 @@ import jade.osgi.service.runtime.JadeRuntimeService;
 import jade.wrapper.AgentController;
 
 import org.aimas.ami.cmm.agent.AgentActivator;
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
@@ -26,6 +27,7 @@ import org.aimas.ami.cmm.agent.user.CtxUser;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
 import org.aimas.ami.cmm.vocabulary.OrgConf;
+import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -75,6 +77,8 @@ public class OrgMgr extends df implements CMMInitListener {
 	    	doCMMConfiguration();
 	    	
 	    	// STEP 3: do behaviour registration
+	    	getContentManager().registerLanguage(CMMAgent.cmmCodec);
+	    	getContentManager().registerOntology(CMMAgent.cmmOntology);
 	    	doBehaviourRegistration();
 	    	
 	    	// STEP 4: start all the configured CMM agents

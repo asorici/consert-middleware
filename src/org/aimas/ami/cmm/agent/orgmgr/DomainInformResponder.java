@@ -1,6 +1,6 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
-import jade.content.ContentElement;
+import jade.content.onto.basic.Action;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -21,11 +21,12 @@ public class DomainInformResponder extends AchieveREResponder {
 			public boolean match(ACLMessage msg) {
 				// We make a pure content match
 				try {
-	                ContentElement ce = orgMgr.getContentManager().extractContent(msg);
-	                return ce instanceof InformDomain;
+	                Action contentAction = (Action)orgMgr.getContentManager().extractContent(msg);
+	                return contentAction.getAction() instanceof InformDomain;
 				}
                 catch (Exception e) {
-	                return false;
+	                //e.printStackTrace();
+                	return false;
                 }
 			}
 		});
@@ -44,10 +45,13 @@ public class DomainInformResponder extends AchieveREResponder {
 		// manage several
 		String appIdentifier = null;
 		try {
-	        InformDomain requestContent = (InformDomain) orgMgr.getContentManager().extractContent(request);
+			Action contentAction = (Action)orgMgr.getContentManager().extractContent(request);
+			InformDomain requestContent = (InformDomain) contentAction.getAction();
 	        appIdentifier = requestContent.getAppIdentifier();
 		}
-        catch (Exception e) {}
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
 		
 		ACLMessage domainInformMsg = request.createReply();
 		domainInformMsg.setPerformative(ACLMessage.INFORM);

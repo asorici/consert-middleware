@@ -1,28 +1,26 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import jade.content.ContentElement;
 import jade.content.lang.Codec.CodecException;
 import jade.content.onto.OntologyException;
 import jade.content.onto.UngroundedException;
+import jade.content.onto.basic.Action;
 import jade.lang.acl.ACLMessage;
 import jade.proto.ProposeInitiator;
 
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
-import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
-import org.aimas.ami.cmm.agent.onto.PublishAssertions;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor.SensorState;
 
 public class PublishAssertionsBehaviour extends ProposeInitiator {
     private static final long serialVersionUID = -5902093606245078978L;
     
     private CtxSensor sensorAgent;
-    private PublishAssertions publishContent;
+    //private PublishAssertions publishContent;
     
 	public PublishAssertionsBehaviour(CtxSensor sensorAgent, ACLMessage msg) throws UngroundedException, CodecException, OntologyException {
 	    super(sensorAgent, msg);
 	    this.sensorAgent = sensorAgent;
-	    this.publishContent = (PublishAssertions)sensorAgent.getContentManager().extractContent(msg);
+	    //this.publishContent = (PublishAssertions)sensorAgent.getContentManager().extractContent(msg);
     }
 	
 	@Override
@@ -34,14 +32,14 @@ public class PublishAssertionsBehaviour extends ProposeInitiator {
 		
 		// See if the CtxCoordinator has told us to enable anything
 		SensingManager sensingManager = sensorAgent.getSensingManager();
-		ContentElement ce = null;
 		
+		Action actionContent = null;
 		try {
-	        ce = sensorAgent.getContentManager().extractContent(acceptProposal);
-	        if (ce instanceof EnableAssertions) {
-	        	EnableAssertions enabledAssertions = (EnableAssertions)ce;
-	        	for (int i = 0; i < enabledAssertions.getCapability().size(); i++) {
-	        		AssertionCapability enabledAssertion = (AssertionCapability)enabledAssertions.getCapability().get(i);
+	        actionContent = (Action)sensorAgent.getContentManager().extractContent(acceptProposal);
+	        if (actionContent.getAction() instanceof EnableAssertions) {
+	        	EnableAssertions enabledAssertions = (EnableAssertions)actionContent.getAction();
+	        	for (int i = 0; i < enabledAssertions.getEnabledCapability().size(); i++) {
+	        		AssertionCapability enabledAssertion = (AssertionCapability)enabledAssertions.getEnabledCapability().get(i);
 	        		String assertionResURI = enabledAssertion.getAssertion().getAssertionType();
 	        		
 	        		sensingManager.getAssertionManager(assertionResURI).setUpdateEnabled(true);

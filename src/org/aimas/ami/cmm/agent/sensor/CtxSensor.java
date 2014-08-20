@@ -1,10 +1,9 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import jade.content.ContentElement;
 import jade.content.lang.Codec.CodecException;
 import jade.content.onto.OntologyException;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
-import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -142,8 +141,8 @@ public class CtxSensor extends CMMAgent {
 					msg.getPerformative() == ACLMessage.REQUEST) {
 					
 					try {
-				        ContentElement ce = getContentManager().extractContent(msg);
-				        if (ce instanceof ExecTask) {
+				        Action contentAction = (Action)getContentManager().extractContent(msg);
+				        if (contentAction.getAction() instanceof ExecTask) {
 				        	return true;
 				        }
 					}
@@ -188,7 +187,9 @@ public class CtxSensor extends CMMAgent {
 		publishMsg.setOntology(cmmOntology.getName());
 		
 		try {
-	        getContentManager().fillContent(publishMsg, publishContent);
+			Action publishAssertionsAction = new Action(getAID(), publishContent);
+			
+	        getContentManager().fillContent(publishMsg, publishAssertionsAction);
 	        addBehaviour(new PublishAssertionsBehaviour(this, publishMsg));
         }
         catch (CodecException e) {

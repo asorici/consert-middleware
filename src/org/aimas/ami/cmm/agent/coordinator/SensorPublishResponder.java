@@ -1,6 +1,6 @@
 package org.aimas.ami.cmm.agent.coordinator;
 
-import jade.content.ContentElement;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -10,6 +10,7 @@ import jade.lang.acl.MessageTemplate.MatchExpression;
 import jade.proto.ProposeResponder;
 import jade.util.leap.List;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.coordinator.SensorManager.AssertionState;
 import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
@@ -38,7 +39,7 @@ public class SensorPublishResponder extends ProposeResponder {
 				}
 				
 				if (msg.getOntology() == null || 
-					!msg.getOntology().equals(coordAgent.getCMMOntology().getName())) {
+					!msg.getOntology().equals(CMMAgent.cmmOntology.getName())) {
 					return false;
 				}
 				
@@ -58,9 +59,9 @@ public class SensorPublishResponder extends ProposeResponder {
     protected ACLMessage prepareResponse(ACLMessage propose) throws NotUnderstoodException, RefuseException {
     	EnableAssertions enableAssertions = null;
     	try {
-	        ContentElement ce = coordAgent.getContentManager().extractContent(propose);
-	        if (ce instanceof PublishAssertions) {
-	        	PublishAssertions publishedAssertions = (PublishAssertions)ce;
+	        Action actionContent = (Action)coordAgent.getContentManager().extractContent(propose);
+	        if (actionContent.getAction() instanceof PublishAssertions) {
+	        	PublishAssertions publishedAssertions = (PublishAssertions)actionContent.getAction();
 	        	enableAssertions = createDescriptionAndEnable(propose.getSender(), publishedAssertions);
 	        }
 	        else {
@@ -75,7 +76,8 @@ public class SensorPublishResponder extends ProposeResponder {
     	ACLMessage response = propose.createReply();
     	response.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
     	try {
-	        coordAgent.getContentManager().fillContent(response, enableAssertions);
+	        Action enableAssertionsAction = new Action(propose.getSender(), enableAssertions);
+    		coordAgent.getContentManager().fillContent(response, enableAssertionsAction);
         }
         catch (Exception e) {}
     	
@@ -129,7 +131,7 @@ public class SensorPublishResponder extends ProposeResponder {
 			}
 			
 			if (state.isUpdatesEnabled()) {
-				enabledAssertions.addCapability(capability);
+				enabledAssertions.addEnabledCapability(capability);
 			}
 		}
 		

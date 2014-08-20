@@ -1,5 +1,7 @@
 package org.aimas.ami.cmm.agent.queryhandler;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
+
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -18,8 +20,8 @@ public class QueryReceiverBehaviour extends MsgReceiver {
 			}
 			
 			private boolean matchesLanguage(ACLMessage msg) {
-				return msg.getLanguage().equals(ctxQueryAgent.getCMMCodec().getName()) &&
-						msg.getOntology().equals(ctxQueryAgent.getCMMOntology().getName());
+				return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
+						msg.getOntology().equals(CMMAgent.cmmOntology.getName());
 			}
 			
 			private boolean matchesPerformative(ACLMessage msg) {

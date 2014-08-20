@@ -4,6 +4,7 @@ import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.onto.QueryHandlerPresent;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultQueryHandlerPresent;
@@ -21,8 +22,8 @@ public class ConnectToCoordinatorBehaviour extends SimpleAchieveREInitiator {
 		QueryHandlerSpecification spec = (QueryHandlerSpecification)ctxQueryAgent.getAgentSpecification();
 		
 		ACLMessage connectRequest = new ACLMessage(ACLMessage.REQUEST);
-		connectRequest.setLanguage(ctxQueryAgent.getCMMCodec().getName());
-		connectRequest.setOntology(ctxQueryAgent.getCMMOntology().getName());
+		connectRequest.setLanguage(CMMAgent.cmmCodec.getName());
+		connectRequest.setOntology(CMMAgent.cmmOntology.getName());
 		
 		String conversationId = ctxQueryAgent.getName() + "-QueryHandlerPresent-" + System.currentTimeMillis();
 		connectRequest.setConversationId(conversationId);

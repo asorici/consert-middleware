@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.UserQuery;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultUserQuery;
 import org.aimas.ami.cmm.api.QueryNotificationHandler;
@@ -181,8 +182,8 @@ public class UserQueryManager {
 			
 			// Create ACLMessage
 			queryMessage = new ACLMessage(queryType);
-			queryMessage.setLanguage(userAgent.getCMMCodec().getName());
-			queryMessage.setOntology(userAgent.getCMMOntology().getName());
+			queryMessage.setLanguage(CMMAgent.cmmCodec.getName());
+			queryMessage.setOntology(CMMAgent.cmmOntology.getName());
 			
 			if (queryType == ACLMessage.SUBSCRIBE) {
 				queryMessage.setProtocol(InteractionProtocol.FIPA_SUBSCRIBE);

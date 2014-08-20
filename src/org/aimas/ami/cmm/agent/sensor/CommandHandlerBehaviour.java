@@ -1,9 +1,9 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import jade.content.ContentElement;
 import jade.content.lang.Codec.CodecException;
 import jade.content.onto.OntologyException;
 import jade.content.onto.UngroundedException;
+import jade.content.onto.basic.Action;
 import jade.domain.FIPAAgentManagement.FailureException;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -53,16 +53,16 @@ public class CommandHandlerBehaviour extends SimpleAchieveREResponder {
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) 
 			throws FailureException {
 		
-		ContentElement ce = null;
+		Action contentAction = null;
 		try {
-	        ce = myAgent.getContentManager().extractContent(request);
+	        contentAction = (Action)myAgent.getContentManager().extractContent(request);
 		}
         catch (Exception e) {
         	// we don't need to do anything here since we treated the possibility of failure earlier 
         }
         
-		if (ce instanceof ExecTask) {
-        	ExecTask taskingCommand = (ExecTask)ce;
+		if (contentAction.getAction() instanceof ExecTask) {
+        	ExecTask taskingCommand = (ExecTask)contentAction.getAction();
         	CtxSensor sensorAgent = (CtxSensor)myAgent;
         	
         	String assertionResourceURI = taskingCommand.getAssertion().getAssertionType();
