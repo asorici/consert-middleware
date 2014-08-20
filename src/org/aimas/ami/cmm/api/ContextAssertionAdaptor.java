@@ -1,12 +1,18 @@
 package org.aimas.ami.cmm.api;
 
-import jade.core.behaviours.Behaviour;
-
-import org.aimas.ami.cmm.agent.sensor.CtxSensor;
-
-import com.hp.hpl.jena.update.UpdateRequest;
 
 public interface ContextAssertionAdaptor {
+	public static final String CHANGE_BASED = "change-based";
+	public static final String TIME_BASED = "time-based"; 
+	
+	public static final int ASSERTION_ENTITY_UPDATE 	=	1;
+	public static final int ASSERTION_ID_CREATE 		=	2;
+	public static final int ASSERTION_CONTENT_UPDATE 	= 	3;
+	public static final int ASSERTION_ANNOTATION_UPDATE = 	4;
+	
+	public static final String ADAPTOR_IMPL_CLASS		= "adaptor.implementation";
+	public static final String ADAPTOR_HANDLED_SENSORS	= "adaptor.sensors";
+	
 	// ======== ContextAssertion Capabilities ======== //
 	/**
 	 * @return Whether the physical sensor which is managed by this adaptor natively supports
@@ -33,14 +39,6 @@ public interface ContextAssertionAdaptor {
 	 * @param sensingAdaptor the ApplicationSensingAdaptor that handles the ContextAssertion sensing update.  
 	 */
 	public void registerSensingAdaptor(ApplicationSensingAdaptor sensingAdaptor);
-	
-	/** 
-	 * Deliver an update of the ContextAssertion to a ApplicationSensingAdaptor instance. 
-	 * This method is expected to produce an {@link UpdateRequest} that contains the content and annotation update
-	 * of the ContextAssertion that this adaptor manages.
-	 * @param sensorAdaptor the ApplicationSensingAdaptor agent that handles the ContextAssertion sensing update.  
-	 */
-	public UpdateRequest deliverUpdate(ApplicationSensingAdaptor sensingAdaptor);
 	
 	
 	// ========== TASKING Commands Handling ========== //
