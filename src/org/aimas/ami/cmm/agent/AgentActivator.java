@@ -10,6 +10,8 @@ import org.aimas.ami.cmm.agent.config.ManagerSpecification;
 import org.aimas.ami.cmm.agent.orgmgr.OrgMgr;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
+import org.aimas.ami.contextrep.resources.SystemTimeService;
+import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -56,6 +58,15 @@ public class AgentActivator implements BundleActivator {
 		
 		if (resourceBundle == null) 
 			throw new CMMConfigException("The " + RESOURCE_BUNDLE_SYMBOLIC_NAME + " bundle could not be found");
+		
+		// Additionally, get the TimeService service registered by the cmm-resource bundle
+		ServiceReference<TimeService> timeServiceRef = context.getServiceReference(TimeService.class);
+		if (timeServiceRef == null) {
+			CMMAgent.setTimeService(new SystemTimeService());
+		}
+		else {
+			CMMAgent.setTimeService(context.getService(timeServiceRef));
+		}
 		
 		AgentConfigLoader configLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
 		OntModel cmmConfigModel = configLoader.loadAppConfiguration();

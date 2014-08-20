@@ -11,8 +11,6 @@ Private-Package:  \
 	org.aimas.ami.cmm.agent.user,\
 	org.aimas.ami.cmm.exceptions,\
 	org.aimas.ami.cmm.functions,\
-	org.aimas.ami.cmm.resources,\
-	org.aimas.ami.cmm.resources.sensing,\
 	org.aimas.ami.cmm.utils,\
 	org.aimas.ami.cmm.vocabulary,\
 	org.aimas.ami.cmm.agent
