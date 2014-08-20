@@ -1,10 +1,13 @@
 package org.aimas.ami.cmm.resources.sensing;
 
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
+import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.datatype.CalendarInterval;
 import org.aimas.ami.contextrep.datatype.CalendarIntervalList;
 import org.aimas.ami.contextrep.model.ContextAssertion.ContextAssertionType;
@@ -136,26 +139,39 @@ public class InformTeachingAdaptor extends SensorAdaptorBase {
 	
 	////////////////////////////////////////////////////////////////////////////////////
 	@Override
-    protected Resource deliverSensorEntityInformation(Model sensorInfoModel) {
-		Resource sensorInstance = sensorInfoModel.createResource(
-			ConsertCore.CONTEXT_AGENT.getURI() + "-" + "TeachingActivitySensor", ConsertCore.CONTEXT_AGENT);
-		sensorInstance.addProperty(ConsertCore.CONTEXT_AGENT_TYPE_PROPERTY, ConsertCore.CTX_SENSOR);
+	protected Map<String, String> getSensorInstanceMap() {
+		Map<String, String> instances = new HashMap<String, String>();
+		
+		instances.put(SmartClassroom.TeachingActivitySensor.getURI(), ConsertCore.CONTEXT_AGENT.getURI());
+		
+		return instances;
+	}
+	
+	@Override
+    protected SensorInstance deliverSensorEntityInformation(String sensorIdURI, String sensorTypeURI) {
+		SensorInstance sensorInstance = super.deliverSensorEntityInformation(sensorIdURI, sensorTypeURI);
+		
+		Resource instanceRes = sensorInstance.getIdResource();
+		instanceRes.addProperty(ConsertCore.CONTEXT_AGENT_TYPE_PROPERTY, ConsertCore.CTX_SENSOR);
 		
 		return sensorInstance;
     }
 	
 	
 	@Override
-    protected List<Update> deliverAssertionUpdate() {
-		List<Update> assertionUpdates = new LinkedList<Update>();
+    protected List<Map<Integer, Update>> deliverAssertionUpdates(String sensorIdURI) {
+		List<Map<Integer, Update>> updates = new LinkedList<Map<Integer,Update>>();
 		CalendarInterval teachingInterval = getCurrentTeachingInterval();
+		
+		Map<Integer, Update> assertionUpdate = new HashMap<Integer, Update>();
+		updates.add(assertionUpdate);
 		
 	    if (teachingInterval != null) {
 			// ======== STEP 1 (optional): ENTITY STORE UPDATE
-			QuadDataAcc entityStoreData = new QuadDataAcc();
-			Node entityStoreNode = Node.createURI(ConsertCore.ENTITY_STORE_URI);
-			
 			if (teachingActivityRes == null) {
+				QuadDataAcc entityStoreData = new QuadDataAcc();
+				Node entityStoreNode = Node.createURI(ConsertCore.ENTITY_STORE_URI);
+				
 		    	// We must introduce the created activity in the EntityStore, so we must create an update request
 		    	// which includes updating the EntityStore
 		    	Model teachingActivityModel = createTeachingActivityInstance(teachingInterval);
@@ -165,41 +181,29 @@ public class InformTeachingAdaptor extends SensorAdaptorBase {
 		    		Statement s = it.next();
 		    		entityStoreData.addQuad(Quad.create(entityStoreNode, s.asTriple()));
 		    	}
-		    }
-			
-			if (sensorInstance == null) {
-				sensorInfoModel = ModelFactory.createDefaultModel();
-				sensorInstance = sensorInfoModel.createResource(
-					ConsertCore.CONTEXT_AGENT.getURI() + "-" + "TeachingActivitySensor", ConsertCore.CONTEXT_AGENT);
-				sensorInstance.addProperty(ConsertCore.CONTEXT_AGENT_TYPE_PROPERTY, ConsertCore.CTX_SENSOR);
-				
-		    	StmtIterator it = sensorInfoModel.listStatements();
-		    	for (;it.hasNext();) {
-		    		Statement s = it.next();
-		    		entityStoreData.addQuad(Quad.create(entityStoreNode, s.asTriple()));
-		    	}
+		    	
+		    	assertionUpdate.put(ContextAssertionAdaptor.ASSERTION_ENTITY_UPDATE, new UpdateDataInsert(entityStoreData));
 			}
-			
-			assertionUpdates.add(new UpdateDataInsert(entityStoreData));
 			
 			// ======== STEP 2: ASSERTION UUID CREATE
 			Node assertionUUIDNode = Node.createURI(ContextModelUtils.createUUID(SmartClassroom.takesPlaceIn));
-			assertionUpdates.add(new UpdateCreate(assertionUUIDNode));
+			assertionUpdate.put(ContextAssertionAdaptor.ASSERTION_ID_CREATE, new UpdateCreate(assertionUUIDNode));
 			
 			// ======== STEP 3: ASSERTION CONTENT
 			QuadDataAcc assertionContent = new QuadDataAcc();
 			assertionContent.addQuad(Quad.create(assertionUUIDNode, teachingActivityRes.asNode(), 
 					SmartClassroom.takesPlaceIn.asNode(), SmartClassroom.EF210_Room.asNode()));
-			assertionUpdates.add(new UpdateDataInsert(assertionContent));
+			assertionUpdate.put(ContextAssertionAdaptor.ASSERTION_CONTENT_UPDATE, new UpdateDataInsert(assertionContent));
 			
 			// ======== STEP 4: ASSERTION ANNOTATIONS
 			Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
 			CalendarIntervalList validityIntervals = new CalendarIntervalList();
 			validityIntervals.add(teachingInterval);
 			
+			SensorInstance sensorInstance = sensorInstances.get(sensorIdURI);
 			List<Statement> assertionAnnotations = ContextModelUtils.createAnnotationStatements(
 					assertionUUIDNode.getURI(), SmartClassroom.takesPlaceIn.getURI(), 
-					ContextAssertionType.Profiled, now, validityIntervals, 1.0, sensorInstance.getURI());
+					ContextAssertionType.Profiled, now, validityIntervals, 1.0, sensorInstance.getIdResource().getURI());
 			
 			QuadDataAcc annotationContent = new QuadDataAcc();
 			String assertionStoreURI = ContextModelUtils.getAssertionStoreURI(SmartClassroom.takesPlaceIn.getURI());
@@ -209,9 +213,9 @@ public class InformTeachingAdaptor extends SensorAdaptorBase {
 				annotationContent.addQuad(Quad.create(assertionStoreNode, s.asTriple()));
 			}
 			
-			assertionUpdates.add(new UpdateDataInsert(annotationContent));
+			assertionUpdate.put(ContextAssertionAdaptor.ASSERTION_ANNOTATION_UPDATE, new UpdateDataInsert(annotationContent));
 		}
 	    
-	    return assertionUpdates;
+	    return updates;
     }
 }

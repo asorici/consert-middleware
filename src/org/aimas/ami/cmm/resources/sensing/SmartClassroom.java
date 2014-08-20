@@ -1,5 +1,7 @@
 package org.aimas.ami.cmm.resources.sensing;
 
+import org.aimas.ami.contextrep.vocabulary.ConsertCore;
+
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
@@ -117,5 +119,10 @@ public class SmartClassroom {
  	public final static Resource Mic_EF210_Section3_Left = m_model.createResource( BOOTSTRAP_NS + "Mic_EF210_Section3_Left", Microphone);
  	public final static Resource Mic_EF210_Section3_Right = m_model.createResource( BOOTSTRAP_NS + "Mic_EF210_Section3_Right", Microphone);
  	
+ 	public final static Resource TeachingActivitySensor = m_model.createResource( BOOTSTRAP_NS + "TeachingActivitySensor", ConsertCore.CONTEXT_AGENT);
  	public final static Resource PresenceSensor_EF210 = m_model.createResource( BOOTSTRAP_NS + "PresenceSensor_EF210", PresenceSensor);
+ 	
+ 	public final static Resource SkeletonSitting = m_model.createResource( NS + "SkeletonSitting", SkeletonPosition);
+ 	public final static Resource SkeletonStanding = m_model.createResource( NS + "SkeletonStanding", SkeletonPosition);
+ 	
 }

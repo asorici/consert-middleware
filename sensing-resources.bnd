@@ -1,0 +1,6 @@
+Bundle-Version: 1.0.0.${tstamp}
+Bundle-Activator: org.aimas.ami.cmm.resources.sensing.SensingResourceActivator
+Export-Package:  \
+	org.aimas.ami.cmm.resources.sensing
+Bundle-Name: consert-middleware-sensing-test
+Bundle-Description: A bundle containing the implementation of ContextAssertionAdaptors for the SmartClassroom scenario.
