@@ -26,6 +26,10 @@ public class SensingManager {
 		configure(sensingPolicies);
 	}
 	
+	public CtxSensor getSensorAgent() {
+		return sensorAgent;
+	}
+	
 	public AssertionManager getAssertionManager(String assertionResourceURI) {
 		return managedAssertions.get(assertionResourceURI);
 	}
@@ -33,6 +37,7 @@ public class SensingManager {
 	public void addPolicies(List<SensingPolicy> sensingPolicies) throws CMMConfigException {
 		configure(sensingPolicies);
 	}
+	
 	
 	private void configure(List<SensingPolicy> sensingPolicies) throws CMMConfigException {
 	    for (SensingPolicy sensingPolicy : sensingPolicies) {

@@ -45,6 +45,8 @@ public class AssertionUpdateBehaviour extends OneShotBehaviour {
 		try {
 	        sensorAgent.getContentManager().fillContent(updateMsg, assertionUpdate);
 			sensorAgent.send(updateMsg);
+			
+			//System.out.println("["+ sensorAgent.getName() +"]: sending AssertionUpdate" );
         }
         catch (CodecException e) {
 	        e.printStackTrace();

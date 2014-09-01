@@ -1,15 +1,20 @@
 package org.aimas.ami.cmm.agent.sensor;
 
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
+import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.SetUpdateMode;
 import org.aimas.ami.cmm.agent.onto.StartSending;
 import org.aimas.ami.cmm.agent.onto.StopSending;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionUpdated;
+import org.aimas.ami.cmm.api.ApplicationSensingAdaptor;
 import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.aimas.ami.cmm.api.ContextAssertionDescription;
 
-public class AssertionManager {
+import com.hp.hpl.jena.update.UpdateRequest;
+
+public class AssertionManager implements ApplicationSensingAdaptor {
 	public static final String TIME_BASED 		= 	"time-based";
 	public static final String CHANGE_BASED 	= 	"change-based";
 	
@@ -53,8 +58,20 @@ public class AssertionManager {
 	    if (assertionAdaptor != null) {
 	    	this.active = true;
 	    	
+	    	assertionAdaptor.registerSensingAdaptor(this);
 	    	assertionAdaptor.setState(updateEnabled, updateMode, updateRate);
 	    }
+    }
+    
+    @Override
+    public void deliverUpdate(ContextAssertionDescription assertionDesc, UpdateRequest update) {
+	    // Create the AssertionUpdated message
+    	AssertionUpdated assertionUpdate = new DefaultAssertionUpdated();
+    	assertionUpdate.setAssertion(fromAdaptor(assertionDesc));
+    	assertionUpdate.setAssertionContent(update.toString());
+    	
+    	AssertionUpdateBehaviour updateBehaviour = new AssertionUpdateBehaviour(sensingManager.getSensorAgent(), assertionUpdate);
+    	sensingManager.getSensorAgent().addBehaviour(updateBehaviour);
     }
     
     public AssertionDescription getAssertionDescription() {
@@ -62,19 +79,23 @@ public class AssertionManager {
 	    if (assertionAdaptor != null) {
 	    	ContextAssertionDescription desc = assertionAdaptor.getProvidedAssertion();
 	    	
-	    	DefaultAssertionDescription info = new DefaultAssertionDescription();
-	    	info.setAssertionType(desc.getContextAssertionURI());
-	    	
-	    	for (String annotationURI : desc.getSupportedAnnotationURIs()) {
-	    		info.addAnnotationType(annotationURI);
-	    	}
-	    	
+	    	AssertionDescription info = fromAdaptor(desc);
 	    	return info;
 	    }
 	    
 	    return null;
     }
     
+    private AssertionDescription fromAdaptor(ContextAssertionDescription desc) {
+    	DefaultAssertionDescription info = new DefaultAssertionDescription();
+    	info.setAssertionType(desc.getContextAssertionURI());
+    	
+    	for (String annotationURI : desc.getSupportedAnnotationURIs()) {
+    		info.addAnnotationType(annotationURI);
+    	}
+    	
+    	return info;
+    }
     
     public void setActive(boolean active) {
     	this.active = active;
