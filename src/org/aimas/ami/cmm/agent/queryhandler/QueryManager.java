@@ -3,6 +3,7 @@ package org.aimas.ami.cmm.agent.queryhandler;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
@@ -31,6 +32,7 @@ public class QueryManager implements AssertionUpdateListener {
 	 */
 	private void setup() throws CMMConfigException {
 		BundleContext context = ctxQueryAgent.getOSGiBridge().getBundleContext();
+		managedQueries = new HashMap<AID, UserQueryHandler>();
 		
 		ServiceReference<QueryHandler> queryAdaptorRef = context.getServiceReference(QueryHandler.class);
 		if (queryAdaptorRef == null) {
