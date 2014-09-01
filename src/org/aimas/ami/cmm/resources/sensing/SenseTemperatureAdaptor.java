@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.datatype.CalendarInterval;
@@ -20,11 +24,16 @@ import com.hp.hpl.jena.sparql.modify.request.QuadDataAcc;
 import com.hp.hpl.jena.sparql.modify.request.UpdateCreate;
 import com.hp.hpl.jena.sparql.modify.request.UpdateDataInsert;
 import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 
 public class SenseTemperatureAdaptor extends SensorAdaptorBase {
 	
 	private Map<String, Integer> temperatureMap;
+	
+	// FOR THE TEST RUN
+	private ScheduledExecutorService temperatureUpdateService;
+	private ScheduledFuture<?> temperatureUpdateTask;
 	
 	protected SenseTemperatureAdaptor() {
 	    super(SmartClassroom.sensesTemperature.getURI());
@@ -46,6 +55,10 @@ public class SenseTemperatureAdaptor extends SensorAdaptorBase {
 	@Override
     public boolean setUpdateEnabled(boolean updatesEnabled) {
 		this.updatesEnabled = updatesEnabled;
+		
+		if (updatesEnabled) {
+			startTestUpdates();
+		}
 		
 		return true;
     }
@@ -125,4 +138,33 @@ public class SenseTemperatureAdaptor extends SensorAdaptorBase {
 		
 		return updates;
     }
+	
+	private void startTestUpdates() {
+	    if (temperatureUpdateService == null || temperatureUpdateService.isShutdown()) {
+	    	temperatureUpdateService = Executors.newSingleThreadScheduledExecutor();
+	    }
+	    
+	    temperatureUpdateTask = temperatureUpdateService.scheduleAtFixedRate(new LuminosityUpdateTask(), updateRate, updateRate, TimeUnit.SECONDS);
+    }
+	
+	private class LuminosityUpdateTask implements Runnable {
+		@Override
+        public void run() {
+			round++;
+			
+	        for (String sensorIdURI : getSensorInstanceMap().keySet()) {
+	        	temperatureMap.put(sensorIdURI, 25);
+	        	List<UpdateRequest> updateRequests = deliverUpdates(sensorIdURI);
+	        	
+	        	for (UpdateRequest update : updateRequests) {
+	        		sensingAdaptor.deliverUpdate(getProvidedAssertion(), update);
+	        	}
+	        }
+	        
+	        if (round == TEST_ROUNDS) {
+	        	temperatureUpdateTask.cancel(false);
+	        	System.out.println("["+ SenseTemperatureAdaptor.class.getName() + "]: UPDATE ROUNDS FINISHED!");
+	        }
+        }
+	}
 }

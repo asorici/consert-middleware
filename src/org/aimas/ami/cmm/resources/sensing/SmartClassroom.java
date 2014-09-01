@@ -36,6 +36,7 @@ public class SmartClassroom {
 	
     // Vocabulary classes
     /////////////////////
+    public final static Resource SchoolBuilding = m_model.createResource( NS + "SchoolBuilding" );
     public final static Resource Room = m_model.createResource( NS + "Room" );
     public final static Resource MultiFunctionalRoom = m_model.createResource( NS + "MultiFunctionalRoom" );
     public final static Resource RoomSection = m_model.createResource( NS + "RoomSection" );

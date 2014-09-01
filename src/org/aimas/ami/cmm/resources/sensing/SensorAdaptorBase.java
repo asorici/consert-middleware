@@ -18,11 +18,15 @@ import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.modify.request.QuadDataAcc;
+import com.hp.hpl.jena.sparql.modify.request.UpdateDataDelete;
 import com.hp.hpl.jena.sparql.modify.request.UpdateDataInsert;
 import com.hp.hpl.jena.update.Update;
 import com.hp.hpl.jena.update.UpdateRequest;
 
 public abstract class SensorAdaptorBase implements ContextAssertionAdaptor {
+	// FOR THE TEST RUN
+	public static final int TEST_ROUNDS = 10;
+	protected int round = 0;
 	
 	/* Info about the physical sensor instances managed by this adaptor */
 	protected Map<String, SensorInstance> sensorInstances;
@@ -110,33 +114,37 @@ public abstract class SensorAdaptorBase implements ContextAssertionAdaptor {
 	/** 
 	 * Deliver an update of the ContextAssertion instance given by the physical sensor specified by
 	 * <code>sensorIdURI</code>. 
-	 * This method is expected to produce an {@link UpdateRequest} that contains the content and annotation update
-	 * of the ContextAssertion that this adaptor manages.
+	 * This method is expected to produce a list of {@link UpdateRequest} that contains the content and annotation 
+	 * updates of the ContextAssertion that this adaptor manages.
 	 * @param sensorIdURI
 	 */
 	public List<UpdateRequest> deliverUpdates(String sensorIdURI) {
 		List<UpdateRequest> updateRequests = new LinkedList<UpdateRequest>();
+		boolean firstSend = false;
 		
 		// 1) Check if sensorInfo has been instantiated. If not, we have to include an initial update request
 		// that makes an insertion into the EntityStore with the description of this sensor
+		Update sensorEntityDelete = null;
+		Update sensorEntityUpdate = null;
+		
 		if (!sensorInstancePublished.get(sensorIdURI)) {
+			firstSend = true;
 			SensorInstance sensorInstance = sensorInstances.get(sensorIdURI);
-			sensorInstancePublished.put(sensorIdURI, true);
+			//sensorInstancePublished.put(sensorIdURI, true);
 			
-			UpdateRequest updateReq = new UpdateRequest();
-			
-			QuadDataAcc entityStoreData = new QuadDataAcc();
-			Node entityStoreNode = Node.createURI(ConsertCore.ENTITY_STORE_URI);
-			
-			StmtIterator it = sensorInstance.getInfoModel().listStatements();
-	    	for (;it.hasNext();) {
-	    		Statement s = it.next();
-	    		entityStoreData.addQuad(Quad.create(entityStoreNode, s.asTriple()));
-	    	}
-			Update sensorEntityUpdate = new UpdateDataInsert(entityStoreData);
-			updateReq.add(sensorEntityUpdate);
-			
-			updateRequests.add(updateReq);
+			//if (round % 3 == 0) {
+				// for testing purposes make this a DELETE and INSERT = MODIFY
+				QuadDataAcc entityStoreData = new QuadDataAcc();
+				Node entityStoreNode = Node.createURI(ConsertCore.ENTITY_STORE_URI);
+				
+				StmtIterator it = sensorInstance.getInfoModel().listStatements();
+		    	for (;it.hasNext();) {
+		    		Statement s = it.next();
+		    		entityStoreData.addQuad(Quad.create(entityStoreNode, s.asTriple()));
+		    	}
+		    	sensorEntityDelete = new UpdateDataDelete(entityStoreData);
+				sensorEntityUpdate = new UpdateDataInsert(entityStoreData);
+			//}
 		}
 		
 		
@@ -151,6 +159,12 @@ public abstract class SensorAdaptorBase implements ContextAssertionAdaptor {
 			Update contentUpdate = assertionUpdate.get(ContextAssertionAdaptor.ASSERTION_CONTENT_UPDATE);
 			Update annotationUpdate = assertionUpdate.get(ContextAssertionAdaptor.ASSERTION_ANNOTATION_UPDATE);
 			
+			if (sensorEntityDelete != null) {
+				updateReq.add(sensorEntityDelete);
+			}
+			if (sensorEntityUpdate != null) {
+				updateReq.add(sensorEntityUpdate);
+			}
 			if (entityStoreUpdate != null) {
 				updateReq.add(entityStoreUpdate);
 			}
@@ -164,6 +178,14 @@ public abstract class SensorAdaptorBase implements ContextAssertionAdaptor {
 		if (updateRequests.isEmpty()) {
 			return null;
 		}
+		
+		/*
+		if (firstSend) {
+			for (UpdateRequest r : updateRequests) {
+				System.out.println(r.toString());
+			}
+		}
+		*/
 		
 		return updateRequests;
 	}

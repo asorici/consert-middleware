@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.datatype.CalendarInterval;
@@ -20,10 +24,13 @@ import com.hp.hpl.jena.sparql.modify.request.QuadDataAcc;
 import com.hp.hpl.jena.sparql.modify.request.UpdateCreate;
 import com.hp.hpl.jena.sparql.modify.request.UpdateDataInsert;
 import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 public class NoiseLevelAdaptor extends SensorAdaptorBase {
-	
 	private Map<String, Integer> noiseLevelMap;
+	
+	private ScheduledExecutorService noiseLevelUpdateService;
+	private ScheduledFuture<?> noiseLevelUpdateTask;
 	
 	public NoiseLevelAdaptor() {
 	    super(SmartClassroom.hasNoiseLevel.getURI());
@@ -46,8 +53,13 @@ public class NoiseLevelAdaptor extends SensorAdaptorBase {
     public boolean setUpdateEnabled(boolean updatesEnabled) {
 		this.updatesEnabled = updatesEnabled;
 		
+		if (updatesEnabled) {
+			startTestUpdates();
+		}
+		
 		return true;
     }
+	
 
 	@Override
     public boolean setUpdateMode(String updateMode, int updateRate) {
@@ -129,5 +141,35 @@ public class NoiseLevelAdaptor extends SensorAdaptorBase {
 		
 		return updates;
     }
-
+	
+	
+	private void startTestUpdates() {
+	    if (noiseLevelUpdateService == null || noiseLevelUpdateService.isShutdown()) {
+	    	noiseLevelUpdateService = Executors.newSingleThreadScheduledExecutor();
+	    }
+	    
+	    noiseLevelUpdateTask = noiseLevelUpdateService.scheduleAtFixedRate(new NoiseLevelUpdateTask(), updateRate, updateRate, TimeUnit.SECONDS);
+    }
+	
+	private class NoiseLevelUpdateTask implements Runnable {
+		
+		@Override
+        public void run() {
+			round++;
+			
+	        for (String sensorIdURI : getSensorInstanceMap().keySet()) {
+	        	noiseLevelMap.put(sensorIdURI, 60);
+	        	List<UpdateRequest> updateRequests = deliverUpdates(sensorIdURI);
+	        	
+	        	for (UpdateRequest update : updateRequests) {
+	        		sensingAdaptor.deliverUpdate(getProvidedAssertion(), update);
+	        	}
+	        }
+	        
+	        if (round == TEST_ROUNDS) {
+	        	noiseLevelUpdateTask.cancel(false);
+	        	System.out.println("["+ NoiseLevelAdaptor.class.getName() + "]: UPDATE ROUNDS FINISHED!");
+	        }
+        }
+	}
 }

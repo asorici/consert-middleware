@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.datatype.CalendarInterval;
@@ -12,6 +16,7 @@ import org.aimas.ami.contextrep.datatype.CalendarIntervalList;
 import org.aimas.ami.contextrep.model.ContextAssertion.ContextAssertionType;
 import org.aimas.ami.contextrep.utils.ContextModelUtils;
 
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
@@ -20,10 +25,19 @@ import com.hp.hpl.jena.sparql.modify.request.QuadDataAcc;
 import com.hp.hpl.jena.sparql.modify.request.UpdateCreate;
 import com.hp.hpl.jena.sparql.modify.request.UpdateDataInsert;
 import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 public class SenseBluetoothAdaptor extends SensorAdaptorBase {
 	
 	private List<String> sensedBluetoothAddresses;
+	
+	// FOR THE TEST RUN
+	private static final String ALICE_SMARTPHONE_ADDRESS = "01:23:45:67:89:ab";
+	private static final String BOB_SMARTPHONE_ADDRESS = "01:23:45:67:89:ac";
+	private static final String CECILLE_SMARTPHONE_ADDRESS = "01:23:45:67:89:ad";
+	
+	private ScheduledExecutorService presenceUpdateService;
+	private ScheduledFuture<?> presenceUpdateTask;
 	
 	protected SenseBluetoothAdaptor() {
 	    super(SmartClassroom.sensesBluetoothAddress.getURI());
@@ -44,6 +58,10 @@ public class SenseBluetoothAdaptor extends SensorAdaptorBase {
 	@Override
     public boolean setUpdateEnabled(boolean updatesEnabled) {
 		this.updatesEnabled = updatesEnabled;
+		
+		if (updatesEnabled) {
+			startTestUpdates();
+		}
 		
 		return true;
     }
@@ -87,7 +105,7 @@ public class SenseBluetoothAdaptor extends SensorAdaptorBase {
 			// ======== STEP 2: ASSERTION CONTENT
 			QuadDataAcc assertionContent = new QuadDataAcc();
 			assertionContent.addQuad(Quad.create(assertionUUIDNode, sensorInstance.getIdResource().asNode(), 
-				SmartClassroom.sensesBluetoothAddress.asNode(), ResourceFactory.createTypedLiteral(sensedAddress).asNode()));
+				SmartClassroom.sensesBluetoothAddress.asNode(), ResourceFactory.createTypedLiteral(sensedAddress, XSDDatatype.XSDstring).asNode()));
 			assertionUpdate.put(ContextAssertionAdaptor.ASSERTION_CONTENT_UPDATE, new UpdateDataInsert(assertionContent));
 			
 			// ======== STEP 3: ASSERTION ANNOTATIONS
@@ -124,4 +142,48 @@ public class SenseBluetoothAdaptor extends SensorAdaptorBase {
 		
 		return updates;
     }
+	
+	private void startTestUpdates() {
+	    if (presenceUpdateService == null || presenceUpdateService.isShutdown()) {
+	    	presenceUpdateService = Executors.newSingleThreadScheduledExecutor();
+	    }
+	    
+	    presenceUpdateTask = presenceUpdateService.scheduleAtFixedRate(new LuminosityUpdateTask(), updateRate, updateRate, TimeUnit.SECONDS);
+    }
+	
+	private class LuminosityUpdateTask implements Runnable {
+		@Override
+        public void run() {
+			round++;
+			
+	        for (String sensorIdURI : getSensorInstanceMap().keySet()) {
+	        	sensedBluetoothAddresses.clear();
+	        	
+	        	if (round <= 33) {
+	        		sensedBluetoothAddresses.add(ALICE_SMARTPHONE_ADDRESS);
+	        		sensedBluetoothAddresses.add(BOB_SMARTPHONE_ADDRESS);
+	        	}
+	        	else if (round <= 67) {
+	        		sensedBluetoothAddresses.add(ALICE_SMARTPHONE_ADDRESS);
+	        		sensedBluetoothAddresses.add(BOB_SMARTPHONE_ADDRESS);
+	        	}
+	        	else {
+	        		sensedBluetoothAddresses.add(ALICE_SMARTPHONE_ADDRESS);
+	        		sensedBluetoothAddresses.add(BOB_SMARTPHONE_ADDRESS);
+	        		sensedBluetoothAddresses.add(CECILLE_SMARTPHONE_ADDRESS);
+	        	}
+	        	
+	        	List<UpdateRequest> updateRequests = deliverUpdates(sensorIdURI);
+	        	
+	        	for (UpdateRequest update : updateRequests) {
+	        		sensingAdaptor.deliverUpdate(getProvidedAssertion(), update);
+	        	}
+	        }
+	        
+	        if (round == TEST_ROUNDS) {
+	        	presenceUpdateTask.cancel(false);
+	        	System.out.println("["+ SenseBluetoothAdaptor.class.getName() + "]: UPDATE ROUNDS FINISHED!");
+	        }
+        }
+	}
 }
