@@ -96,6 +96,7 @@ public class SensorPublishResponder extends ProposeResponder {
 		 * ATTENTION: This mechanism might be sufficient now, but might be augmented further by analysis of the
 		 * current context and the specific annotation capabilities of the assertion !!! 
 		 */
+		SensorManager sm = coordAgent.getSensorManager();
 		EnableAssertions enabledAssertions = new DefaultEnableAssertions();
 		
 		// Create the new sensor description entry
@@ -106,12 +107,13 @@ public class SensorPublishResponder extends ProposeResponder {
 			AssertionCapability capability = (AssertionCapability) capabilities.get(i);
 			AssertionState state = sensorDescription.addCapability(capability);
 			
-			SensorManager sm = coordAgent.getSensorManager();
 			AssertionState existingState = sm.matchDescription(capability.getAssertion());
-			
 			if (existingState != null) {
 				// If there is a state for such assertions
 				state.setUpdatesEnabled(existingState.isUpdatesEnabled());
+				
+				// TODO: this here is out of place, but we'll leave it be for the time being
+				// pending the implementation of a proper SensorPublish PROTOCOL
 				deliverUpdateModeCommand(sensorAgent, capability.getAssertion(), existingState);
 			}
 			else {
@@ -134,6 +136,9 @@ public class SensorPublishResponder extends ProposeResponder {
 				enabledAssertions.addEnabledCapability(capability);
 			}
 		}
+		
+		// After analysis, register the agent and his description
+		sm.registerSensor(sensorAgent, sensorDescription);
 		
 		return enabledAssertions;
     }

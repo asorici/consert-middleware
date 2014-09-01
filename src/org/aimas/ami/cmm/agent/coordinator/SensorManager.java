@@ -63,8 +63,7 @@ public class SensorManager implements InsertionResultNotifier {
 		engineInsertionAdaptor = context.getService(insertHandlerRef);
     }
 	
-	
-	// GETTERS 
+	// MANAGEMENT METHODS 
 	/////////////////////////////////////////////////////////////////////////////
 	public void submitCommand(AID ctxSensor, TaskingCommand taskingCommand) {
 		pendingCommands.add(taskingCommand);
@@ -74,6 +73,21 @@ public class SensorManager implements InsertionResultNotifier {
 	public void removeCommand(TaskingCommand taskingCommand) {
 		pendingCommands.remove(taskingCommand);
 	}
+	
+	public void registerSensor(AID sensorAgent, SensorDescription sensorDescription) {
+		registeredSensors.put(sensorAgent, sensorDescription);
+		for (AssertionDescription desc : sensorDescription.getProvidedAssertions()) {
+			Resource assertionRes = ResourceFactory.createResource(desc.getAssertionType());
+			
+			List<AID> assertionResProviders = assertionProviderMap.get(assertionRes);
+			if (assertionResProviders == null) {
+				assertionResProviders = new LinkedList<AID>();
+				assertionProviderMap.put(assertionRes, assertionResProviders);
+			}
+			assertionResProviders.add(sensorAgent);
+		}
+	}
+	
 	
 	/**
 	 * Try to find an existing assertion state for a ContextAssertion description.
@@ -93,6 +107,9 @@ public class SensorManager implements InsertionResultNotifier {
 		return null;
 	}
 	
+	
+	// GETTERS 
+	/////////////////////////////////////////////////////////////////////////////
 	public SensorDescription getSensorDescription(AID sensorAgent) {
 		return registeredSensors.get(sensorAgent);
 	}
@@ -172,6 +189,11 @@ public class SensorManager implements InsertionResultNotifier {
 			providedAssertionsState.put(assertionDesc, assertionState);
 		}
 		
+		
+		public List<AssertionDescription> getProvidedAssertions() {
+			return providedAssertions;
+		}
+
 		/**
 		 * Retrieve an assertion description based on the given ContextAssertion URI.
 		 * If there are more than one, retrieve one at random.
