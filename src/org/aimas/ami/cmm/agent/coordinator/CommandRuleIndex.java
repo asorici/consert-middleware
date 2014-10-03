@@ -64,7 +64,12 @@ public class CommandRuleIndex {
 				List<CommandWrapper> commandWrappers = cls2Query.get(anchorResource);
 				
 				for (CommandWrapper cmd : commandWrappers) {
-					commandRules.add(new CommandRule(cmdProp, anchorResource, cmd, initialTemplateBindings.get(cmd)));
+					// determine referenced assertions
+					Set<Resource> referencedAssertions = commandManager.getEngineCommandAdaptor()
+							.getControlCommandAssertions(cmd, initialTemplateBindings.get(cmd));
+					
+					commandRules.add(new CommandRule(cmdProp, anchorResource, cmd, 
+							initialTemplateBindings.get(cmd), referencedAssertions));
 				}
 			}
 			

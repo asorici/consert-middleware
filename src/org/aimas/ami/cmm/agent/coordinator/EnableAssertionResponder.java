@@ -86,34 +86,51 @@ public class EnableAssertionResponder extends AchieveREResponder {
 			EnableAssertions enableRequest = (EnableAssertions)contentAction.getAction();
 	        List requiredAssertions = enableRequest.getEnabledCapability();
 	        
+	        /* We need to data structures: a list of sensed disabled ContextAssertion
+	         * A map (built recursively) for all derived disabled ContextAssertions to the sensed disabled CAs on which they
+	         * depend. 
+	         */
+	        Map<Resource, Boolean> requiredAssertionSatisfied = new HashMap<Resource, Boolean>();
+	        Map<Resource, LinkedList<Resource>> requiredDependencyMap = new HashMap<Resource, LinkedList<Resource>>();
+	        
 	        for (int i = 0; i < requiredAssertions.size(); i++) {
 	        	AssertionCapability requiredAssertion = (AssertionCapability)requiredAssertions.get(i);
 	        	String requiredAssertionURI = requiredAssertion.getAssertion().getAssertionType();
 	        	Resource requiredAssertionRes = ResourceFactory.createResource(requiredAssertionURI);
 	        	
-	        	LinkedList<Resource> referencedDisabled = new LinkedList<Resource>();
+	        	System.out.println("Looking to enable assertion " + requiredAssertionRes);
 	        	
-	        	if (engineCommandAdaptor.getAssertionType(requiredAssertionRes) == ContextAssertionType.Derived) {
-	        		// see which of the referenced assertion are enabled
-	        		Set<Resource> referencedAssertions = engineCommandAdaptor.getReferencedAssertions(requiredAssertionRes);
-	        		for (Resource referencedAssertion : referencedAssertions) {
-	        			if (!engineStatsAdaptor.assertionUpdatesEnabled(referencedAssertion)) {
-	        				referencedDisabled.add(referencedAssertion);
-	        			}
-	        		}
-	        	}
-	        	
-	        	if (referencedDisabled.isEmpty()) {
-	        		// if there are no disabled referenced assertions - just enable the derived one
+	        	ContextAssertionType requiredAssertionCaptureType = engineCommandAdaptor.getAssertionType(requiredAssertionRes);
+	        	if (requiredAssertionCaptureType == ContextAssertionType.Profiled) {
 	        		engineCommandAdaptor.setAssertionActive(requiredAssertionRes, true);
 	        	}
-	        	else {
-	        		// otherwise we have to enable them by sending requests to the sensors
-	        		// we register a specific behaviour for this
-	        		registerPrepareResultNotification(new EnableUpdatesRequester(coordAgent, request, referencedDisabled));
+	        	else if (requiredAssertionCaptureType == ContextAssertionType.Sensed) {
+	        		requiredAssertionSatisfied.put(requiredAssertionRes, false);
 	        	}
-	        	
+	        	else if (requiredAssertionCaptureType == ContextAssertionType.Derived) {
+	        		//engineCommandAdaptor.setAssertionActive(requiredAssertionRes, true);
+	        		collectDisabledForDerived(requiredAssertionSatisfied, requiredDependencyMap, 
+	        				requiredAssertionRes, engineCommandAdaptor, engineStatsAdaptor);
+	        	}
 	        }
+	        
+	        // filter through the requiredAssertionSatisfied map and see which ones are sensed, unsatisfied assertions
+	        LinkedList<Resource> requiredSensedAssertions = new LinkedList<Resource>();
+	        for (Resource assertionRes : requiredAssertionSatisfied.keySet()) {
+	        	if (engineCommandAdaptor.getAssertionType(assertionRes) == ContextAssertionType.Sensed) {
+	        		requiredSensedAssertions.add(assertionRes);
+	        	}
+	        }
+	        
+	        System.out.println("List of already enabled assertions: " + requiredAssertionSatisfied.keySet());
+	        System.out.println("Final list of needed assertions to enable: " + requiredSensedAssertions);
+	        
+        	// otherwise we have to enable them by sending requests to the sensors
+        	// we register a specific behaviour for this
+        	if (!requiredSensedAssertions.isEmpty()) {
+        		registerPrepareResultNotification(new EnableUpdatesRequester(coordAgent, request, requiredSensedAssertions, 
+        			requiredAssertionSatisfied, requiredDependencyMap));
+        	}
 		}
         catch (Exception e) {
 	        throw new NotUnderstoodException("Enable Assertions message not understood. "
@@ -123,6 +140,59 @@ public class EnableAssertionResponder extends AchieveREResponder {
 		return null;
 	}
 	
+	private void collectDisabledForDerived(Map<Resource, Boolean> requiredAssertionSatisfied,
+            Map<Resource, LinkedList<Resource>> requiredDependencyMap,
+            Resource requiredAssertionRes, CommandHandler engineCommandAdaptor,
+            StatsHandler engineStatsAdaptor) {
+	    
+		// see which of the referenced assertion are enabled
+		LinkedList<Resource> dependencyAssertions = new LinkedList<Resource>();
+		requiredDependencyMap.put(requiredAssertionRes, dependencyAssertions);
+		
+		Set<Resource> referencedAssertions = engineCommandAdaptor.getReferencedAssertions(requiredAssertionRes);
+		
+		for (Resource referencedAssertion : referencedAssertions) {
+			if (!engineStatsAdaptor.assertionUpdatesEnabled(referencedAssertion)) {
+				ContextAssertionType referencedAssertionCaptureType = engineCommandAdaptor.getAssertionType(referencedAssertion);
+				
+				if (referencedAssertionCaptureType == ContextAssertionType.Profiled) {
+					engineCommandAdaptor.setAssertionActive(referencedAssertion, true);
+				}
+				else if (referencedAssertionCaptureType == ContextAssertionType.Sensed) {
+					dependencyAssertions.add(referencedAssertion);
+					requiredAssertionSatisfied.put(referencedAssertion, false);
+				}
+				else if (referencedAssertionCaptureType == ContextAssertionType.Derived &&
+						!requiredDependencyMap.containsKey(referencedAssertion)) {
+					
+					//engineCommandAdaptor.setAssertionActive(referencedAssertion, true);
+					dependencyAssertions.add(referencedAssertion);
+					collectDisabledForDerived(requiredAssertionSatisfied, requiredDependencyMap, 
+							referencedAssertion, engineCommandAdaptor, engineStatsAdaptor);
+				}
+			}
+		}
+		
+		if (dependencyAssertions.isEmpty()) {
+			requiredAssertionSatisfied.put(requiredAssertionRes, true);
+			engineCommandAdaptor.setAssertionActive(requiredAssertionRes, true);
+		}
+		else {
+			boolean satisfied = true;
+			for (Resource assertionRes : dependencyAssertions) {
+				if (!requiredAssertionSatisfied.get(assertionRes)) {
+					satisfied = false;
+					break;
+				}
+			}
+			
+			requiredAssertionSatisfied.put(requiredAssertionRes, satisfied);
+			if (satisfied) {
+				engineCommandAdaptor.setAssertionActive(requiredAssertionRes, true);
+			}
+		}
+    }
+
 	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) 
 			throws FailureException {
@@ -141,15 +211,23 @@ public class EnableAssertionResponder extends AchieveREResponder {
         
 		private CtxCoord coordAgent;
 		private LinkedList<Resource> requiredAssertions;
+		private Map<Resource, Boolean> requiredAssertionSatisfied;
+		private Map<Resource, LinkedList<Resource>> requiredDependencyMap;
 		private ACLMessage triggerMessage;
 		
 		private Map<Resource, java.util.List<AID>> requiredSensorAgents;
 		
-		public EnableUpdatesRequester(CtxCoord coordAgent, ACLMessage triggerMessage, LinkedList<Resource> requiredAssertions) {
+		public EnableUpdatesRequester(CtxCoord coordAgent, ACLMessage triggerMessage,
+				LinkedList<Resource> requiredAssertions,
+				Map<Resource, Boolean> requiredAssertionSatisfied, 
+				Map<Resource, LinkedList<Resource>> requiredDependencyMap) {
 	        super(coordAgent, triggerMessage);
 	        
 	        this.triggerMessage = triggerMessage;
+	        this.requiredAssertionSatisfied = requiredAssertionSatisfied;
+	        this.requiredDependencyMap = requiredDependencyMap;
 	        this.requiredAssertions = requiredAssertions;
+	        
 	        this.coordAgent = coordAgent;
 	        
 	        requiredSensorAgents = new HashMap<Resource, java.util.List<AID>>();
@@ -164,12 +242,20 @@ public class EnableAssertionResponder extends AchieveREResponder {
 				desc.setAssertionType(assertionRes.getURI());
 				
 				java.util.List<AID> providers = coordAgent.getSensorManager().getProviders(assertionRes);
-				requiredSensorAgents.put(assertionRes, providers);
+				System.out.println("Looking for providers of assertionRes : " + assertionRes);
 				
-				for (AID sensor : providers) {
-					StartSending enableRequest = new DefaultStartSending();
-					ACLMessage enableMessage = createEnableMessage(sensor, enableRequest);
-					messageVector.add(enableMessage);
+				if (providers != null) {
+					requiredSensorAgents.put(assertionRes, providers);
+					
+					for (AID sensor : providers) {
+						StartSending enableRequest = new DefaultStartSending();
+						enableRequest.setAssertion(desc);
+						ACLMessage enableMessage = createEnableMessage(sensor, enableRequest);
+						messageVector.add(enableMessage);
+					}
+				}
+				else {
+					System.out.println("No providers for assertion: " + assertionRes);
 				}
 			}
 			
@@ -187,17 +273,18 @@ public class EnableAssertionResponder extends AchieveREResponder {
 			msg.addReceiver(sensor);
 			
 			try {
-	            coordAgent.getContentManager().fillContent(msg, enableRequest);
+				Action enableAction = new Action(coordAgent.getAID(), enableRequest);
+				coordAgent.getContentManager().fillContent(msg, enableAction);
             }
-            catch (Exception e) {}
+            catch (Exception e) {
+            	e.printStackTrace();
+            }
 			
 			return msg;
         }
 		
 		@Override
 		protected void handleAllResultNotifications(Vector resultNotifications) {
-			Map<Resource, Boolean> enablingMap = new HashMap<Resource, Boolean>();
-			
 			// Go through all the responses to the enabling request
 			for (int i = 0; i < resultNotifications.size(); i++) {
 				ACLMessage resultMessage = (ACLMessage)resultNotifications.get(i);
@@ -207,7 +294,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 					
 					if (enabledAssertionRes != null) {
 						// If it is an affirmative reply, add it to the enabled map
-						enablingMap.put(enabledAssertionRes, true);
+						requiredAssertionSatisfied.put(enabledAssertionRes, true);
 						
 						// and mark it as such in CtxCoordinator sensor state manager for this sensor agent
 						SensorDescription sensorDesc = coordAgent.getSensorManager().getSensorDescription(resultMessage.getSender());
@@ -219,12 +306,34 @@ public class EnableAssertionResponder extends AchieveREResponder {
 				}
 			}
 			
+			// now that we have set the satisfaction state for all received sensed assertions,
+			// walk through the derived ones in the satisfaction map and see if they are satisfied as well based on
+			// their dependencies
+			int n = requiredAssertionSatisfied.size();
+			
+			// HACK !!!!!
+			for (int i = 0; i < n; i++) {
+				for (Resource assertionRes : requiredAssertionSatisfied.keySet()) {
+					if (!requiredAssertionSatisfied.get(assertionRes)) {
+						boolean satisfied = true;
+						for (Resource dependencyRes : requiredDependencyMap.get(assertionRes)) {
+							if (!requiredAssertionSatisfied.get(dependencyRes)) {
+								satisfied = false;
+								break;
+							}
+						}
+						
+						requiredAssertionSatisfied.put(assertionRes, satisfied);
+					}
+				}
+			}
+			
 			// In the end, if all are enabled set the RESULT_NOTIFICATION_KEY in the parent behaviour as
 			// an INFORM DONE message, otherwise as a failure message.
 			// For each required assertion that is enabled, mark this fact in the CONSERT Engine
 			boolean allEnabled = true;
-			for (Resource requiredAssertionRes : requiredAssertions) {
-				if (!enablingMap.get(requiredAssertionRes)) {
+			for (Resource requiredAssertionRes : requiredAssertionSatisfied.keySet()) {
+				if (!requiredAssertionSatisfied.get(requiredAssertionRes)) {
 					allEnabled = false;
 				}
 				else {
@@ -246,7 +355,8 @@ public class EnableAssertionResponder extends AchieveREResponder {
 
 		private Resource extractAssertionResource(ACLMessage resultMessage) {
 	        try {
-	            StartSending enableRequest = (StartSending) coordAgent.getContentManager().extractContent(resultMessage);
+	        	Action enableAction = (Action)coordAgent.getContentManager().extractContent(resultMessage);
+	        	StartSending enableRequest = (StartSending) enableAction.getAction();
 	            String assertionURI = enableRequest.getAssertion().getAssertionType();
 	            return ResourceFactory.createResource(assertionURI);
 	        }

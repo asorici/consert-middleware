@@ -23,9 +23,11 @@ import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
 import org.aimas.ami.cmm.agent.onto.UserQuery;
+import org.aimas.ami.cmm.agent.onto.UserQueryResult;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultEnableAssertions;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultUserQueryResult;
 import org.aimas.ami.contextrep.engine.api.ContextResultSet;
 import org.aimas.ami.contextrep.engine.api.QueryHandler;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
@@ -33,6 +35,7 @@ import org.aimas.ami.contextrep.model.ContextAssertion;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 
 public class UserQueryHandler {
@@ -86,6 +89,8 @@ public class UserQueryHandler {
 			for (String identifier : subsIdentifiers) {
 				if (!pendingQueries.containsKey(identifier)) {
 					UserQueryWrapper queryWrapper = registeredSubscriptions.get(identifier);
+					
+					pendingQueries.put(identifier, queryWrapper);
 					queryWrapper.executeQuery();
 				}
 			}
@@ -98,20 +103,20 @@ public class UserQueryHandler {
     public void notifyQueryResult(int queryType, String queryIdentifier, QueryResult result) {
 	    // Retrieve the queryWrapper for the query we executed
     	UserQueryWrapper queryWrapper = pendingQueries.remove(queryIdentifier);
-    	
     	if (queryWrapper == null) {
     		return;
     	}
+    	
     	
     	if (result.hasError()) {
     		// If we could not execute the query, we are going to return a FAILURE message performative
     		ACLMessage response = prepareQueryResponseMsg(queryWrapper.getInitialMessage(), ACLMessage.FAILURE);
     		try {
-	            response.setContentObject(result);
+	            UserQueryResult qr = encodeResult(result);
+	            manager.getCtxQueryAgent().getContentManager().fillContent(response, qr);
             }
-            catch (IOException e) {
-	            // This shouldn't happen but oh well, we're sending the failure message anyway, 
-            	// just with no content.
+            catch (Exception e) {
+	            e.printStackTrace();
             }
     		
     		manager.getCtxQueryAgent().addBehaviour(new SenderBehaviour(manager.getCtxQueryAgent(), response));
@@ -133,29 +138,53 @@ public class UserQueryHandler {
     		}
     		
     		if (sendInform) {
-	    		// Establish the kind of performative for the result notification response
-	    		int performative = ACLMessage.INFORM_REF;
-	    		if (result.isAsk()) {
-	    			performative = ACLMessage.INFORM_IF;
-	    		}
-	    		
-	    		ACLMessage response = prepareQueryResponseMsg(queryWrapper.getInitialMessage(), performative);
+	    		ACLMessage response = prepareQueryResponseMsg(queryWrapper.getInitialMessage(), ACLMessage.INFORM);
 	    		try {
-		            response.setContentObject(result);
+	    			UserQueryResult qr = encodeResult(result);
+	    			manager.getCtxQueryAgent().getContentManager().fillContent(response, qr);
+	    			
+	    			//System.out.println(response);
 	            }
-	            catch (IOException e) {
-		            // This shouldn't happen but oh well, we're sending the failure message anyway, 
-	            	// just with no content.
+	            catch (Exception e) {
+		            e.printStackTrace();
 	            }
 	    		
-	    		manager.getCtxQueryAgent().addBehaviour(new SenderBehaviour(manager.getCtxQueryAgent(), 
-	    				response));
+	    		manager.getCtxQueryAgent().addBehaviour(new SenderBehaviour(manager.getCtxQueryAgent(), response));
     		}
     	}
     }
 
     
-    ACLMessage prepareQueryResponseMsg(ACLMessage initialMessage, int performative) {
+    private UserQueryResult encodeResult(QueryResult result) {
+	    UserQueryResult qr = new DefaultUserQueryResult();
+	    
+	    // set isAsk
+	    qr.setIsAsk(result.isAsk());
+	    
+	    // set error message
+	    if (result.hasError()) {
+	    	qr.setErrorMessage(result.getError().getMessage());
+	    }
+	    else {
+	    	qr.setErrorMessage("");
+	    }
+	    
+	    // set ask value
+	    qr.setAskResult(result.getAskResult());
+	    
+	    // set xml-serialized result set
+	    if (result.isSelect() && result.getResultSet() != null) {
+	    	result.getResultSet().reset();
+	    	qr.setQueryResultSet(ResultSetFormatter.asXMLString(result.getResultSet()));
+	    }
+	    else {
+	    	qr.setQueryResultSet("");
+	    }
+	    
+	    return qr;
+    }
+
+	ACLMessage prepareQueryResponseMsg(ACLMessage initialMessage, int performative) {
     	ACLMessage reply = new ACLMessage(performative);
     	
     	// set the receiver
@@ -171,10 +200,10 @@ public class UserQueryHandler {
     	reply.setProtocol(initialMessage.getProtocol());
     	
     	// Set the Language codec
-    	//reply.setLanguage(initialMessage.getLanguage());
+    	reply.setLanguage(initialMessage.getLanguage());
     	
     	// Set the ontology
-    	//reply.setOntology(initialMessage.getOntology());
+    	reply.setOntology(initialMessage.getOntology());
     	
     	// Set ReplyWith - don't think it is necessary for a QUERY RESULT MSG - the requesting agent won't
     	// send anything in response
@@ -282,7 +311,7 @@ public class UserQueryHandler {
 
 		private void extractUserQuery() throws NotUnderstoodException {
 			try {
-	            ContentElement ce = manager.getCtxQueryAgent().getContentManager().extractContent(initQueryMessage);
+				ContentElement ce = manager.getCtxQueryAgent().getContentManager().extractContent(initQueryMessage);
 	            if (ce instanceof UserQuery) {
 	            	queryDescription = (UserQuery)ce;
 	            	
@@ -294,6 +323,7 @@ public class UserQueryHandler {
 	            }
 			}
             catch (Exception e) {
+            	e.printStackTrace();
 	            throw new NotUnderstoodException("Requested query not understood. Reason: " + e.getMessage());
             }
         }
@@ -337,12 +367,14 @@ public class UserQueryHandler {
 				if (!cachedBinding.equals(newBinding)) {
 					// reset the new result set and return
 					newSelectResult.reset();
+					cachedSelectResult.reset();
 					return true;
 				}
 			}
 			
 			// reset the new result set and return
 			newSelectResult.reset();
+			cachedSelectResult.reset();
 			return false;
 		}
 		

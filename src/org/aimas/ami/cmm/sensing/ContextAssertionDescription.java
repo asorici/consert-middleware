@@ -1,4 +1,4 @@
-package org.aimas.ami.cmm.api;
+package org.aimas.ami.cmm.sensing;
 
 import java.util.LinkedList;
 import java.util.List;

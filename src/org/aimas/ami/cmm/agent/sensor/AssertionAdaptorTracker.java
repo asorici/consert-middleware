@@ -2,7 +2,7 @@ package org.aimas.ami.cmm.agent.sensor;
 
 import java.util.List;
 
-import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;

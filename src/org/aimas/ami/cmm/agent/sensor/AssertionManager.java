@@ -8,9 +8,9 @@ import org.aimas.ami.cmm.agent.onto.StartSending;
 import org.aimas.ami.cmm.agent.onto.StopSending;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionUpdated;
-import org.aimas.ami.cmm.api.ApplicationSensingAdaptor;
-import org.aimas.ami.cmm.api.ContextAssertionAdaptor;
-import org.aimas.ami.cmm.api.ContextAssertionDescription;
+import org.aimas.ami.cmm.sensing.ApplicationSensingAdaptor;
+import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
+import org.aimas.ami.cmm.sensing.ContextAssertionDescription;
 
 import com.hp.hpl.jena.update.UpdateRequest;
 
@@ -75,6 +75,8 @@ public class AssertionManager implements ApplicationSensingAdaptor {
     }
     
     public AssertionDescription getAssertionDescription() {
+    	System.out.println("[Assertion Manager " + assertionResourceURI + "] Getting description");
+    	
     	ContextAssertionAdaptor assertionAdaptor = assertionAdaptorTracker.getService();
 	    if (assertionAdaptor != null) {
 	    	ContextAssertionDescription desc = assertionAdaptor.getProvidedAssertion();
@@ -83,6 +85,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	    	return info;
 	    }
 	    
+	    System.out.println("[Assertion Manager " + assertionResourceURI + "] Assertion Adaptor not available");
 	    return null;
     }
     

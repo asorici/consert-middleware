@@ -20,6 +20,7 @@ public class QueryExecBehaviour extends OneShotBehaviour implements QueryResultN
 			UserQueryHandler userQueryHandler) {
 	    this.queryType = queryType;
 	    this.query = query;
+	    this.queryIdentifier = queryIdentifier;
 	    this.userQueryHandler = userQueryHandler;
     }
 	
@@ -27,6 +28,7 @@ public class QueryExecBehaviour extends OneShotBehaviour implements QueryResultN
 	public void action() {
 		// Pose the query
 		if (query.isAskType()) {
+			//System.out.println("[INFO " + getClass().getSimpleName() + "] EXECUTING ASK QUERY " + queryIdentifier);
 			userQueryHandler.getEngineQueryAdaptor().execAsk(query, null, this);
 		}
 		else if (query.isSelectType()) {
@@ -37,7 +39,7 @@ public class QueryExecBehaviour extends OneShotBehaviour implements QueryResultN
 	
 	@Override
     public void notifyAskResult(QueryResult queryResult) {
-	    if (!queryResult.hasError()) {
+		if (!queryResult.hasError()) {
 	    	userQueryHandler.notifyQueryResult(queryType, queryIdentifier, queryResult);
 	    }
 	    else {
@@ -50,6 +52,13 @@ public class QueryExecBehaviour extends OneShotBehaviour implements QueryResultN
 	@Override
     public void notifyQueryResult(QueryResult queryResult) {
 		if (!queryResult.hasError()) {
+			/*
+			System.out.println("[INFO " + getClass().getName() + "] RESULTS FOR QUERY WITH ID: " + queryIdentifier);
+			while(queryResult.getResultSet().hasNext()) {
+    			System.out.println(queryResult.getResultSet().nextSolution());
+    		}
+			queryResult.getResultSet().reset();
+			*/
 			userQueryHandler.notifyQueryResult(queryType, queryIdentifier, queryResult);
 		}
 		else {

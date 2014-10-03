@@ -1,4 +1,5 @@
-package org.aimas.ami.cmm.api;
+package org.aimas.ami.cmm.sensing;
+
 
 
 public interface ContextAssertionAdaptor {

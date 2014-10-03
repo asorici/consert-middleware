@@ -1,16 +1,17 @@
 package org.aimas.ami.cmm.agent.queryhandler;
 
-import org.aimas.ami.cmm.agent.CMMAgent;
-
+import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
-import jade.proto.states.MsgReceiver;
 
-public class QueryReceiverBehaviour extends MsgReceiver {
+import org.aimas.ami.cmm.agent.CMMAgent;
+
+public class QueryReceiver extends SimpleBehaviour {
 	private static final long serialVersionUID = -6981189612500189702L;
 	
-	private static MessageTemplate getQueryReceiverTemplate(final CtxQueryHandler ctxQueryAgent) {
+	@SuppressWarnings("serial")
+    private static MessageTemplate getQueryReceiverTemplate(final CtxQueryHandler ctxQueryAgent) {
 		// We consider a match if we receive either a QUERY_REF, QUERY_IF, SUBSCRIBE, OR CANCEL message
 		MessageTemplate mt = new MessageTemplate(new MatchExpression() {
 			
@@ -35,12 +36,32 @@ public class QueryReceiverBehaviour extends MsgReceiver {
 		return mt;
 	}
 	
-	public QueryReceiverBehaviour(CtxQueryHandler ctxQueryAgent) {
-		super(ctxQueryAgent, getQueryReceiverTemplate(ctxQueryAgent), INFINITE, null, null);
+	private MessageTemplate template;
+	private boolean finished = false;
+	
+	public QueryReceiver(CtxQueryHandler ctxQueryAgent) {
+		super(ctxQueryAgent);
+		this.template = getQueryReceiverTemplate(ctxQueryAgent);
+	}
+	
+	public void cancelSensorUpdateReceiver() {
+		finished = true;
 	}
 	
 	@Override
-	public void handleMessage(ACLMessage msg) {
+    public void action() {
+		if (!finished) {
+			ACLMessage msg = myAgent.receive(template);
+			if (msg != null) {
+				handleMessage(msg);
+			}
+			else {
+				block();
+			}
+		}
+    }
+	
+	private void handleMessage(ACLMessage msg) {
 		CtxQueryHandler ctxQueryAgent = (CtxQueryHandler)myAgent;
 		QueryManager queryManager = ctxQueryAgent.getQueryManager();
 		
@@ -53,5 +74,16 @@ public class QueryReceiverBehaviour extends MsgReceiver {
 		else {
 			queryManager.executeQuery(msg.getSender(), msg);
 		}
+	}
+
+	@Override
+    public boolean done() {
+	    return finished;
+    }
+	
+	@Override
+	public void reset() {
+	    finished = false;
+	    super.reset();
 	}
 }

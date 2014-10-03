@@ -67,25 +67,33 @@ public class UpdateModeCommandResult extends AssertionCommandResult {
 	    final SensorManager sensorManager = commandManager.getCoordinatorAgent().getSensorManager();
 	    List<AID> providingSensors = sensorManager.getProviders(assertionResource);
 	    
-	    for (final AID sensorAgent: providingSensors) {
-		    TaskingCommand updateModeCommand = new TaskingCommand(updateModeTask) {
-				@Override
-				protected void handleSuccess(ACLMessage responseMsg) {
-					// If we are not timed out, confirm updateMode command execution by setting the
-					// update parameters in the state corresponding to the assertionDesc of the sensorAgent
-					AssertionState state = sensorManager.getSensorDescription(sensorAgent).getAssertionState(assertionDesc);
-					state.setUpdateMode(updateMode);
-					state.setUpdateRate(updateRate);
-				}
+	    if (providingSensors != null) {
+		    for (final AID sensorAgent: providingSensors) {
+			    TaskingCommand updateModeCommand = new TaskingCommand(updateModeTask) {
+					@Override
+					protected void handleSuccess(ACLMessage responseMsg) {
+						// If we are not timed out, confirm updateMode command execution by setting the
+						// update parameters in the states (there can be more since the assertionDesc
+						// also includes the number of provided annotations which may differ) 
+						// corresponding to assertions of the sensorAgent matching the assertionResource URI
+						
+						List<AssertionDescription>  descriptions = sensorManager.getSensorDescription(sensorAgent).listAssertionsByURI(assertionResource.getURI());
+						for (AssertionDescription ad : descriptions) {
+							AssertionState state = sensorManager.getSensorDescription(sensorAgent).getAssertionState(ad);
+							state.setUpdateMode(updateMode);
+							state.setUpdateRate(updateRate);
+						}
+					}
+					
+					@Override
+					protected void handleFailure(ACLMessage responseMsg) {
+						// For now we can't do anything about it, except maybe try again later but 
+						// that's not realistic
+					}
+				};
 				
-				@Override
-				protected void handleFailure(ACLMessage responseMsg) {
-					// For now we can't do anything about it, except maybe try again later but 
-					// that's not realistic
-				}
-			};
-			
-			sensorManager.submitCommand(sensorAgent, updateModeCommand);
+				sensorManager.submitCommand(sensorAgent, updateModeCommand);
+		    }
 	    }
     }
 }

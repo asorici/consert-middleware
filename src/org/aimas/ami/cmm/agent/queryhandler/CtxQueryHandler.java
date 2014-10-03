@@ -114,7 +114,7 @@ public class CtxQueryHandler extends CMMAgent {
 	
 	private void setupQueryHandlerBehaviours() {
 	    // Register the QueryReceiverBehaviour
-		addBehaviour(new QueryReceiverBehaviour(this));
+		addBehaviour(new QueryReceiver(this));
 		
 		// Register the UserRegistrationBehaviour
 		addBehaviour(new UserRegistrationBehaviour(this));

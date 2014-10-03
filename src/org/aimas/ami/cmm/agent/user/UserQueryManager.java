@@ -172,9 +172,15 @@ public class UserQueryManager {
 			if (domainLowerBoundURI != null) {
 				queryDesc.setDomain_lower_bound(domainLowerBoundURI);
 			}
+			else {
+				queryDesc.setDomain_lower_bound(userAgent.getApplicationAdaptor().getDomainValue());
+			}
 			
 			if (domainUpperBoundURI != null) {
 				queryDesc.setDomain_upper_bound(domainUpperBoundURI);
+			}
+			else {
+				queryDesc.setDomain_upper_bound(userAgent.getApplicationAdaptor().getDomainValue());
 			}
 			
 			queryDesc.setRepeatInterval(repeatInterval);
@@ -201,9 +207,9 @@ public class UserQueryManager {
 			
 			try {
 	            userAgent.getContentManager().fillContent(queryMessage, queryDesc);
-            }
+			}
             catch (Exception e) {
-            	// This will never happen
+            	e.printStackTrace();
             }
         }
 		
@@ -251,9 +257,14 @@ public class UserQueryManager {
 					notificationEvent.notifyProcessed(result);
 				}
 				else if (notificationHandler != null) { 
+					if (result.isAsk()) {
+						System.out.println("[INFO "+getClass().getName()+"] answer to ask query for id: " 
+								+ getIdentifier() + " = " + result.getAskResult());
+					}
+					
 					notificationHandler.handleResultNotification(query, result);
 				}
-		    }
+			}
 			
 			// then remove from submitted queries list
 			submittedQueries.remove(getIdentifier());

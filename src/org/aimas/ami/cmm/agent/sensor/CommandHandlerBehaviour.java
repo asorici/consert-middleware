@@ -58,7 +58,8 @@ public class CommandHandlerBehaviour extends SimpleAchieveREResponder {
 	        contentAction = (Action)myAgent.getContentManager().extractContent(request);
 		}
         catch (Exception e) {
-        	// we don't need to do anything here since we treated the possibility of failure earlier 
+        	// we don't need to do anything here since we treated the possibility of failure earlier
+        	e.printStackTrace();
         }
         
 		if (contentAction.getAction() instanceof ExecTask) {

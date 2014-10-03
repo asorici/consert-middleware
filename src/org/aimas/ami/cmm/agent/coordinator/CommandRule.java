@@ -24,14 +24,16 @@ public class CommandRule {
 	protected Set<Resource> referencedAssertions;
 		
 	public CommandRule(Property commandProperty, Resource anchorResource, CommandWrapper commandWrapper, 
-			Map<String, RDFNode> bindings) {
+			Map<String, RDFNode> bindings, Set<Resource> referencedAssertions) {
 		
 	    this.commandProperty = commandProperty;
 		this.anchorResource = anchorResource;
 	    this.commandWrapper = commandWrapper;
 	    this.bindings = bindings;
+	    
+	    this.referencedAssertions = referencedAssertions;
     }
-	
+
 	public Set<Resource> getReferencedAssertions() {
 		return referencedAssertions;
 	}

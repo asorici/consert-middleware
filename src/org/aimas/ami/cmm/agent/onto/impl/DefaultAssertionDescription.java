@@ -24,7 +24,7 @@ public class DefaultAssertionDescription implements AssertionDescription {
   }
 
   public String toString() {
-    return _internalInstanceName;
+    return assertionType;
   }
 
    /**

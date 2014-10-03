@@ -121,9 +121,6 @@ public class CtxUser extends CMMAgent {
     	// ======== STEP 3:	setup the CtxUser specific permanent behaviours
     	setupUserBehaviours();
     	
-    	// after this step initialization of the CtxSensor is complete, so we signal a successful init
-		signalInitializationOutcome(true);
-    	
     	// ======== STEP 4: check existence of a CtxQueryHandler to be able to pose queries.
     	// This check involves the following steps:
     	//   - if we are in a centralized app setting (what we are doing in this initial version):
@@ -132,6 +129,9 @@ public class CtxUser extends CMMAgent {
     	//     we operate in the dynamic mode which means we will receive the remote OrgMgr address
     	//     from our local OrgMgr. We then repeat the same thing as above with the remote OrgMgr
     	doConnectToQueryHandler();
+    	
+    	// after this step initialization of the CtxSensor is complete, so we signal a successful init
+    	signalInitializationOutcome(true);
     	
     	findContextDomain();
 	}
@@ -143,6 +143,7 @@ public class CtxUser extends CMMAgent {
 	    applicationAdaptor = new CtxUserAdaptor(this);
 	    
 	    Dictionary<String, String> properties = new Hashtable<String, String>();
+	    properties.put(ApplicationUserAdaptor.ADAPTOR_NAME, userSpecification.getAgentLocalName());
 	    properties.put(ApplicationUserAdaptor.APP_IDENTIFIER_PROPERTY, appIdentifier);
 	    
 	    context.registerService(ApplicationUserAdaptor.class, applicationAdaptor, properties);

@@ -12,4 +12,9 @@ public abstract class AssertionCommandResult extends CommandResult {
 	public Resource getAssertionResource() {
 		return assertionResource;
 	}
+	
+	@Override
+	public String toString() {
+		return "{"+getClass().getSimpleName()+": " + assertionResource + "}";
+	}
 }

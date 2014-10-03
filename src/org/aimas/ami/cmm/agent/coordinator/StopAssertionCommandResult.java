@@ -6,6 +6,7 @@ import jade.lang.acl.ACLMessage;
 import java.util.List;
 
 import org.aimas.ami.cmm.agent.coordinator.SensorManager.AssertionState;
+import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.StopSending;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
@@ -46,27 +47,47 @@ public class StopAssertionCommandResult extends AssertionCommandResult {
 		final SensorManager sensorManager = commandManager.getCoordinatorAgent().getSensorManager();
 		List<AID> providingSensors = sensorManager.getProviders(assertionResource);
 		
-		for (final AID sensorAgent: providingSensors) {
-			TaskingCommand disableAssertionTask = new TaskingCommand(disableRequest) {
-				@Override
-				protected void handleSuccess(ACLMessage responseMsg) {
-					// if we are not timed out, confirm start sending command execution by marking the
-					// ContextAssertion as active in the state corresponding to the assertionDesc of the sensorAgent
-					AssertionState state = sensorManager.getSensorDescription(sensorAgent).getAssertionState(assertionDesc);
-					state.setUpdatesEnabled(false);
+		if (providingSensors != null) {
+			for (final AID sensorAgent: providingSensors) {
+				SensorDescription sensorDesc = sensorManager.getSensorDescription(sensorAgent); 
+				List<AssertionDescription> sensorAssertionVariants = sensorDesc.listAssertionsByURI(assertionResource.getURI());
 				
-					// also mark the assertion as active in the CONSERT Engine
-					commandManager.getEngineCommandAdaptor().setAssertionActive(assertionResource, false);
+				boolean needsDisabling = false;
+				for (AssertionDescription ad : sensorAssertionVariants) {
+					if (sensorDesc.getAssertionState(ad).isUpdatesEnabled()) {
+						needsDisabling = true;
+						break;
+					}
 				}
 				
-				@Override
-				protected void handleFailure(ACLMessage responseMsg) {
-					// For now we can't do anything about it, except maybe try again later but 
-					// that's not realistic
+				if (needsDisabling) {
+					TaskingCommand disableAssertionTask = new TaskingCommand(disableRequest) {
+						@Override
+						protected void handleSuccess(ACLMessage responseMsg) {
+							// if we are not timed out, confirm start sending command execution by marking the
+							// ContextAssertion as inactive in the states (there can be more since the assertionDesc
+							// also includes the number of provided annotations which may differ) 
+							// corresponding to assertions of the sensorAgent matching the assertionResource URI 
+							List<AssertionDescription>  descriptions = sensorManager.getSensorDescription(sensorAgent).listAssertionsByURI(assertionResource.getURI());
+							for (AssertionDescription ad : descriptions) {
+								AssertionState state = sensorManager.getSensorDescription(sensorAgent).getAssertionState(ad);
+								state.setUpdatesEnabled(false);
+							}
+							
+							// also mark the assertion as active in the CONSERT Engine
+							commandManager.getEngineCommandAdaptor().setAssertionActive(assertionResource, false);
+						}
+						
+						@Override
+						protected void handleFailure(ACLMessage responseMsg) {
+							// For now we can't do anything about it, except maybe try again later but 
+							// that's not realistic
+						}
+					};
+					
+					sensorManager.submitCommand(sensorAgent, disableAssertionTask);
 				}
-			};
-			
-			sensorManager.submitCommand(sensorAgent, disableAssertionTask);
+			}
 		}
     }
 	

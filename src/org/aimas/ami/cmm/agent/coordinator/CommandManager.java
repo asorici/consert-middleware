@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,6 +23,7 @@ import org.aimas.ami.contextrep.engine.api.StatsHandler;
 import org.aimas.ami.contextrep.model.ContextAssertion.ContextAssertionType;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.topbraid.spin.arq.ARQFactory;
 
 import com.hp.hpl.jena.graph.compose.MultiUnion;
 import com.hp.hpl.jena.ontology.OntModel;
@@ -34,6 +34,7 @@ import com.hp.hpl.jena.query.ReadWrite;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 
 public class CommandManager implements ApplicationControlAdaptor {
@@ -156,8 +157,8 @@ public class CommandManager implements ApplicationControlAdaptor {
 		}
 	}
 	
-	Boolean assertionChanged(Resource resource) {
-		return assertionChangedTracker.get(resource);
+	boolean assertionChanged(Resource resource) {
+		return assertionChangedTracker.get(resource) == null ? false : assertionChangedTracker.get(resource);
 	}
 	
 	void setCommandRuleServiceActive(boolean active) {
@@ -184,15 +185,22 @@ public class CommandManager implements ApplicationControlAdaptor {
 		
 		@Override
         public void run() {
-	        // STEP 1: take snapshot of ContextStore and Statistics
+	        System.out.println("RUNNING CONTROL MANAGEMENT");
+			
+			// STEP 1: take snapshot of ContextStore and Statistics
 			Dataset contextStore = manager.getEngineCommandAdaptor().getRuntimeContextStore();
 			Model statsModel = buildStatsModel();
+		
+			//System.out.println("[STATS MODEL] =========================== ");
+			//statsModel.write(System.out, "TTL");
 			
 			contextStore.begin(ReadWrite.READ);
 			try {
 				// Create a unified model from contextStore and statsModel
 				Dataset dataset = DatasetFactory.make(contextStore, statsModel);
 				Model queryModel = getUnionModel(dataset);
+				
+				ARQFactory.set(new CommandARQFactory(dataset));
 				
 				// STEP 2: get all commandRules in order and execute them
 				for (OntProperty commandRuleProp : manager.commandRuleIndex.getCommandRuleProperties()) {
@@ -201,6 +209,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 						
 						// Check if the commandRule references any ContextAssertions. If true,
 						// only execute the rule if there was at least an update to a referenced assertion
+						/*
 						Set<Resource> referencedAssertions = commandRule.getReferencedAssertions(); 
 						if (!referencedAssertions.isEmpty()) {
 							boolean updated = false;
@@ -212,14 +221,16 @@ public class CommandManager implements ApplicationControlAdaptor {
 							}
 							
 							execute = updated;
+							System.out.println("[INFO " + getClass().getSimpleName() + "] "
+									+ "WE HAVE A COMMAND THAT REFERENCES A CONTEXT-ASSERTION which has update status: " + updated);
 						}
+						*/
 						
-						if (execute) {
-							// Insert the results for this command in the global list, overwriting all the
-							// results with which it conflicts; this is essentially the ordered preference 
-							// mechanism that we employ.
-							
-							List<CommandResult> results = commandRule.execute(queryModel);
+						// Insert the results for this command in the global list, overwriting all the
+						// results with which it conflicts; this is essentially the ordered preference 
+						// mechanism that we employ.
+						List<CommandResult> results = commandRule.execute(queryModel);
+						if (results != null) {
 							for (CommandResult cmdResult : results) {
 								boolean overwritten = false;
 								
@@ -238,6 +249,11 @@ public class CommandManager implements ApplicationControlAdaptor {
 					}
 				}
 				
+				System.out.println("[COMMAND MANAGER] ===============================");
+				System.out.println("Collected command results");
+				System.out.println(commandResultList);
+				System.out.println("=======================================");
+				
 				// STEP 3: handle command results
 				for (CommandResult cmdResult : commandResultList) {
 					cmdResult.apply(manager);
@@ -250,7 +266,10 @@ public class CommandManager implements ApplicationControlAdaptor {
 				
 				queryModel = null;
 				statsModel = null;
-			} 
+			}
+			catch (Exception ex) {
+				ex.printStackTrace();
+			}
 			finally {
 				contextStore.end();
 			}
@@ -261,23 +280,28 @@ public class CommandManager implements ApplicationControlAdaptor {
 	        EngineQueryStats queryStats = manager.getEngineStatsAdaptor().getQueryStatistics();
 	        
 	        Model statsModel = ModelFactory.createDefaultModel();
+	        Map<Resource, Resource> assertionStatsMap = new HashMap<Resource, Resource>();
 	        
-	        Map<Resource, Resource> assertionQueryStatsMap = new HashMap<Resource, Resource>();
-	        Map<Resource, Resource> assertionInferenceStatsMap = new HashMap<Resource, Resource>();
+	        // ======== STEP 1) Fill model with enabled/disabled status for the sensed and derived ContextAssertions
+	        List<Resource> enabledAssertions = manager.getEngineStatsAdaptor().getEnabledAssertions();
+	        for (Resource assertionRes : enabledAssertions) {
+	        	Resource statsResource = assertionStatsMap.get(assertionRes);
+	        	if (statsResource == null) {
+					statsResource = createAssertionStatsResource(assertionRes, statsModel);
+					assertionStatsMap.put(assertionRes, statsResource);
+				}
+	        	
+	        	statsResource.addLiteral(CoordConf.isEnabledAssertion, true);
+	        }
 	        
-	        // ======== STEP 1) Fill model with query statistics
+	        // ======== STEP 2) Fill model with query statistics
 			// nrQueries
 	        Map<Resource, Integer> nrQueryMap = queryStats.nrQueries();
 			for (Resource assertionRes : nrQueryMap.keySet()) {
-				Resource statsResource = assertionQueryStatsMap.get(assertionRes);
+				Resource statsResource = assertionStatsMap.get(assertionRes);
 				if (statsResource == null) {
-					statsResource = statsModel.createResource(CoordConf.AssertionSpecificQueryStatistic);
-					statsResource.addProperty(CoordConf.forContextAssertion, assertionRes);
-					
-					boolean derived = manager.getEngineCommandAdaptor().getAssertionType(assertionRes) == ContextAssertionType.Derived; 
-					statsResource.addLiteral(CoordConf.isDerivedAssertion, derived);
-					
-					assertionQueryStatsMap.put(assertionRes, statsResource);
+					statsResource = createAssertionStatsResource(assertionRes, statsModel);
+					assertionStatsMap.put(assertionRes, statsResource);
 				}
 				
 				int nrQueries = nrQueryMap.get(assertionRes) == null ? 0 : nrQueryMap.get(assertionRes).intValue();
@@ -287,15 +311,10 @@ public class CommandManager implements ApplicationControlAdaptor {
 			// nr. successful queries
 			Map<Resource, Integer> nrSuccessfulQueryMap = queryStats.nrSuccessfulQueries();
 			for (Resource assertionRes : nrSuccessfulQueryMap.keySet()) {
-				Resource statsResource = assertionQueryStatsMap.get(assertionRes);
+				Resource statsResource = assertionStatsMap.get(assertionRes);
 				if (statsResource == null) {
-					statsResource = statsModel.createResource(CoordConf.AssertionSpecificQueryStatistic);
-					statsResource.addProperty(CoordConf.forContextAssertion, assertionRes);
-					
-					boolean derived = manager.getEngineCommandAdaptor().getAssertionType(assertionRes) == ContextAssertionType.Derived; 
-					statsResource.addLiteral(CoordConf.isDerivedAssertion, derived);
-				
-					assertionQueryStatsMap.put(assertionRes, statsResource);
+					statsResource = createAssertionStatsResource(assertionRes, statsModel);
+					assertionStatsMap.put(assertionRes, statsResource);
 				}
 				
 				int nrQueries = nrQueryMap.get(assertionRes) == null ? 0 : nrSuccessfulQueryMap.get(assertionRes).intValue();
@@ -305,35 +324,28 @@ public class CommandManager implements ApplicationControlAdaptor {
 			// time since last query
 			Map<Resource, Long> timeSincelastQueryMap = queryStats.timeSinceLastQuery();
 			for (Resource assertionRes : timeSincelastQueryMap.keySet()) {
-				Resource statsResource = assertionQueryStatsMap.get(assertionRes);
+				Resource statsResource = assertionStatsMap.get(assertionRes);
 				if (statsResource == null) {
-					statsResource = statsModel.createResource(CoordConf.AssertionSpecificQueryStatistic);
-					statsResource.addProperty(CoordConf.forContextAssertion, assertionRes);
-					
-					boolean derived = manager.getEngineCommandAdaptor().getAssertionType(assertionRes) == ContextAssertionType.Derived; 
-					statsResource.addLiteral(CoordConf.isDerivedAssertion, derived);
-				
-					assertionQueryStatsMap.put(assertionRes, statsResource);
+					statsResource = createAssertionStatsResource(assertionRes, statsModel);
+					assertionStatsMap.put(assertionRes, statsResource);
 				}
 				
 				long timeElapsed = timeSincelastQueryMap.get(assertionRes) == null ? 0 : timeSincelastQueryMap.get(assertionRes).longValue();
-				statsResource.addLiteral(CoordConf.timeSinceLastQuery, timeElapsed);
+				long timeElapsedSeconds = timeElapsed / 1000;
+				statsResource.addLiteral(CoordConf.timeSinceLastQuery, timeElapsedSeconds);
 			}
 			
-			// ======== STEP 2) Fill model with query statistics
+			// ======== STEP 3) Fill model with query statistics
 			// nrInferences
 			Map<ContextDerivationRule, Integer> nrDerivationsMap = inferenceStats.nrDerivations();
 			for (ContextDerivationRule derivationRule : nrDerivationsMap.keySet()) {
 				Resource derivedRes = derivationRule.getDerivedAssertion().getOntologyResource();
 				
-				Resource infResource = assertionInferenceStatsMap.get(derivedRes);
+				Resource infResource = assertionStatsMap.get(derivedRes);
 				if (infResource == null) {
-					infResource = statsModel.createResource(CoordConf.AssertionSpecificInferenceStatistic);
-					infResource.addProperty(CoordConf.forContextAssertion, derivedRes);
-					infResource.addLiteral(CoordConf.isDerivedAssertion, true);
-				
-					assertionInferenceStatsMap.put(derivedRes, infResource);
-				
+					infResource = createAssertionStatsResource(derivedRes, statsModel);
+					assertionStatsMap.put(derivedRes, infResource);
+					
 					int ct = nrDerivationsMap.get(derivationRule) == null ? 0 : nrDerivationsMap.get(derivationRule).intValue();
 					infResource.addLiteral(CoordConf.nrDerivations, ct);
 				}
@@ -355,14 +367,11 @@ public class CommandManager implements ApplicationControlAdaptor {
 			for (ContextDerivationRule derivationRule : nrSuccessDerivationsMap.keySet()) {
 				Resource derivedRes = derivationRule.getDerivedAssertion().getOntologyResource();
 				
-				Resource infResource = assertionInferenceStatsMap.get(derivedRes);
+				Resource infResource = assertionStatsMap.get(derivedRes);
 				if (infResource == null) {
-					infResource = statsModel.createResource(CoordConf.AssertionSpecificInferenceStatistic);
-					infResource.addProperty(CoordConf.forContextAssertion, derivedRes);
-					infResource.addLiteral(CoordConf.isDerivedAssertion, true);
-				
-					assertionInferenceStatsMap.put(derivedRes, infResource);
-				
+					infResource = createAssertionStatsResource(derivedRes, statsModel);
+					assertionStatsMap.put(derivedRes, infResource);
+					
 					int ct = nrSuccessDerivationsMap.get(derivationRule) == null ? 0 : nrSuccessDerivationsMap.get(derivationRule).intValue();
 					infResource.addLiteral(CoordConf.nrSuccessfulDerivations, ct);
 				}
@@ -379,13 +388,28 @@ public class CommandManager implements ApplicationControlAdaptor {
 			}
 			
 			// set last derived resource
-			Resource lastDerivationRes = statsModel.createResource(CoordConf.LastDerivation);
-			lastDerivationRes.addProperty(CoordConf.forContextAssertion, 
-					inferenceStats.lastDerivation().getDerivedAssertion().getOntologyResource());
+			if (inferenceStats.lastDerivation() != null) {
+				Resource lastDerivationRes = statsModel.createResource(CoordConf.LastDerivation);
+				lastDerivationRes.addProperty(CoordConf.forContextAssertion, 
+						inferenceStats.lastDerivation().getDerivedAssertion().getOntologyResource());
+			}
 			
 			return statsModel;
         }
-	
+		
+		private Resource createAssertionStatsResource(Resource assertionResource, Model statsModel) {
+			Resource statsResource = statsModel.createResource(CoordConf.AssertionSpecificStatistic);
+			statsResource.addProperty(CoordConf.forContextAssertion, assertionResource);
+			
+			ContextAssertionType assertionAcquisitionType = manager.getEngineCommandAdaptor().getAssertionType(assertionResource); 
+			statsResource.addProperty(CoordConf.hasAcquisitionType, ResourceFactory.createResource(assertionAcquisitionType.getTypeURI()));
+			
+			boolean derived = assertionAcquisitionType == ContextAssertionType.Derived; 
+			statsResource.addLiteral(CoordConf.isDerivedAssertion, derived);
+			
+			return statsResource;
+		}
+		
 		private static Model getUnionModel(Dataset dataset) {
 			MultiUnion union = new MultiUnion();
 			

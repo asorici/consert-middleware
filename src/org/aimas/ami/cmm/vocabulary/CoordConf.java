@@ -49,8 +49,6 @@ public class CoordConf {
     // Statistics
     public final static Resource OperationalStatistic = m_model.createResource( NS + "OperationalStatistic" );
     public final static Resource AssertionSpecificStatistic = m_model.createResource( NS + "AssertionSpecificStatistic" );
-    public final static Resource AssertionSpecificInferenceStatistic = m_model.createResource( NS + "AssertionSpecificInferenceStatistic" );
-    public final static Resource AssertionSpecificQueryStatistic = m_model.createResource( NS + "AssertionSpecificQueryStatistic" );
     public final static Resource GeneralStatistic = m_model.createResource( NS + "GeneralStatistic" );
     public final static Resource LastDerivation = m_model.createResource( NS + "LastDerivation" );
     
@@ -71,7 +69,11 @@ public class CoordConf {
     public final static Property hasDefaultUniquenessResolution = m_model.createProperty( NS + "hasDefaultUniquenessResolution" );
     public final static Property hasInferenceSchedulingType = m_model.createProperty( NS + "hasInferenceSchedulingType" );
     public final static Property hasParameterValue = m_model.createProperty( NS + "hasParameterValue" );
+    
+    public final static Property hasAcquisitionType = m_model.createProperty( NS + "hasAcquisitionType" );
     public final static Property isDerivedAssertion = m_model.createProperty( NS + "isDerivedAssertion" );
+    public final static Property isEnabledAssertion = m_model.createProperty( NS + "isEnabledAssertion" );
+    
     public final static Property nrDerivations = m_model.createProperty( NS + "nrDerivations" );
     public final static Property nrQueries = m_model.createProperty( NS + "nrQueries" );
     public final static Property nrSuccessfulDerivations = m_model.createProperty( NS + "nrSuccessfulDerivations" );

@@ -1,7 +1,7 @@
 package org.aimas.ami.cmm.agent.coordinator;
 
 import jade.content.ContentElement;
-import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -9,10 +9,12 @@ import jade.lang.acl.MessageTemplate.MatchExpression;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 
-public class SensorUpdateReceiver extends CyclicBehaviour {
+public class SensorUpdateReceiver extends SimpleBehaviour {
     private static final long serialVersionUID = 9159640468516161996L;
 	private CtxCoord coordAgent;
 	private MessageTemplate template;
+	
+	private boolean finished = false;
 	
 	@SuppressWarnings("serial")
     private static MessageTemplate prepareTemplate(final CtxCoord coordAgent) {
@@ -53,13 +55,21 @@ public class SensorUpdateReceiver extends CyclicBehaviour {
 		this.template = prepareTemplate(coordAgent);
 	}
 	
+	public void cancelSensorUpdateReceiver() {
+		finished = true;
+	}
+	
 	@Override
     public void action() {
-		ACLMessage msg = myAgent.receive(template);
-		if (msg != null) {
-			handleMessage(msg);
+		if (!finished) {
+			ACLMessage msg = myAgent.receive(template);
+			if (msg != null) {
+				handleMessage(msg);
+			}
+			else {
+				block();
+			}
 		}
-	    
     }
 	
 	private void handleMessage(ACLMessage msg) {
@@ -72,5 +82,16 @@ public class SensorUpdateReceiver extends CyclicBehaviour {
         catch (Exception e) {
         	e.printStackTrace();
         }
+	}
+
+	@Override
+    public boolean done() {
+	    return finished;
+    }
+	
+	@Override
+	public void reset() {
+	    finished = false;
+	    super.reset();
 	}
 }

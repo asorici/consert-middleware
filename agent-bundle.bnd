@@ -14,8 +14,6 @@ Private-Package:  \
 	org.aimas.ami.cmm.utils,\
 	org.aimas.ami.cmm.vocabulary,\
 	org.aimas.ami.cmm.agent
-Export-Package:  \
-	org.aimas.ami.cmm.api
 Bundle-Name: consert-middleware-agents
 Bundle-Description: The core of the CONSERT CMM operational functionality: the multi-agent system implementing the general manager, coordinator, query handler, sensor and user functionalities
 Import-Package:  \
@@ -38,3 +36,5 @@ Import-Package:  \
 	jade.util.leap;resolution:=optional,\
 	jade.wrapper;resolution:=optional,\
 	*
+Export-Package:  \
+	org.aimas.ami.cmm.api

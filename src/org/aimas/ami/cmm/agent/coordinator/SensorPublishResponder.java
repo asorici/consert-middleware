@@ -138,6 +138,7 @@ public class SensorPublishResponder extends ProposeResponder {
 		}
 		
 		// After analysis, register the agent and his description
+		System.out.println("Registering " + sensorAgent.getLocalName() + " as supplying " + sensorDescription.getProvidedAssertions());
 		sm.registerSensor(sensorAgent, sensorDescription);
 		
 		return enabledAssertions;

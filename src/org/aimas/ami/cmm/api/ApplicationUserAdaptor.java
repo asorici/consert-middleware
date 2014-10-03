@@ -5,7 +5,8 @@ import org.aimas.ami.contextrep.engine.api.QueryResult;
 import com.hp.hpl.jena.query.Query;
 
 public interface ApplicationUserAdaptor {
-	public static final String APP_IDENTIFIER_PROPERTY = "app-identifier";
+	public static final String APP_IDENTIFIER_PROPERTY = "useradaptor.app-identifier";
+	public static final String ADAPTOR_NAME = "useradaptor.name";
 	
 	public static enum QueryTarget {
 		LOCAL("local"), DOMAIN("domain");
@@ -22,6 +23,7 @@ public interface ApplicationUserAdaptor {
 	}
 	
 	/* ==================== QUERY AND SUBSCRIPTION SUBMISSION ==================== */
+	
 	public QueryResult submitLocalQuery(Query query, long timeout) 
 			throws DisconnectedQueryHandlerException;
 	
