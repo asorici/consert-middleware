@@ -113,18 +113,39 @@ public class CommandManager implements ApplicationControlAdaptor {
 	
 	private void configureCONSERTEngine() {
 		// STEP 1a: configure CONSERT Engine defaults
+		// set default ContextAssertion update configuration
 		boolean updateEnabledDefault = controlParameters.defaultUpdateEnabled();
 		engineCommandAdaptor.setAssertionInsertActiveByDefault(updateEnabledDefault);
 		engineCommandAdaptor.setAssertionInferenceActiveByDefault(updateEnabledDefault);
 		
+		// set default RUN_WINDOW parameter
 		long defaultRunWindow = controlParameters.defaultRunWindow();
 		engineCommandAdaptor.setDefaultQueryRunWindow(defaultRunWindow);
 		engineCommandAdaptor.setDefaultInferenceRunWindow(defaultRunWindow);
+		
+		// set default integrity/uniqueness constraint resolution services
+		engineCommandAdaptor.setDefaultIntegrityConstraintResolution(controlParameters.defaultIntegrityResolutionStrategy());
+		engineCommandAdaptor.setDefaultUniquenessConstraintResolution(controlParameters.defaultUniquenessResolutionStrategy());
 		
 		// STEP 1b: configure CONSERT Engine specifics
 		Map<Resource, Boolean> specificUpdateEnabled = controlParameters.specificUpdateEnabled();
 		for (Resource assertionRes : specificUpdateEnabled.keySet()) {
 			engineCommandAdaptor.setAssertionActive(assertionRes, specificUpdateEnabled.get(assertionRes));
+		}
+		
+		Map<Resource, String> specificIntegrityConstraintResolution = controlParameters.specificIntegrityConstraintResolutionStrategy();
+		for (Resource assertionRes : specificIntegrityConstraintResolution.keySet()) {
+			engineCommandAdaptor.setSpecificIntegrityConstraintResolution(assertionRes, specificIntegrityConstraintResolution.get(assertionRes));
+		}
+		
+		Map<Resource, String> specificUniquenessConstraintResolution = controlParameters.specificUniquenessConstraintResolutionStrategy();
+		for (Resource assertionRes : specificIntegrityConstraintResolution.keySet()) {
+			engineCommandAdaptor.setSpecificUniquenessConstraintResolution(assertionRes, specificUniquenessConstraintResolution.get(assertionRes));
+		}
+		
+		Map<Resource, String> specificValueConstraintResolution = controlParameters.specificValueConstraintResolutionStrategy();
+		for (Resource assertionRes : specificValueConstraintResolution.keySet()) {
+			engineCommandAdaptor.setSpecificValueConstraintResolution(assertionRes, specificValueConstraintResolution.get(assertionRes));
 		}
     }
 	

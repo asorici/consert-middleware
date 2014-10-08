@@ -56,20 +56,23 @@ public class CoordConf {
     // Vocabulary properties
   	////////////////////////
     public final static Property hasSpecificAssertionEnabling = m_model.createProperty( NS + "hasSpecificAssertionEnabling" );
-    public final static Property hasSpecificIntegrityResolution = m_model.createProperty( NS + "hasSpecificIntegrityResolution" );
     public final static Property hasSpecificOntReasoningInterval = m_model.createProperty( NS + "hasSpecificOntReasoningInterval" );
     public final static Property hasSpecificTTLSpec = m_model.createProperty( NS + "hasSpecificTTLSpec" );
-    public final static Property hasSpecificUniquenessResolution = m_model.createProperty( NS + "hasSpecificUniquenessResolution" );
     public final static Property enablesAssertionByDefault = m_model.createProperty( NS + "enablesAssertionByDefault" );
     public final static Property forContextAssertion = m_model.createProperty( NS + "forContextAssertion" );
-    public final static Property hasDefaultIntegrityResolution = m_model.createProperty( NS + "hasDefaultIntegrityResolution" );
+    
     public final static Property hasDefaultOntReasoningInterval = m_model.createProperty( NS + "hasDefaultOntReasoningInterval" );
     public final static Property hasDefaultRunWindow = m_model.createProperty( NS + "hasDefaultRunWindow" );
     public final static Property hasDefaultTTLSpec = m_model.createProperty( NS + "hasDefaultTTLSpec" );
-    public final static Property hasDefaultUniquenessResolution = m_model.createProperty( NS + "hasDefaultUniquenessResolution" );
     public final static Property hasInferenceSchedulingType = m_model.createProperty( NS + "hasInferenceSchedulingType" );
-    public final static Property hasParameterValue = m_model.createProperty( NS + "hasParameterValue" );
     
+    public final static Property hasDefaultIntegrityConstraintResolution = m_model.createProperty( NS + "hasDefaultIntegrityConstraintResolution" );
+    public final static Property hasDefaultUniquenessConstraintResolution = m_model.createProperty( NS + "hasDefaultUniquenessConstraintResolution" );
+    public final static Property hasSpecificUniquenessConstraintResolution = m_model.createProperty( NS + "hasSpecificUniquenessConstraintResolution" );
+    public final static Property hasSpecificIntegrityConstraintResolution = m_model.createProperty( NS + "hasSpecificIntegrityConstraintResolution" );
+    public final static Property hasSpecificValueConstraintResolution = m_model.createProperty( NS + "hasSpecificValueConstraintResolution" );
+    
+    public final static Property hasParameterValue = m_model.createProperty( NS + "hasParameterValue" );
     public final static Property hasAcquisitionType = m_model.createProperty( NS + "hasAcquisitionType" );
     public final static Property isDerivedAssertion = m_model.createProperty( NS + "isDerivedAssertion" );
     public final static Property isEnabledAssertion = m_model.createProperty( NS + "isEnabledAssertion" );
@@ -96,10 +99,11 @@ public class CoordConf {
     
     // Vocabulary Individuals
   	/////////////////////////
-    public final static Resource timeBased = m_model.createResource( NS + "timeBased", AssertionUpdateMode);
-    public final static Resource changeBased = m_model.createResource( NS + "changeBased", AssertionUpdateMode);
+    public final static Resource timeBased = m_model.createResource( NS + "time-based", AssertionUpdateMode);
+    public final static Resource changeBased = m_model.createResource( NS + "change-based", AssertionUpdateMode);
     public final static Resource PreferAccurate = m_model.createResource( NS + "PreferAccurate", ConstraintResolutionType);
     public final static Resource PreferNewest = m_model.createResource( NS + "PreferNewest", ConstraintResolutionType);
+    public final static Resource DropAll = m_model.createResource( NS + "DropAll", ConstraintResolutionType);
     public final static Resource FCFS = m_model.createResource( NS + "FCFS", SchedulingType);
     public final static Resource UsagePriority = m_model.createResource( NS + "UsagePriority", SchedulingType);
 }

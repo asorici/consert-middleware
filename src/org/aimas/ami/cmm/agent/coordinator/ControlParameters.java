@@ -42,11 +42,11 @@ public class ControlParameters {
 	}
 	
 	public String defaultIntegrityResolutionStrategy() {
-		return controlPolicyRes.getPropertyResourceValue(CoordConf.hasDefaultIntegrityResolution).getLocalName();
+		return controlPolicyRes.getPropertyResourceValue(CoordConf.hasDefaultIntegrityConstraintResolution).getLocalName();
 	}
 	
 	public String defaultUniquenessResolutionStrategy() {
-		return controlPolicyRes.getPropertyResourceValue(CoordConf.hasDefaultUniquenessResolution).getLocalName();
+		return controlPolicyRes.getPropertyResourceValue(CoordConf.hasDefaultUniquenessConstraintResolution).getLocalName();
 	}
 	
 	public String inferenceSchedulingStrategy() {
@@ -56,8 +56,9 @@ public class ControlParameters {
 	// SPECIFICS
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private Map<Resource, Boolean> specificAssertionEnabledMap;
-	private Map<Resource, String> specificIntegrityResolutionStrategy;
-	private Map<Resource, String> specificUniquenessResolutionStrategy;
+	private Map<Resource, String> specificIntegrityConstraintResolutionStrategy;
+	private Map<Resource, String> specificUniquenessConstraintResolutionStrategy;
+	private Map<Resource, String> specificValueConstraintResolutionStrategy;
 	private Map<Resource, Integer> specificOntReasoningInterval;
 	private Map<Resource, Integer> specificTTL;
 	
@@ -78,38 +79,55 @@ public class ControlParameters {
 		return specificAssertionEnabledMap;
 	}
 	
-	public Map<Resource, String> specificIntegrityResolutionStrategy() {
-		if (specificIntegrityResolutionStrategy == null) {
-			specificIntegrityResolutionStrategy = new HashMap<Resource, String>();
+	public Map<Resource, String> specificIntegrityConstraintResolutionStrategy() {
+		if (specificIntegrityConstraintResolutionStrategy == null) {
+			specificIntegrityConstraintResolutionStrategy = new HashMap<Resource, String>();
 		
-			StmtIterator it = controlPolicyRes.listProperties(CoordConf.hasSpecificIntegrityResolution);
+			StmtIterator it = controlPolicyRes.listProperties(CoordConf.hasSpecificIntegrityConstraintResolution);
 			for (;it.hasNext();) {
 				Resource paramSpec = it.next().getResource();
 				Resource assertionRes = paramSpec.getPropertyResourceValue(CoordConf.forContextAssertion);
 				String value = paramSpec.getPropertyResourceValue(CoordConf.hasParameterValue).getLocalName();
 				
-				specificIntegrityResolutionStrategy.put(assertionRes, value);
+				specificIntegrityConstraintResolutionStrategy.put(assertionRes, value);
 			}
 		}
 		
-		return specificIntegrityResolutionStrategy;
+		return specificIntegrityConstraintResolutionStrategy;
 	}
 	
-	public Map<Resource, String> specificUniquenessResolutionStrategy() {
-		if (specificUniquenessResolutionStrategy == null) {
-			specificUniquenessResolutionStrategy = new HashMap<Resource, String>();
+	public Map<Resource, String> specificUniquenessConstraintResolutionStrategy() {
+		if (specificUniquenessConstraintResolutionStrategy == null) {
+			specificUniquenessConstraintResolutionStrategy = new HashMap<Resource, String>();
 		
-			StmtIterator it = controlPolicyRes.listProperties(CoordConf.hasSpecificUniquenessResolution);
+			StmtIterator it = controlPolicyRes.listProperties(CoordConf.hasSpecificUniquenessConstraintResolution);
 			for (;it.hasNext();) {
 				Resource paramSpec = it.next().getResource();
 				Resource assertionRes = paramSpec.getPropertyResourceValue(CoordConf.forContextAssertion);
 				String value = paramSpec.getPropertyResourceValue(CoordConf.hasParameterValue).getLocalName();
 				
-				specificUniquenessResolutionStrategy.put(assertionRes, value);
+				specificUniquenessConstraintResolutionStrategy.put(assertionRes, value);
 			}
 		}
 		
-		return specificUniquenessResolutionStrategy;
+		return specificUniquenessConstraintResolutionStrategy;
+	}
+	
+	public Map<Resource, String> specificValueConstraintResolutionStrategy() {
+		if (specificValueConstraintResolutionStrategy == null) {
+			specificValueConstraintResolutionStrategy = new HashMap<Resource, String>();
+		
+			StmtIterator it = controlPolicyRes.listProperties(CoordConf.hasSpecificValueConstraintResolution);
+			for (;it.hasNext();) {
+				Resource paramSpec = it.next().getResource();
+				Resource assertionRes = paramSpec.getPropertyResourceValue(CoordConf.forContextAssertion);
+				String value = paramSpec.getPropertyResourceValue(CoordConf.hasParameterValue).getLocalName();
+				
+				specificValueConstraintResolutionStrategy.put(assertionRes, value);
+			}
+		}
+		
+		return specificUniquenessConstraintResolutionStrategy;
 	}
 	
 	public Map<Resource, Integer> specificOntReasoningInterval() {
