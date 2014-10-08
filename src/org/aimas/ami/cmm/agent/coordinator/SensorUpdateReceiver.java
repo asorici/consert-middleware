@@ -77,7 +77,7 @@ public class SensorUpdateReceiver extends SimpleBehaviour {
 		try {
 			//System.out.println("["+ coordAgent.getName() +"]: receving AssertionUpdate from " + msg.getSender().getName() );
 			AssertionUpdated assertionUpdate = (AssertionUpdated)coordAgent.getContentManager().extractContent(msg);
-	        coordAgent.getSensorManager().insertAssertion(assertionUpdate);
+	        coordAgent.getSensorManager().insertAssertion(msg.getSender(), assertionUpdate);
 		}
         catch (Exception e) {
         	e.printStackTrace();

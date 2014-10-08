@@ -18,6 +18,7 @@ import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.engine.api.InsertResult;
 import org.aimas.ami.contextrep.engine.api.InsertionHandler;
 import org.aimas.ami.contextrep.engine.api.InsertionResultNotifier;
@@ -134,15 +135,29 @@ public class SensorManager implements InsertionResultNotifier {
 	
 	// SENSOR ASSERTION UPDATE
 	//////////////////////////////////////////////////////////////////////////////
-	public void insertAssertion(AssertionUpdated assertionUpdate) {
+	public void insertAssertion(AID sensorAgent, AssertionUpdated assertionUpdate) {
 		String assertionResURI = assertionUpdate.getAssertion().getAssertionType();
 		Resource assertionRes = ResourceFactory.createResource(assertionResURI);
 		
+		// get the sensor description of the sender
+		SensorDescription sensorDesc = registeredSensors.get(sensorAgent);
+		
+		// get the AssertionState for the ContextAssertion being updated and see in which type of update-mode it is
+		// we ASSUME that a same CtxSensor will not send several versions of the same ContextAssertion, since the
+		// CONSERT Engine can currently not distinguish between such versions.
+		AssertionDescription assertionDesc = sensorDesc.getAssertionByURI(assertionResURI);
+		AssertionState assertionState = sensorDesc.getAssertionState(assertionDesc);
+		
+		int updateMode = assertionState.getUpdateMode().equalsIgnoreCase(ContextAssertionAdaptor.TIME_BASED) 
+				? InsertionHandler.TIME_BASED_UPDATE_MODE : InsertionHandler.CHANGE_BASED_UPDATE_MODE; 
+		
+		// retrieve the assertion update content and create the Jena UpdateRequest
 		String assertionContent = assertionUpdate.getAssertionContent();
 		UpdateRequest updateRequest = UpdateFactory.create(assertionContent, Syntax.syntaxSPARQL_11);
 		
+		// mark insertion as pending (awaiting notification of insertion) and submit to CONSERT Engine
 		pendingInsertions.put(updateRequest, assertionRes);
-		engineInsertionAdaptor.insert(updateRequest, this);
+		engineInsertionAdaptor.insert(updateRequest, this, updateMode);
 	}
 	
 	@Override
