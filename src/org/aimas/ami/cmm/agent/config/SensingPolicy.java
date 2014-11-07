@@ -48,6 +48,6 @@ public class SensingPolicy extends AgentPolicy {
     
     
     private static String getAdaptorClass(OntModel cmmConfigModel, Resource assertionAdaptorRes) {
-    	return assertionAdaptorRes.getProperty(OrgConf.hasQualifiedName).getString();
+    	return assertionAdaptorRes.getProperty(OrgConf.hasQualifiedClassName).getString();
     }
 }

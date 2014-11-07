@@ -9,14 +9,14 @@ import jade.domain.df;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.osgi.OSGIBridgeHelper;
-import jade.osgi.service.runtime.JadeRuntimeService;
+import jade.util.Event;
 import jade.wrapper.AgentController;
 
-import org.aimas.ami.cmm.agent.AgentActivator;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
+import org.aimas.ami.cmm.agent.config.ManagerSpecification.ManagerType;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
@@ -24,98 +24,59 @@ import org.aimas.ami.cmm.agent.coordinator.CtxCoord;
 import org.aimas.ami.cmm.agent.queryhandler.CtxQueryHandler;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
 import org.aimas.ami.cmm.agent.user.CtxUser;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
 import org.aimas.ami.cmm.vocabulary.OrgConf;
-import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
-public class OrgMgr extends df implements CMMInitListener {
-    private static final long serialVersionUID = 8067387356505727111L;
+public class OrgMgr extends df implements CMMPlatformInterface {
+	private static final long serialVersionUID = 8067387356505727111L;
     
+	public static final int INSTALL_REQUEST 	= 	0;
+	public static final int START_REQUEST 		= 	1;
+	public static final int STOP_REQUEST 		= 	2;
+	public static final int UNINSTALL_REQUEST 	= 	3;
+	
     public static final String NICKNAME = "OrgMgr";
     
-    
-    /**
-     * The helper that allows access to the OSGi framework that supports this CMM deployment.
-     */
+    /* The helper that allows access to the OSGi framework that supports this CMM deployment. */
     OSGIBridgeHelper helper;
-    Bundle resourceBundle;
     AgentConfigLoader configurationLoader;
     
-    /** The Application specification */
+    /* Application and Context Domain Information */
     ApplicationSpecification appSpecification;
+    String cmmBundleLocation;
     
-    /** The OrgMgr specification */
+    /* The OrgMgr specification */
     ManagerSpecification mySpecification;
+    ManagerType myType = ManagerType.Central;
     
-    /** The index and control of managed agents */
+    /* The index and control of managed agents */
     CMMAgentManager agentManager = new CMMAgentManager();
     
+    
     public void setup() {
-    	try {
-	    	// STEP 1: do sub-DF registration
-	    	doSubDFRegistration();
-	    	
-	    	// STEP 2: retrieve the CMM configuration file and read it
-	    	/* TODO: this step will most likely be reconsidered in the future. This is because we said that
-	    	 * we want the OrgMgr TO BE ABLE TO MANAGE MULTIPLE APPLICATIONS AT A TIME. As such, he will not search
-	    	 * only for a specific bundle where configuration files are found, but MOST LIKELY WILL LOOKUP AN 
-	    	 * CMMAplicationManagementService WHICH WILL PROVIDE THE LIST OF APPLICATION CONFIGURATION BUNDLES INSTALLED
-	    	 * IN THE CURRENT OSGi Runtime that he needs to inspect.
-	    	 * 
-	    	 * FOR THE INITIAL VERSION WE ARE DOING IT LIKE THIS, SIMPLY BECAUSE IT'S FASTER.
-	    	 */
-	    	doCMMConfiguration();
-	    	
-	    	// STEP 3: do behaviour registration
-	    	getContentManager().registerLanguage(CMMAgent.cmmCodec);
-	    	getContentManager().registerOntology(CMMAgent.cmmOntology);
-	    	doBehaviourRegistration();
-	    	
-	    	// STEP 4: start all the configured CMM agents
-	    	doCMMInitialization();
-    	}
-    	catch(CMMConfigException e) {
-    		System.out.println("Failed to initialize OrgMgr agent. Reason: " + e);
-    	}
+		// STEP 1: retrieve the initialization arguments
+    	Object[] initArgs = getArguments();
+    	cmmBundleLocation = (String)initArgs[0];
+    	myType = (ManagerType)initArgs[1];
+    	
+		// STEP 2: do sub-DF registration and register as the implementation for the CMMPlatformInterface
+    	doSubDFRegistration();
+    	registerO2AInterface(CMMPlatformInterface.class, this);
+    	
+    	// STEP 3: do behaviour registration
+    	getContentManager().registerLanguage(CMMAgent.cmmCodec);
+    	getContentManager().registerOntology(CMMAgent.cmmOntology);
+    	doBehaviourRegistration();
 	}
-	
-
-	private void doCMMInitialization() {
-		// STEP 2: start managed agents in required order: CtxCoord, CtxQueryHandler, CtxSensor, CtxUser.
-		// We do this by registering a CMM initialization SequentialBehavior: in each child behavior the 
-		// agent must send a confirmation of successful initialization
-		System.out.println("Registering CMM INIT Behaviour");
-		
-		CMMInitBehaviour initBehaviour = new CMMInitBehaviour(this, this);
-		addBehaviour(initBehaviour);
-    }
-	
-	@Override
-    public void notifyInitResult(CMMInitResult initResult) {
-	    if (!initResult.hasError()) {
-	    	System.out.println("CMM INIT SUCCESSFUL!");
-	    }
-	    else {
-	    	if (initResult.hasFaultyAgent()) {
-	    		System.out.println("CMM INIT FAILED. No initialization confirmation received from " 
-	    			+ initResult.getFaultyAgent().getAgentSpecification().getAgentName());
-	    	}
-	    	else {
-	    		System.out.println("CMM INIT FAILED. Exception during initialization: " 
-	    			+ initResult.getError());
-	    	}
-	    }
-    }
 	
 	
 	private void doBehaviourRegistration() {
@@ -162,7 +123,7 @@ public class OrgMgr extends df implements CMMInitListener {
 	}
 	
 	
-	private void doCMMConfiguration() throws CMMConfigException {
+	private void doCMMConfiguration(String cmmBundleLocation) throws CMMConfigException {
 		try {
 	        helper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
         }
@@ -171,27 +132,21 @@ public class OrgMgr extends df implements CMMInitListener {
         } 
 		
 		BundleContext context = helper.getBundleContext();
-		
-		// Iterate through the installed bundles to find our "cmm-resources"
-		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(AgentActivator.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
-				resourceBundle = candidate;
-				break;
-			}
+		Bundle cmmInstanceResourceBundle = context.getBundle(cmmBundleLocation);
+		if (cmmInstanceResourceBundle == null) {
+			throw new CMMConfigException("Could not find any CONSERT Middleware configuration bundle at OSGi plaform location: " + cmmBundleLocation);
 		}
 		
 		// Now that we have found our resource bundle, setup the configuration loader 
 		// and load the CMM configuration for located at the standard location: etc/cmm/cmm-config.ttl
-		configurationLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
-		OntModel cmmConfigModel = configurationLoader.loadAppConfiguration();
+		configurationLoader = new AgentConfigLoader(new BundleResourceManager(cmmInstanceResourceBundle));
+		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
 		
 		// validate the configurationModel
 		validateConfiguration(cmmConfigModel);
 		
-		// retrieve app specification - TODO: there will be more than one in the future
+		// retrieve the application specification and my own specification (if one exists)
 		appSpecification = ApplicationSpecification.fromConfigurationModel(cmmConfigModel);
-		
-		// retrieve own specification
 		mySpecification = ManagerSpecification.fromConfigurationModel(cmmConfigModel);
 		
 		// build agent configuration and start agents
@@ -205,134 +160,196 @@ public class OrgMgr extends df implements CMMInitListener {
     }
 	
 	
+	private void validateConfiguration(OntModel cmmConfigModel) throws CMMConfigException {
+	    // TODO Implement validation
+    }
+	
+	
 	private void doManagedAgentConfiguration(OntModel cmmConfigModel, BundleContext context) throws Exception {
 	    // STEP 1: configure managed agents
 		
-		// access the Jade Runtime Service
-		String jrsName = JadeRuntimeService.class.getName(); 
-		ServiceReference jadeRef = context.getServiceReference(jrsName); 
-		JadeRuntimeService jrs = (JadeRuntimeService) context.getService(jadeRef);
-		
 		// setup all CtxCoordinators - for starters we will only have one
-		setupCoordinators(cmmConfigModel, context, jrs);
+		setupCoordinators(cmmConfigModel, context);
 		
 		// setup all CtxQueryHandlers
-		setupQueryHandlers(cmmConfigModel, context, jrs);
+		setupQueryHandlers(cmmConfigModel, context);
 		
 		// setup all CtxSensors
-		setupSensors(cmmConfigModel, context, jrs);
+		setupSensors(cmmConfigModel, context);
 		
 		// setup all CtxUsers
-		setupUsers(cmmConfigModel, context, jrs);
+		setupUsers(cmmConfigModel, context);
     }
 
 	
-	private void setupCoordinators(OntModel cmmConfigModel, BundleContext context, JadeRuntimeService jrs) 
-			throws Exception {
-		// Every agent receives 2 mandatory argument and 1 optional one at initialization:
-		// 		- 1: the URI that represents their Specification resource in the configuration file
-		//		- 2: the application unique identifier
-		//		- 3: (optional) the AID of the local OrgMgr
-		AID orgMgrAID = mySpecification.getAgentAddress().getAID();
-		String appIdentifier = appSpecification.getAppIdentifier();
+	private void setupCoordinators(OntModel cmmConfigModel, BundleContext context) throws Exception {
+		// Every agent receives 4 arguments:
+		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
+		// 		- 2: the URI that represents their Specification resource in the configuration file
+		//		- 3: the application unique identifier
+		//		- 4: the AID of the local OrgMgr (the one that instantiates them)
+		AID orgMgrAID = getAID();
 		
 		ResIterator coordinatorIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxCoordSpec);
 		for (;coordinatorIt.hasNext();) {
 			Resource coordSpecRes = coordinatorIt.next();
 			CoordinatorSpecification coordSpec = CoordinatorSpecification.fromConfigurationModel(cmmConfigModel, coordSpecRes);
+			String agentLocalName = coordSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {coordSpecRes.getURI(), appIdentifier, orgMgrAID};
+			Object[] args = new Object[] {cmmBundleLocation, coordSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			
-			
-			AgentController coordController = jrs.createNewAgent(coordSpec.getAgentLocalName(), CtxCoord.class.getName(), 
-					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
-			
-			
+			AgentController coordController = getContainerController().createNewAgent(agentLocalName, CtxCoord.class.getName(), args);
 			agentManager.addManagedCoordinator(coordSpec.getAgentName(), coordSpec, coordController);
 		}
     }
 	
 	
-	private void setupQueryHandlers(OntModel cmmConfigModel, BundleContext context, JadeRuntimeService jrs) 
-			throws Exception {
-		// Every agent receives 2 mandatory argument and 1 optional one at initialization:
-		// 		- 1: the URI that represents their Specification resource in the configuration file
-		//		- 2: the application unique identifier
-		//		- 3: (optional) the AID of the local OrgMgr
-		AID orgMgrAID = mySpecification.getAgentAddress().getAID();
-		String appIdentifier = appSpecification.getAppIdentifier();
+	private void setupQueryHandlers(OntModel cmmConfigModel, BundleContext context) throws Exception {
+		// Every agent receives 4 arguments:
+		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
+		// 		- 2: the URI that represents their Specification resource in the configuration file
+		//		- 3: the application unique identifier
+		//		- 4: the AID of the local OrgMgr (the one that instantiates them)
+		AID orgMgrAID = getAID();
 		
 		ResIterator queryHandlerIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxQueryHandlerSpec);
 		for (;queryHandlerIt.hasNext();) {
 			Resource queryHandlerSpecRes = queryHandlerIt.next();
 			QueryHandlerSpecification queryHandlerSpec = QueryHandlerSpecification.fromConfigurationModel(cmmConfigModel, queryHandlerSpecRes);
+			String agentLocalName = queryHandlerSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {queryHandlerSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController queryController = jrs.createNewAgent(queryHandlerSpec.getAgentLocalName(), CtxQueryHandler.class.getName(), 
-					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
+			Object[] args = new Object[] {cmmBundleLocation, queryHandlerSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			
+			AgentController queryController = getContainerController().createNewAgent(agentLocalName, CtxQueryHandler.class.getName(), args);
 			agentManager.addManagedQueryHandler(queryHandlerSpec.getAgentName(), queryHandlerSpec, queryController);
 		}
     }
 	
 	
-	private void setupSensors(OntModel cmmConfigModel, BundleContext context, JadeRuntimeService jrs) 
-			throws Exception {
-		// Every agent receives 2 mandatory argument and 1 optional one at initialization:
-		// 		- 1: the URI that represents their Specification resource in the configuration file
-		//		- 2: the application unique identifier
-		//		- 3: (optional) the AID of the local OrgMgr
-		AID orgMgrAID = mySpecification.getAgentAddress().getAID();
-		String appIdentifier = appSpecification.getAppIdentifier();
+	private void setupSensors(OntModel cmmConfigModel, BundleContext context) throws Exception {
+		// Every agent receives 4 arguments:
+		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
+		// 		- 2: the URI that represents their Specification resource in the configuration file
+		//		- 3: the application unique identifier
+		//		- 4: the AID of the local OrgMgr (the one that instantiates them)
+		AID orgMgrAID = getAID();
 		
 		ResIterator sensorIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxSensorSpec);
 		for (;sensorIt.hasNext();) {
 			Resource sensorSpecRes = sensorIt.next();
 			SensorSpecification sensorSpec = SensorSpecification.fromConfigurationModel(cmmConfigModel, sensorSpecRes);
+			String agentLocalName = sensorSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {sensorSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController sensorController = jrs.createNewAgent(sensorSpec.getAgentLocalName(), CtxSensor.class.getName(), 
-					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
+			Object[] args = new Object[] {cmmBundleLocation, sensorSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			AgentController sensorController = getContainerController().createNewAgent(agentLocalName, CtxSensor.class.getName(), args);
 			
 			agentManager.addManagedSensor(sensorSpec.getAgentName(), sensorSpec, sensorController);
 		}
     }
 	
 	
-	private void setupUsers(OntModel cmmConfigModel, BundleContext context, JadeRuntimeService jrs) 
-			throws Exception {
-		// Every agent receives 2 mandatory argument and 1 optional one at initialization:
-		// 		- 1: the URI that represents their Specification resource in the configuration file
-		//		- 2: the application unique identifier
-		//		- 3: (optional) the AID of the local OrgMgr
-		AID orgMgrAID = mySpecification.getAgentAddress().getAID();
-		String appIdentifier = appSpecification.getAppIdentifier();
+	private void setupUsers(OntModel cmmConfigModel, BundleContext context) throws Exception {
+		// Every agent receives 4 arguments:
+		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
+		// 		- 2: the URI that represents their Specification resource in the configuration file
+		//		- 3: the application unique identifier
+		//		- 4: the AID of the local OrgMgr (the one that instantiates them)
+		AID orgMgrAID = getAID();
 		
 		ResIterator userIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxUserSpec);
 		for (;userIt.hasNext();) {
 			Resource userSpecRes = userIt.next();
 			UserSpecification userSpec = UserSpecification.fromConfigurationModel(cmmConfigModel, userSpecRes);
+			String agentLocalName = userSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {userSpecRes.getURI(), appIdentifier, orgMgrAID};
-			AgentController userController = jrs.createNewAgent(userSpec.getAgentLocalName(), CtxUser.class.getName(), 
-					args, AgentActivator.AGENT_BUNDLE_SYMBOLIC_NAME);
+			Object[] args = new Object[] {cmmBundleLocation, userSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			AgentController userController = getContainerController().createNewAgent(agentLocalName, CtxUser.class.getName(), args);
 			
 			agentManager.addManagedUser(userSpec.getAgentName(), userSpec, userController);
 		}
     }
 	
 	
-	private void validateConfiguration(OntModel cmmConfigModel) throws CMMConfigException {
-	    // TODO Implement validation
+	private void doCMMInit(Event initCMMEvent) {
+		// STEP 2: start managed agents in required order: CtxCoord, CtxQueryHandler, CtxSensor, CtxUser.
+		// We do this by registering a CMM initialization SequentialBehavior: in each child behavior the 
+		// agent must send a confirmation of successful initialization
+		//System.out.println("Registering CMM INIT Behaviour");
+		
+		CMMInitBehaviour initBehaviour = new CMMInitBehaviour(this, initCMMEvent);
+		addBehaviour(initBehaviour);
     }
+	
+	
+	private void doCMMStart(Event startCMMEvent) {
+	    // TODO Do an actual start
+	    startCMMEvent.notifyProcessed(new CMMEventResult());
+    }
+	
+	
+	private void doCMMStop(Event stopCMMEvent) {
+	    // TODO Do an actual stop
+		stopCMMEvent.notifyProcessed(new CMMEventResult());
+    }
+	
+	
+	private void doCMMKill(Event killCMMEvent) {
+	    // TODO Do an actual kill
+		killCMMEvent.notifyProcessed(new CMMEventResult());
+    }
+	
 	
 	
 	@Override
 	protected void takeDown() {
 	
 	}
+
+	// CMM Instance Request Management
+	///////////////////////////////////////////////////////////////////////////////////////////
+	@Override
+    public Event createCMMInstance() {
+    	Event initCMMEvent = new Event(INSTALL_REQUEST, this);
+		try {
+	        doCMMConfiguration(cmmBundleLocation);
+        }
+        catch (CMMConfigException e) {
+        	initCMMEvent.notifyProcessed(new CMMEventResult(e));
+        }
+    	
+    	doCMMInit(initCMMEvent);
+    	
+    	return initCMMEvent;
+    }
+
+
+	@Override
+    public Event startCMMInstance() {
+		Event startCMMEvent = new Event(START_REQUEST, this);
+	    
+		doCMMStart(startCMMEvent);
+		return startCMMEvent;
+    }
+	
+
+	@Override
+    public Event stopCMMInstance() {
+		Event stopCMMEvent = new Event(STOP_REQUEST, this);
+	    
+		doCMMStop(stopCMMEvent);
+		return stopCMMEvent;
+    }
+
+
+	@Override
+    public Event killCMMInstance() {
+		Event killCMMEvent = new Event(UNINSTALL_REQUEST, this);
+	    
+		doCMMKill(killCMMEvent);
+		return killCMMEvent;
+    }
 }

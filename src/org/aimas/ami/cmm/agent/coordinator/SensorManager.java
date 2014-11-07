@@ -17,7 +17,7 @@ import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.engine.api.InsertResult;
 import org.aimas.ami.contextrep.engine.api.InsertionHandler;

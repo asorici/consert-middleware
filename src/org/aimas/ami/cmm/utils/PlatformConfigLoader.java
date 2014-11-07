@@ -11,26 +11,24 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.shared.JenaException;
 import com.hp.hpl.jena.shared.NotFoundException;
 import com.hp.hpl.jena.util.Locator;
 
-
-public class AgentConfigLoader {
+public class PlatformConfigLoader {
+	
 	public static final String CMM_RESOURCE_PATH = "etc/cmm/";
 	public static final String CMM_ONTOLOGIES_PATH = CMM_RESOURCE_PATH + "ontologies/";
 	public static final String CMM_PROPERTIES_FILE = CMM_RESOURCE_PATH + "cmm.properties";
 	
 	public static final String CMM_DOCMGR_FILE = CMM_RESOURCE_PATH + "cmm-ont-policy.rdf";
-	public static final String CMM_AGENT_CONFIG_FILE_TTL = CMM_RESOURCE_PATH + "agent-config.ttl";
-	public static final String CMM_AGENT_CONFIG_FILE_RDF = CMM_RESOURCE_PATH + "agent-config.rdf";
+	public static final String CMM_PLATFORM_CONFIG_FILE_TTL = CMM_RESOURCE_PATH + "platform-config.ttl";
+	public static final String CMM_PLATFORM_CONFIG_FILE_RDF = CMM_RESOURCE_PATH + "platform-config.rdf";
 	
 	private ResourceManager cmmResourceManager;
-	
 	private OntDocumentManager cmmDocManager;
 	
-	public AgentConfigLoader(ResourceManager resourceManager) throws CMMConfigException {
+	public PlatformConfigLoader(ResourceManager resourceManager) throws CMMConfigException {
 		this.cmmResourceManager = resourceManager;
 		configure();
 	}
@@ -55,10 +53,10 @@ public class AgentConfigLoader {
 		}
 		
 		// STEP 2: try to locate CMM configuration file: first as TTL file
-		InputStream cmmConfStream = cmmResourceManager.getResourceAsStream(CMM_AGENT_CONFIG_FILE_TTL);
+		InputStream cmmConfStream = cmmResourceManager.getResourceAsStream(CMM_PLATFORM_CONFIG_FILE_TTL);
 		if (cmmConfStream == null) {
 			// then as rdf file
-			cmmConfStream = cmmResourceManager.getResourceAsStream(CMM_AGENT_CONFIG_FILE_RDF);
+			cmmConfStream = cmmResourceManager.getResourceAsStream(CMM_PLATFORM_CONFIG_FILE_RDF);
 			
 			if (cmmConfStream == null) { 
 				throw new CMMConfigException("Neither .ttl, nor .rdf versions of the CMM configuration file " + "etc/cmm/cmm-config" + " were found in resources.");
@@ -91,18 +89,18 @@ public class AgentConfigLoader {
     }
 	
 	
-	public OntModel loadAgentConfiguration() throws CMMConfigException {
+	public OntModel loadAppConfiguration() throws CMMConfigException {
 		// We know it has to be one or the other because we passed the configure()
-		if (cmmResourceManager.hasResource(CMM_AGENT_CONFIG_FILE_TTL)) {
-			return load(CMM_AGENT_CONFIG_FILE_TTL);
+		if (cmmResourceManager.hasResource(CMM_PLATFORM_CONFIG_FILE_TTL)) {
+			return load(CMM_PLATFORM_CONFIG_FILE_TTL);
 		}
 		else {
-			return load(CMM_AGENT_CONFIG_FILE_RDF);
+			return load(CMM_PLATFORM_CONFIG_FILE_RDF);
 		}
 	}
 	
 	
-	public OntModel load(String filenameOrURI) throws CMMConfigException {
+	private OntModel load(String filenameOrURI) throws CMMConfigException {
 		try {
 			// create the OntModelSpec
 			OntModelSpec agentConfModelSpec = new OntModelSpec(OntModelSpec.OWL_MEM);
@@ -123,10 +121,4 @@ public class AgentConfigLoader {
 			throw new CMMConfigException("Syntax error for model loaded from filename or URI " + filenameOrURI, e);
 		}
 	}
-	
-	
-	public OntModel load(Resource uriResource) throws CMMConfigException {
-		return load(uriResource.getURI());
-	}
-
 }

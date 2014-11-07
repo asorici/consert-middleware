@@ -5,6 +5,7 @@ import jade.util.Event;
 import org.aimas.ami.cmm.api.ApplicationUserAdaptor;
 import org.aimas.ami.cmm.api.DisconnectedQueryHandlerException;
 import org.aimas.ami.cmm.api.QueryNotificationHandler;
+import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 
 import com.hp.hpl.jena.query.Query;
@@ -143,5 +144,23 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
 	
 	public void setDomainValue(String domainValueURI) {
 		this.domainValueURI = domainValueURI;
+	}
+	
+	
+	// USER-GENERATED CONTEXT ASSERTION MANAGEMENT
+	////////////////////////////////////////////////////////////////////////////
+	@Override
+	public void registerUserSuppliedAssertion(String assertionResourceURI, ContextAssertionAdaptor assertionAdaptor, String contextDomainURI) {
+		
+	}
+	
+	@Override
+	public void unregisterUserSuppliedAssertion(String assertionResourceURI) {
+		
+	}
+	
+	@Override
+	public void unregisterUserSuppliedAssertion(String assertionResourceURI, String contextDomainURI) {
+		
 	}
 }

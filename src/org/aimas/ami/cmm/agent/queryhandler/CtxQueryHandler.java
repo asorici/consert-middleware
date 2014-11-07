@@ -6,7 +6,7 @@ import jade.domain.FIPAAgentManagement.Property;
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -65,7 +65,7 @@ public class CtxQueryHandler extends CMMAgent {
 	    	// configure access to resource
     		doResourceAccessConfiguration();
     		
-    		OntModel cmmConfigModel = configurationLoader.loadAppConfiguration();
+    		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {

@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
@@ -19,7 +20,7 @@ import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.PublishAssertions;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultPublishAssertions;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -37,7 +38,7 @@ public class CtxSensor extends CMMAgent {
     
     /* SensingManager, CtxSensor state and the CtxCoord currently connected to (there will be more 
      * in the extended decentralized hierarchical version) */
-    private SensingManager sensedAssertionsManager;
+    private AbstractSensingManager sensedAssertionsManager;
     private SensorState sensorState = SensorState.INACTIVE;
     
     
@@ -49,7 +50,7 @@ public class CtxSensor extends CMMAgent {
     	this.sensorState = state;
     }
     
-    SensingManager getSensingManager() {
+    AbstractSensingManager getSensingManager() {
     	return sensedAssertionsManager;
     }
     
@@ -81,7 +82,7 @@ public class CtxSensor extends CMMAgent {
 	    	// configure access to resource
     		doResourceAccessConfiguration();
     		
-    		OntModel cmmConfigModel = configurationLoader.loadAppConfiguration();
+    		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {
@@ -92,6 +93,7 @@ public class CtxSensor extends CMMAgent {
     		// retrieve specification and create sensed assertions manager
     		agentSpecification = SensorSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		sensorSpecification = (SensorSpecification)agentSpecification;
+    		
     		sensedAssertionsManager = new SensingManager(this, sensorSpecification.getSensingPolicies());
     		
     		// after this step initialization of the CtxSensor is complete, so we signal a successful init
@@ -155,7 +157,7 @@ public class CtxSensor extends CMMAgent {
 			}
 		});
 		
-		addBehaviour(new CommandHandlerBehaviour(this, taskCommandTemplate));
+		addBehaviour(new TaskingCommandBehaviour(this, taskCommandTemplate));
     }
 
 	
@@ -165,7 +167,7 @@ public class CtxSensor extends CMMAgent {
 		final AID coordinatorAID = sensorSpecification.getAssignedCoordinatorAddress().getAID();
 		PublishAssertions publishContent = new DefaultPublishAssertions();
 		
-		Map<String, AssertionManager> managedAssertions = sensedAssertionsManager.managedAssertions;
+		Map<String, AssertionManager> managedAssertions = sensedAssertionsManager.getManagedAssertions();
 		for (AssertionManager assertionManager : managedAssertions.values()) {
 			AssertionDescription assertionDesc = assertionManager.getAssertionDescription();
 			String updateMode = assertionManager.getUpdateMode();

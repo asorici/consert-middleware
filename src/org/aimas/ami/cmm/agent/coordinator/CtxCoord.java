@@ -6,7 +6,7 @@ import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.api.ApplicationControlAdaptor;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -73,7 +73,7 @@ public class CtxCoord extends CMMAgent {
 	    	// configure access to resource
     		doResourceAccessConfiguration();
     		
-    		OntModel cmmConfigModel = configurationLoader.loadAppConfiguration();
+    		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {

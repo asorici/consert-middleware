@@ -1,5 +1,6 @@
 package org.aimas.ami.cmm.api;
 
+import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 
 import com.hp.hpl.jena.query.Query;
@@ -61,4 +62,30 @@ public interface ApplicationUserAdaptor {
 	 * (could be the case in the centralized-local deployment)
 	 */
 	public String getDomainValue();
+	
+	/* ==================== USER-GENERATED CONTEXT ASSERTION MANAGEMENT ==================== */
+	/**
+	 * Register a ContextAssertionAdaptor which can provide updates for the ContextAssertion identified by <code>assertionResourceURI</code>.
+	 * If <code>contextDomainURI</code> is null, the updates will be directed to the local coordinator. Otherwise, they will be directed to 
+	 * the coordinator in charge of the ContextDomain identified by <code>contextDomainURI</code>.
+	 * @param assertionResourceURI
+	 * @param assertionAdaptor
+	 * @param contextDomainURI
+	 */
+	public void registerUserSuppliedAssertion(String assertionResourceURI, ContextAssertionAdaptor assertionAdaptor, String contextDomainURI);
+	
+	/**
+	 * Stop supplying updates of the ContextAssertion identified by the <code>assertionResourceURI</code>.
+	 * @param assertionResourceURI
+	 */
+	public void unregisterUserSuppliedAssertion(String assertionResourceURI);
+	
+	/**
+	 * Stop supplying updates of the ContextAssertion identified by the <code>assertionResourceURI</code>. Perform this retraction only for
+	 * the updates sent to the coordinator of the Context Domain identified by <code>contextDomainURI</code>.
+	 * @param assertionResourceURI
+	 * @param contextDomainURI
+	 */
+	public void unregisterUserSuppliedAssertion(String assertionResourceURI, String contextDomainURI);
+	
 }

@@ -6,4 +6,5 @@
 	consert-model;version=1.0,\
 	jade.jadeOsgi;version=1.0,\
 	consert-engine.engine;version=1.0,\
-	consert-engine.resources;version=1.0
+	consert-engine.resources;version=1.0,\
+	org.apache.felix.configadmin;version=1.8

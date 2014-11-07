@@ -7,33 +7,28 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 
 public class AssertionUpdateBehaviour extends OneShotBehaviour {
 	private static final long serialVersionUID = 792037104675375166L;
     
-    private CtxSensor sensorAgent;
+    private CMMAgent senderAgent;
+    private AID coordinatorAID;
     private AssertionUpdated assertionUpdate;
     
-    public AssertionUpdateBehaviour(CtxSensor sensorAgent, AssertionUpdated assertionUpdate) {
-    	super(sensorAgent);
-    	this.sensorAgent = sensorAgent;
+    public AssertionUpdateBehaviour(CMMAgent senderAgent, AID coordinatorAID, AssertionUpdated assertionUpdate) {
+    	super(senderAgent);
+    	
+    	this.senderAgent = senderAgent;
+    	this.coordinatorAID = coordinatorAID;
     	this.assertionUpdate = assertionUpdate;
     }
     
     
 	@Override
 	public void action() {
-		// Send an AssertionUpdate message to the connected CtxCoordinator
-		// TODO: this method will need to be revised to perform a check of sending settings, i.e.
-		// which ContextAssertions need to be sent to which CtxCoord agents. For now we assume there
-		// is only one active CtxCoord (as is the case in the Centralized Local deployment)
-		
-		SensorSpecification sensorSpec = sensorAgent.getSensorSpecification();
-		AID coordinatorAID = sensorSpec.getAssignedCoordinatorAddress().getAID();
-		
-		String conversationId = sensorAgent.getName() + "-AssertionUpdate-" 
+		// Send an AssertionUpdate message to the specified CtxCoordinator
+		String conversationId = senderAgent.getName() + "-AssertionUpdate-" 
 				+ System.currentTimeMillis() + "-" + getCnt();
 		
 		ACLMessage updateMsg = new ACLMessage(ACLMessage.INFORM);
@@ -43,8 +38,8 @@ public class AssertionUpdateBehaviour extends OneShotBehaviour {
 		updateMsg.setOntology(CMMAgent.cmmOntology.getName());
 		
 		try {
-	        sensorAgent.getContentManager().fillContent(updateMsg, assertionUpdate);
-			sensorAgent.send(updateMsg);
+	        senderAgent.getContentManager().fillContent(updateMsg, assertionUpdate);
+			senderAgent.send(updateMsg);
 			
 			//System.out.println("["+ sensorAgent.getName() +"]: sending AssertionUpdate" );
         }

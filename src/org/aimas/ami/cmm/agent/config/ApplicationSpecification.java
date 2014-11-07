@@ -23,14 +23,10 @@ public class ApplicationSpecification {
 	private DeploymentType appDeploymentType;
 	private ContextDomain localContextDomain;
 	
-	private CMMAgentContainer appAgentContainer; 
-	
-	public ApplicationSpecification(String appIdentifier, DeploymentType appDeploymentType, 
-			ContextDomain localContextDomain, CMMAgentContainer appAgentContainer) {
+	public ApplicationSpecification(String appIdentifier, DeploymentType appDeploymentType, ContextDomain localContextDomain) {
 	    this.appIdentifier = appIdentifier;
 	    this.appDeploymentType = appDeploymentType;
 	    this.localContextDomain = localContextDomain;
-	    this.appAgentContainer = appAgentContainer;
     }
 
 	public String getAppIdentifier() {
@@ -44,10 +40,6 @@ public class ApplicationSpecification {
 	public ContextDomain getLocalContextDomain() {
 		return localContextDomain;
 	}
-		
-	public CMMAgentContainer getAppAgentContainer() {
-		return appAgentContainer;
-	}
 	
 	
 	public static ApplicationSpecification fromConfigurationModel(OntModel cmmConfigModel) {
@@ -58,9 +50,6 @@ public class ApplicationSpecification {
 		ContextDomain localContextDomain = ContextDomain.fromConfigurationModel(cmmConfigModel, 
 				appSpec.getPropertyResourceValue(OrgConf.hasContextDomain));
 		
-		CMMAgentContainer appAgentContainer = CMMAgentContainer.fromConfigurationModel(cmmConfigModel, 
-				appSpec.getPropertyResourceValue(OrgConf.hasAgentContainer));
-		
-		return new ApplicationSpecification(appIdentifier, appDeploymentType, localContextDomain, appAgentContainer);
+		return new ApplicationSpecification(appIdentifier, appDeploymentType, localContextDomain);
 	}
 }

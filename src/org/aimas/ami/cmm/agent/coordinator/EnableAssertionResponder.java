@@ -98,7 +98,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 	        	String requiredAssertionURI = requiredAssertion.getAssertion().getAssertionType();
 	        	Resource requiredAssertionRes = ResourceFactory.createResource(requiredAssertionURI);
 	        	
-	        	System.out.println("Looking to enable assertion " + requiredAssertionRes);
+	        	//System.out.println("Looking to enable assertion " + requiredAssertionRes);
 	        	
 	        	ContextAssertionType requiredAssertionCaptureType = engineCommandAdaptor.getAssertionType(requiredAssertionRes);
 	        	if (requiredAssertionCaptureType == ContextAssertionType.Profiled) {
@@ -122,8 +122,8 @@ public class EnableAssertionResponder extends AchieveREResponder {
 	        	}
 	        }
 	        
-	        System.out.println("List of already enabled assertions: " + requiredAssertionSatisfied.keySet());
-	        System.out.println("Final list of needed assertions to enable: " + requiredSensedAssertions);
+	        //System.out.println("List of already enabled assertions: " + requiredAssertionSatisfied.keySet());
+	        //System.out.println("Final list of needed assertions to enable: " + requiredSensedAssertions);
 	        
         	// otherwise we have to enable them by sending requests to the sensors
         	// we register a specific behaviour for this
@@ -152,7 +152,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 		Set<Resource> referencedAssertions = engineCommandAdaptor.getReferencedAssertions(requiredAssertionRes);
 		
 		for (Resource referencedAssertion : referencedAssertions) {
-			if (!engineStatsAdaptor.assertionUpdatesEnabled(referencedAssertion)) {
+			if (!engineStatsAdaptor.getAssertionEnableStatus(referencedAssertion).updatesEnabled()) {
 				ContextAssertionType referencedAssertionCaptureType = engineCommandAdaptor.getAssertionType(referencedAssertion);
 				
 				if (referencedAssertionCaptureType == ContextAssertionType.Profiled) {

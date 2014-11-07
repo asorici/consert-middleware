@@ -16,10 +16,10 @@ public class AgentAddress {
 	private AID agentID;
 	
 	
-	public AgentAddress(String agentLocalName, String agentMTPHost, int agentMTPPort, CMMAgentContainer agentContainer) {
+	public AgentAddress(String agentLocalName, CMMAgentContainer agentContainer) {
 	    this.agentLocalName = agentLocalName;
-	    this.agentMTPHost = agentMTPHost;
-	    this.agentMTPPort = agentMTPPort;
+	    this.agentMTPHost = agentContainer.getMTPHost();
+	    this.agentMTPPort = agentContainer.getMTPPort();
     
 	    this.agentContainer = agentContainer;
 	}
@@ -72,13 +72,10 @@ public class AgentAddress {
 			return null;
 		
 		String agentLocalName = agentAddressResource.getProperty(OrgConf.agentName).getString();
-		String agentMTPHost = agentAddressResource.getProperty(OrgConf.agentMTPHost).getString();
-		int agentMTPPort = agentAddressResource.getProperty(OrgConf.agentMTPPort).getInt();
-		
 		CMMAgentContainer agentContainer = CMMAgentContainer.fromConfigurationModel(cmmConfigurationModel, 
 				agentAddressResource.getPropertyResourceValue(OrgConf.agentContainer));
 		
-		return new AgentAddress(agentLocalName, agentMTPHost, agentMTPPort, agentContainer);
+		return new AgentAddress(agentLocalName, agentContainer);
 	}
 
 	@Override

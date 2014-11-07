@@ -1,33 +1,27 @@
 package org.aimas.ami.cmm.agent.config;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import org.aimas.ami.cmm.vocabulary.OrgConf;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class ContextDomain {
 	private Resource domainDimension;
-	private Resource domainEntity;
-	private Resource domainValue;
+	private Resource domainRangeEntity;
+	private Resource domainRangeValue;
 	
-	private List<String> domainModelPartitionDocs;
+	private ContextModelDefinition domainModelDefinition;
 
 	public ContextDomain(Resource domainDimension, Resource domainEntity,
-            Resource domainValue, List<String> domainModelPartitionDocs) {
+            Resource domainValue, ContextModelDefinition domainModelDefinition) {
 	    this.domainDimension = domainDimension;
-	    this.domainEntity = domainEntity;
-	    this.domainValue = domainValue;
-	    this.domainModelPartitionDocs = domainModelPartitionDocs;
+	    this.domainRangeEntity = domainEntity;
+	    this.domainRangeValue = domainValue;
+	    this.domainModelDefinition = domainModelDefinition;
     }
 
-	public ContextDomain(List<String> domainModelPartitionDocs) {
-	    this(null, null, null, domainModelPartitionDocs);
+	public ContextDomain(ContextModelDefinition domainModelDefinition) {
+	    this(null, null, null, domainModelDefinition);
     }
 
 	public Resource getDomainDimension() {
@@ -39,48 +33,34 @@ public class ContextDomain {
 	}
 
 	public Resource getDomainEntity() {
-		return domainEntity;
+		return domainRangeEntity;
 	}
 	
 	public boolean hasDomainEntity() {
-		return domainEntity != null;
+		return domainRangeEntity != null;
 	}
 
 	public Resource getDomainValue() {
-		return domainValue;
+		return domainRangeValue;
 	}
 	
 	public boolean hasDomainValue() {
-		return domainValue != null;
+		return domainRangeValue != null;
 	}
 
-	public List<String> getDomainModelPartitionDocs() {
-		return domainModelPartitionDocs;
+	public ContextModelDefinition getDomainContextModelDefinition() {
+		return domainModelDefinition;
 	}
 	
 	
 	public static ContextDomain fromConfigurationModel(OntModel cmmConfigModel, Resource contextDomainResource) {
-		Resource domainDimension = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDimension).getResource();
-		Resource domainEntity = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDomainEntity).getResource();
-		Resource domainValue = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDomainValue).getResource();
-	
-		StmtIterator partitionIterator = cmmConfigModel.listStatements(contextDomainResource, OrgConf.hasModelPartition, (RDFNode)null);
+		Resource domainDimension = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDomainDimension).getResource();
+		Resource domainRangeEntity = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDomainRangeEntity).getResource();
+		Resource domainRangeValue = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasDomainRangeValue).getResource();
 		
-		List<String> domainModelPartitionDocs = new LinkedList<String>();
-		for (;partitionIterator.hasNext();) {
-			Resource modelPartition = partitionIterator.next().getResource();
-			Resource partitionDocument = modelPartition.getPropertyResourceValue(OrgConf.hasPartitionDocument);
-			
-			Statement docFileStmt = partitionDocument.getProperty(OrgConf.documentPath);
-			if (docFileStmt != null) {
-				domainModelPartitionDocs.add(docFileStmt.getString());
-			}
-			else {
-				docFileStmt = partitionDocument.getProperty(OrgConf.documentURI);
-				domainModelPartitionDocs.add(docFileStmt.getString());
-			}
-		}
+		Resource domainModelRes = cmmConfigModel.getProperty(contextDomainResource, OrgConf.hasContextModel).getResource();
+		ContextModelDefinition contextModelDefinition = ContextModelDefinition.fromConfigurationModel(cmmConfigModel, domainModelRes);
 		
-		return new ContextDomain(domainDimension, domainEntity, domainValue, domainModelPartitionDocs);
+		return new ContextDomain(domainDimension, domainRangeEntity, domainRangeValue, contextModelDefinition);
 	}
 }

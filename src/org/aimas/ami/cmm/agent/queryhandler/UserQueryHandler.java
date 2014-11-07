@@ -8,7 +8,6 @@ import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -72,7 +71,7 @@ public class UserQueryHandler {
 	    Set<ContextAssertion> inactiveAssertions = new HashSet<ContextAssertion>();
 	    
 	    for (ContextAssertion contextAssertion : referencedAssertions) {
-	    	if (!manager.getEngineStatsAdaptor().assertionUpdatesEnabled(contextAssertion.getOntologyResource())) {
+	    	if (!manager.getEngineStatsAdaptor().getAssertionEnableStatus(contextAssertion.getOntologyResource()).updatesEnabled()) {
 	    		inactiveAssertions.add(contextAssertion);
 	    	}
 	    }

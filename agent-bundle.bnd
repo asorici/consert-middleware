@@ -13,7 +13,8 @@ Private-Package:  \
 	org.aimas.ami.cmm.functions,\
 	org.aimas.ami.cmm.utils,\
 	org.aimas.ami.cmm.vocabulary,\
-	org.aimas.ami.cmm.agent
+	org.aimas.ami.cmm.agent,\
+	org.aimas.ami.cmm
 Bundle-Name: consert-middleware-agents
 Bundle-Description: The core of the CONSERT CMM operational functionality: the multi-agent system implementing the general manager, coordinator, query handler, sensor and user functionalities
 Import-Package:  \

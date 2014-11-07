@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.aimas.ami.cmm.agent.config.AgentPolicy;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.api.ApplicationControlAdaptor;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.vocabulary.CoordConf;
 import org.aimas.ami.contextrep.engine.api.CommandHandler;
 import org.aimas.ami.contextrep.engine.api.ContextDerivationRule;

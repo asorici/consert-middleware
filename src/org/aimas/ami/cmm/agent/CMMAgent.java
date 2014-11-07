@@ -17,9 +17,10 @@ import jade.osgi.OSGIBridgeHelper;
 
 import java.util.Calendar;
 
+import org.aimas.ami.cmm.CMMPlatformManager;
 import org.aimas.ami.cmm.agent.config.AgentSpecification;
 import org.aimas.ami.cmm.agent.onto.CMMAgentLangOntology;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
 import org.aimas.ami.contextrep.resources.SystemTimeService;
 import org.aimas.ami.contextrep.resources.TimeService;
@@ -92,16 +93,14 @@ public abstract class CMMAgent extends Agent {
 			osgiHelper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
 		}
 		catch (ServiceException e) {
-			throw new CMMConfigException(
-			        "Failed to configure CMM. Could not access OSGi bridge helper.",
-			        e);
+			throw new CMMConfigException("Failed to configure CMM. Could not access OSGi bridge helper.", e);
 		}
 		
 		BundleContext context = osgiHelper.getBundleContext();
 		
 		// Iterate through the installed bundles to find our "cmm-resources"
 		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(AgentActivator.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
+			if (candidate.getSymbolicName().equals(CMMPlatformManager.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
 				resourceBundle = candidate;
 				break;
 			}

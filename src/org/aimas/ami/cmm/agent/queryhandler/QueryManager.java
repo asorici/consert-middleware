@@ -6,7 +6,7 @@ import jade.lang.acl.ACLMessage;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.contextrep.engine.api.AssertionUpdateListener;
 import org.aimas.ami.contextrep.engine.api.QueryHandler;
 import org.aimas.ami.contextrep.engine.api.StatsHandler;

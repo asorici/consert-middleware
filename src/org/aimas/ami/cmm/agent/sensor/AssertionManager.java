@@ -1,5 +1,6 @@
 package org.aimas.ami.cmm.agent.sensor;
 
+import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 import org.aimas.ami.cmm.agent.onto.ExecTask;
@@ -34,7 +35,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	/** The current update rate (in seconds) for this ContextAssertion */
 	private int updateRate;
 	
-	private SensingManager sensingManager;
+	private AbstractSensingManager sensingManager;
 	private AssertionAdaptorTracker assertionAdaptorTracker;
 	
 	/**
@@ -43,7 +44,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	 * @param updateRate
 	 */
     public AssertionManager(String assertionResourceURI, String updateMode, int updateRate,
-    		AssertionAdaptorTracker assertionAdaptorTracker, SensingManager sensingManager) {
+    		AssertionAdaptorTracker assertionAdaptorTracker, AbstractSensingManager sensingManager) {
 	    this.assertionResourceURI = assertionResourceURI;
 	    this.updateMode = updateMode;
 	    this.updateRate = updateRate;
@@ -70,8 +71,8 @@ public class AssertionManager implements ApplicationSensingAdaptor {
     	assertionUpdate.setAssertion(fromAdaptor(assertionDesc));
     	assertionUpdate.setAssertionContent(update.toString());
     	
-    	AssertionUpdateBehaviour updateBehaviour = new AssertionUpdateBehaviour(sensingManager.getSensorAgent(), assertionUpdate);
-    	sensingManager.getSensorAgent().addBehaviour(updateBehaviour);
+    	AssertionUpdateBehaviour updateBehaviour = new AssertionUpdateBehaviour(sensingManager.getManagingAgent(), assertionUpdate);
+    	sensingManager.getManagingAgent().addBehaviour(updateBehaviour);
     }
     
     public AssertionDescription getAssertionDescription() {

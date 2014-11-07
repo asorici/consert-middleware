@@ -1,4 +1,4 @@
-package org.aimas.ami.cmm.exceptions;
+package org.aimas.ami.cmm.api;
 
 public class CMMConfigException extends Exception {
     private static final long serialVersionUID = 7675767726672345495L;

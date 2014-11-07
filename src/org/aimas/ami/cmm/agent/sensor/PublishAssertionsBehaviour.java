@@ -7,6 +7,7 @@ import jade.content.onto.basic.Action;
 import jade.lang.acl.ACLMessage;
 import jade.proto.ProposeInitiator;
 
+import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor.SensorState;
@@ -31,7 +32,7 @@ public class PublishAssertionsBehaviour extends ProposeInitiator {
 		sensorAgent.setSensorState(SensorState.CONNECTED);
 		
 		// See if the CtxCoordinator has told us to enable anything
-		SensingManager sensingManager = sensorAgent.getSensingManager();
+		AbstractSensingManager sensingManager = sensorAgent.getSensingManager();
 		
 		Action actionContent = null;
 		try {

@@ -8,28 +8,22 @@ import com.hp.hpl.jena.rdf.model.Resource;
 
 public class QueryHandlerSpecification extends AgentSpecification {
 	private boolean isPrimary;
-	private AgentAddress coordinatorAddress;
-	private String queryAdaptorClass;
+	private AgentAddress assignedOrgMgrAddress;
 	
 	public QueryHandlerSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, 
-			boolean isPrimary, String queryAdaptorClass, AgentAddress coordinatorAddress) {
+			boolean isPrimary, AgentAddress assignedOrgMgrAddress) {
 		super(agentAddress, AgentType.CTX_QUERY_HANDLER, controlPolicy);
 		
 		this.isPrimary = isPrimary;
-		this.queryAdaptorClass = queryAdaptorClass;
-		this.coordinatorAddress = coordinatorAddress;
+		this.assignedOrgMgrAddress = assignedOrgMgrAddress;
     }
 
 	public boolean isPrimary() {
 		return isPrimary;
 	}
 	
-	public String getQueryAdaptorClass() {
-	    return queryAdaptorClass;
-    }
-	
 	public AgentAddress getAssignedCoordinatorAddress() {
-		return coordinatorAddress;
+		return assignedOrgMgrAddress;
 	}
 	
 	
@@ -37,16 +31,10 @@ public class QueryHandlerSpecification extends AgentSpecification {
 		AgentAddress agentAddress = AgentSpecification.getAddressFromConfig(cmmConfigModel, queryHandlerSpec);
 		boolean isPrimary = queryHandlerSpec.getProperty(OrgConf.isPrimaryQueryHandler).getBoolean();
 		
-		String queryAdaptorClass = getAdaptorClass(cmmConfigModel, queryHandlerSpec.getPropertyResourceValue(OrgConf.hasQueryAdaptor));
-		
-		AgentAddress coordinatorAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 
-			queryHandlerSpec.getPropertyResourceValue(OrgConf.assignedCoordinator));	
+		AgentAddress assignedOrgMgrAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 
+			queryHandlerSpec.getPropertyResourceValue(OrgConf.assignedOrgManager));	
 		
 		// We don't have any CtxQueryHandler specific control policies yet
-		return new QueryHandlerSpecification(agentAddress, null, isPrimary, queryAdaptorClass, coordinatorAddress);
+		return new QueryHandlerSpecification(agentAddress, null, isPrimary, assignedOrgMgrAddress);
 	}
-	
-	private static String getAdaptorClass(OntModel cmmConfigModel, Resource assertionAdaptorRes) {
-    	return assertionAdaptorRes.getProperty(OrgConf.hasQualifiedName).getString();
-    }
 }

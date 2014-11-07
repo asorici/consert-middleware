@@ -13,14 +13,20 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 public class ManagerSpecification extends AgentSpecification {
 	public static enum ManagerType {
-		Root, Node;
+		Root, Node, Central, Mobile;
 		
 		public static ManagerType getFromResource(Resource typeResource) {
-			if (typeResource.equals(OrgConf.RootManager)) {
+			if (typeResource.equals(OrgConf.Root)) {
 				return Root;
 			}
+			else if (typeResource.equals(OrgConf.Node)) {
+				return Node;
+			}
+			else if (typeResource.equals(OrgConf.Mobile)) {
+				return Mobile;
+			}
 			
-			return Node;
+			return Central;
 		}
 	}
 	
@@ -30,8 +36,8 @@ public class ManagerSpecification extends AgentSpecification {
 	
 	private ManagerType managerType;
 	
-	public ManagerSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, ManagerType managerType, AgentAddress parentManager) {
-	    super(agentAddress, AgentType.ORG_MGR, controlPolicy);
+	public ManagerSpecification(AgentAddress agentAddress, ManagerType managerType, AgentAddress parentManager) {
+	    super(agentAddress, AgentType.ORG_MGR, null);
 	    this.parentManager = parentManager;
 	    this.managerType = managerType;
     }
@@ -83,7 +89,7 @@ public class ManagerSpecification extends AgentSpecification {
 		List<AgentAddress> knownRootManagers = getKnownRootManagers(cmmConfigModel, orgMgrSpec);
 		
 		// create the manager specification
-		ManagerSpecification managerSpec = new ManagerSpecification(agentAddress, null, managerType, parentMgrAddress);
+		ManagerSpecification managerSpec = new ManagerSpecification(agentAddress, managerType, parentMgrAddress);
 		if (rootMgrAddress != null) 
 			managerSpec.setRootManagerAddress(rootMgrAddress);
 		

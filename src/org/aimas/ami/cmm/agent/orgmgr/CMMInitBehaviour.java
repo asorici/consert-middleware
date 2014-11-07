@@ -6,8 +6,10 @@ import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
+import jade.util.Event;
 import jade.wrapper.StaleProxyException;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
@@ -27,13 +29,16 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     static final long SENSOR_TIMEOUT = 30000;
     static final long USER_TIMEOUT = 10000;
     
-    private CMMInitListener initListener;
-    private CMMInitResult initResult;
+    private Event cmmInitEvent;
+    private CMMEventResult initResult;
     
-    public CMMInitBehaviour(OrgMgr orgMgr, CMMInitListener initListener) {
+    private List<ManagedAgentWrapper<?>> initializedAgents;
+    
+    public CMMInitBehaviour(OrgMgr orgMgr, Event initEvent) {
     	super(orgMgr);
     	
-    	this.initListener = initListener;
+    	this.cmmInitEvent = initEvent;
+    	this.initializedAgents = new LinkedList<ManagedAgentWrapper<?>>();
     	
     	// add the sub-behaviours
     	List<ManagedAgentWrapper<CoordinatorSpecification>> managedCoordinators = orgMgr.agentManager.getManagedCoordinators();
@@ -71,7 +76,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     			ManagedAgentWrapper<?> faultyAgent = currentInitBehaviour.getCMMAgent();
     			Exception initError = currentInitBehaviour.getInitError();
     			
-    			initResult = new CMMInitResult(initError, faultyAgent);
+    			initResult = new CMMEventResult(initError, faultyAgent);
     		}
     	}
     	
@@ -82,16 +87,39 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     public int onEnd() {
     	if (initResult == null) {
     		// yey, we had no errors during the initialization chain
-    		initResult = new CMMInitResult();
+    		System.out.println("CMM INIT SUCCESSFUL!");
+    		
+    		initResult = new CMMEventResult();
+    	}
+    	else {
+    		if (initResult.hasResult()) {
+	    		System.out.println("CMM INIT FAILED. No initialization confirmation received from " 
+	    			+ ((ManagedAgentWrapper<?>)initResult.getResult()).getAgentSpecification().getAgentName());
+	    	}
+	    	else {
+	    		System.out.println("CMM INIT FAILED. Exception during initialization: " + initResult.getError());
+	    	}
+    		
+    		// we had an error so kill all the initialized agents because it's all or nothing
+    		for (int index = initializedAgents.size() - 1; index >= 0; index--) {
+    			ManagedAgentWrapper<?> agentWrapper = initializedAgents.get(index);
+    			try {
+	                agentWrapper.getAgentController().kill();
+                }
+                catch (StaleProxyException e) {
+                	// we ignore the exception since it means the agent is already dead and there's nothing more we can do
+                }
+    		}
     	}
     	
-    	initListener.notifyInitResult(initResult);
+    	// we notify here the result of the initialization
+    	cmmInitEvent.notifyProcessed(initResult);
     	
     	return 0;
     }
     
     
-    private static class AgentInitBehaviour extends SimpleBehaviour {
+    private class AgentInitBehaviour extends SimpleBehaviour {
         private static final long serialVersionUID = 2701478816359859719L;
 		
         private static final int REQUEST_START = 0;
@@ -125,9 +153,10 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     	}
     	
     	
-		@Override
+		@SuppressWarnings("serial")
+        @Override
         public void action() {
-			switch(state){
+			switch(state) {
 				case REQUEST_START: {
 					if (!cmmAgentWrapper.isActive()) {
 						// 1a) start the agent
@@ -186,7 +215,13 @@ public class CMMInitBehaviour extends SequentialBehaviour {
 					ACLMessage confirmMessage = orgMgr.receive(initConfirmationTemplate);
 					if (confirmMessage != null) {
 						boolean initialized = initSuccessful(confirmMessage);
-						exitCode = initialized ? INIT_SUCCESS : INIT_FAILURE;
+						if (initialized) {
+							exitCode = INIT_SUCCESS;
+							initializedAgents.add(cmmAgentWrapper);
+						}
+						else {
+							exitCode = INIT_FAILURE;
+						}
 						finished = true;
 					}
 					else {

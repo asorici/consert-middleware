@@ -1,13 +1,13 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.config.SensingPolicy;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor.SensorState;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.vocabulary.CoordConf;
 import org.aimas.ami.cmm.vocabulary.SensorConf;
 import org.osgi.framework.BundleContext;
@@ -17,27 +17,16 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 
-public class SensingManager {
-	CtxSensor sensorAgent;
-	Map<String, AssertionManager> managedAssertions = new HashMap<String, AssertionManager>();
+public class SensingManager extends AbstractSensingManager {
 	
-	public SensingManager(CtxSensor sensorAgent, List<SensingPolicy> sensingPolicies) throws CMMConfigException {
-		this.sensorAgent = sensorAgent;
+	public SensingManager(CMMAgent managingAgent, List<SensingPolicy> sensingPolicies) throws CMMConfigException {
+		super(managingAgent);
 		configure(sensingPolicies);
-	}
-	
-	public CtxSensor getSensorAgent() {
-		return sensorAgent;
-	}
-	
-	public AssertionManager getAssertionManager(String assertionResourceURI) {
-		return managedAssertions.get(assertionResourceURI);
 	}
 	
 	public void addPolicies(List<SensingPolicy> sensingPolicies) throws CMMConfigException {
 		configure(sensingPolicies);
 	}
-	
 	
 	private void configure(List<SensingPolicy> sensingPolicies) throws CMMConfigException {
 	    for (SensingPolicy sensingPolicy : sensingPolicies) {
@@ -47,7 +36,7 @@ public class SensingManager {
 	    	
 	    	// Retrieve the ContextAssertion-specific sensing policy, the one that specifies
 	    	// update mode, update rate and the list of physical sensor IDs to which it applies
-	    	OntModel sensingConfigModel = sensorAgent.getConfigurationLoader().load(configureDoc);
+	    	OntModel sensingConfigModel = managingAgent.getConfigurationLoader().load(configureDoc);
 	    	Resource assertionSenseSpec = 
 	    		sensingConfigModel.listResourcesWithProperty(CoordConf.forContextAssertion, assertionRes).next();
 	    	
@@ -73,7 +62,7 @@ public class SensingManager {
 	    	}
 	    	
 	    	// Access the assertion adaptor service instance via ServiceTracker
-	    	BundleContext context = sensorAgent.getOSGiBridge().getBundleContext();
+	    	BundleContext context = managingAgent.getOSGiBridge().getBundleContext();
 	    	AssertionAdaptorTracker adaptorTracker = new AssertionAdaptorTracker(context, adaptorClassName, sensorIdList);
 	    	
 	    	// When we create the assertion manager updates are not yet enabled.
@@ -86,24 +75,22 @@ public class SensingManager {
 	    }
     }
 	
-	
-	public void removeAssertionManager(String assertionResourceURI) {
-		managedAssertions.remove(assertionResourceURI);
-	}
-
+	@Override
 	public void notifyAssertionActive(String assertionResourceURI, boolean updateEnabled) {
-	    if (updateEnabled) {
+	    CtxSensor ctxSensor = (CtxSensor)managingAgent;
+		
+		if (updateEnabled) {
 	    	// It means that one of the managed assertions has resumed updates, so we set the
 	    	// CtxSensor in a TRANSMITTING state if we are in the CONNECTED one
-	    	if (sensorAgent.getSensorState() == SensorState.CONNECTED) {
-	    		sensorAgent.setSensorState(SensorState.TRANSMITTING);
+	    	if (ctxSensor.getSensorState() == SensorState.CONNECTED) {
+	    		ctxSensor.setSensorState(SensorState.TRANSMITTING);
 	    	}
 	    }
 	    else {
 	    	// If we are in the transmitting state and one of our assertions stops its updates,
 	    	// then we need to figure out if others we are managing are still active. If no more
 	    	// are active, set the state to just CONNECTED
-	    	if (sensorAgent.getSensorState() == SensorState.TRANSMITTING) {
+	    	if (ctxSensor.getSensorState() == SensorState.TRANSMITTING) {
 	    		boolean hasActive = false;
 	    		for (String assertionURI : managedAssertions.keySet()) {
 	    			if (!assertionURI.equals(assertionResourceURI)) {
@@ -116,9 +103,10 @@ public class SensingManager {
 	    		}
 	    		
 	    		if (!hasActive) {
-	    			sensorAgent.setSensorState(SensorState.CONNECTED);
+	    			ctxSensor.setSensorState(SensorState.CONNECTED);
 	    		}
 	    	}
 	    }
-    }
+	}
+	
 }

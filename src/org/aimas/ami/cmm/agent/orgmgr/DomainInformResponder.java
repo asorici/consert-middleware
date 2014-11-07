@@ -15,7 +15,8 @@ import org.aimas.ami.cmm.agent.onto.impl.DefaultDomainDescription;
 public class DomainInformResponder extends AchieveREResponder {
     private static final long serialVersionUID = -4938065778483291585L;
 
-	private static MessageTemplate prepareTemplate(final OrgMgr orgMgr) {
+	@SuppressWarnings("serial")
+    private static MessageTemplate prepareTemplate(final OrgMgr orgMgr) {
 		return new MessageTemplate(new MatchExpression() {
 			@Override
 			public boolean match(ACLMessage msg) {
@@ -40,9 +41,6 @@ public class DomainInformResponder extends AchieveREResponder {
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		
-		// extract the appIdentifier - TODO: this is to be used later to get the context domain
-		// based on the application the CMMAgent is interested in, given that the  OrgMgr can
-		// manage several
 		String appIdentifier = null;
 		try {
 			Action contentAction = (Action)orgMgr.getContentManager().extractContent(request);

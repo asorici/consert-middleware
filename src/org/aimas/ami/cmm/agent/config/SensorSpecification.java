@@ -11,34 +11,23 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class SensorSpecification extends AgentSpecification {
-	private AgentAddress coordinatorAddress;
-	private AgentAddress managerAddress;
+	private AgentAddress assignedOrgMgrAddress;
 	private List<SensingPolicy> sensingPolicies;
 	
 	public SensorSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, 
-			AgentAddress coordinatorAddress, AgentAddress managerAddress, 
-			List<SensingPolicy> sensingPolicies) {
+			AgentAddress assignedOrgMgrAddress, List<SensingPolicy> sensingPolicies) {
 	    super(agentAddress, AgentType.CTX_SENSOR, controlPolicy);
 	    
-	    this.coordinatorAddress = coordinatorAddress;
-	    this.managerAddress = managerAddress;
+	    this.assignedOrgMgrAddress = assignedOrgMgrAddress;
 	    this.sensingPolicies = sensingPolicies;
     }
 
-	public AgentAddress getAssignedCoordinatorAddress() {
-		return coordinatorAddress;
-	}
-
 	public AgentAddress getAssignedManagerAddress() {
-		return managerAddress;
-	}
-	
-	public boolean hasAssignedCoordinator() {
-		return coordinatorAddress != null;
+		return assignedOrgMgrAddress;
 	}
 	
 	public boolean hasAssignedManager() {
-		return managerAddress != null;
+		return assignedOrgMgrAddress != null;
 	}
 	
 	public List<SensingPolicy> getSensingPolicies() {
@@ -57,12 +46,9 @@ public class SensorSpecification extends AgentSpecification {
 			sensingPolicies.add(sensingPolicy);
 		}
 		
-		AgentAddress coordinatorAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 
-			sensorSpec.getPropertyResourceValue(OrgConf.assignedCoordinator));	
-		
-		AgentAddress managerAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 
+		AgentAddress assignedOrgMgrAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 
 			sensorSpec.getPropertyResourceValue(OrgConf.assignedOrgManager));	
-			
-		return new SensorSpecification(agentAddress, null, coordinatorAddress, managerAddress, sensingPolicies);
+		
+		return new SensorSpecification(agentAddress, null, assignedOrgMgrAddress, sensingPolicies);
 	}
 }

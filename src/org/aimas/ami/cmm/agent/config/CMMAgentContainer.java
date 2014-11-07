@@ -7,19 +7,26 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 
 public class CMMAgentContainer {
-	private boolean isMainContainer;
+	
+	private String platformName;
 	private String containerHost;
 	private int containerPort;
-	private String platformName;
+	private boolean isMainContainer;
+	private String mtpHost;
+	private int mtpPort;
+	
 	
 	private CMMAgentContainer mainContainer;
 
 	public CMMAgentContainer(boolean isMainContainer, String containerHost, int containerPort, 
-			String platformName, CMMAgentContainer mainContainer) {
-	    this.isMainContainer = isMainContainer;
+			String platformName, String mtpHost, int mtpPort, CMMAgentContainer mainContainer) {
+	    
+		this.isMainContainer = isMainContainer;
 	    this.containerHost = containerHost;
 	    this.containerPort = containerPort;
 	    this.platformName = platformName;
+	    this.mtpHost = mtpHost;
+	    this.mtpPort = mtpPort;
 	    this.mainContainer = mainContainer;
     }
 
@@ -33,6 +40,14 @@ public class CMMAgentContainer {
 
 	public int getContainerPort() {
 		return containerPort;
+	}
+	
+	public String getMTPHost() {
+		return mtpHost;
+	}
+
+	public int getMTPPort() {
+		return mtpPort;
 	}
 	
 	public String getPlatformName() {
@@ -50,6 +65,11 @@ public class CMMAgentContainer {
 		
 		String containerHost = containerRes.getProperty(OrgConf.containerHost).getString();
 		int containerPort = containerRes.getProperty(OrgConf.containerPort).getInt();
+		
+		String mtpHost = containerRes.getProperty(OrgConf.hasMTPHost).getString();
+		int mtpPort = containerRes.getProperty(OrgConf.hasMTPPort).getInt();
+		
+		
 		boolean isMainContainer = containerRes.getProperty(OrgConf.isMainContainer).getBoolean();
 		String platformName = containerRes.getProperty(OrgConf.platformName).getString();
 		
@@ -57,9 +77,9 @@ public class CMMAgentContainer {
 		if (mainContainerStmt != null) {
 			Resource mainContainerRes = mainContainerStmt.getResource();
 			CMMAgentContainer mainContainer = CMMAgentContainer.fromConfigurationModel(cmmConfigurationModel, mainContainerRes);
-			return new CMMAgentContainer(isMainContainer, containerHost, containerPort, platformName, mainContainer);
+			return new CMMAgentContainer(isMainContainer, containerHost, containerPort, platformName, mtpHost, mtpPort, mainContainer);
 		}
 		
-		return new CMMAgentContainer(isMainContainer, containerHost, containerPort, platformName, null);
+		return new CMMAgentContainer(isMainContainer, containerHost, containerPort, platformName, mtpHost, mtpPort, null);
 	}
 }

@@ -18,14 +18,14 @@ public class SensorConf {
     // Vocabulary classes
     /////////////////////
     public final static Resource SensingPolicy = m_model.createResource( NS + "SensingPolicy" );
-    public final static Resource SensorInstance = m_model.createResource( NS + "SensorInstance" );
+    //public final static Resource SensorInstance = m_model.createResource( NS + "SensorInstance" );
     
     // Vocabulary properties
    	////////////////////////
     public final static Property hasUpdateMode = m_model.createProperty( NS + "hasUpdateMode" );
     public final static Property hasUpdateRate = m_model.createProperty( NS + "hasUpdateRate" );
-    public final static Property appliesTo = m_model.createProperty( NS + "appliesTo" );
-    public final static Property instanceID = m_model.createProperty( NS + "instanceID" );
-    public final static Property instanceType = m_model.createProperty( NS + "instanceType" );
+    //public final static Property appliesTo = m_model.createProperty( NS + "appliesTo" );
+    //public final static Property instanceID = m_model.createProperty( NS + "instanceID" );
+    //public final static Property instanceType = m_model.createProperty( NS + "instanceType" );
     
 }

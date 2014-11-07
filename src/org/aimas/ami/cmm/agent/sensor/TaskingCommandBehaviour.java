@@ -11,12 +11,13 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.SimpleAchieveREResponder;
 
+import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.onto.ExecTask;
 
-public class CommandHandlerBehaviour extends SimpleAchieveREResponder {
+public class TaskingCommandBehaviour extends SimpleAchieveREResponder {
     private static final long serialVersionUID = 2291039095257411838L;
     
-	public CommandHandlerBehaviour(CtxSensor sensorAgent, MessageTemplate mt) {
+	public TaskingCommandBehaviour(CtxSensor sensorAgent, MessageTemplate mt) {
 	    super(sensorAgent, mt);
     }
 	
@@ -67,7 +68,7 @@ public class CommandHandlerBehaviour extends SimpleAchieveREResponder {
         	CtxSensor sensorAgent = (CtxSensor)myAgent;
         	
         	String assertionResourceURI = taskingCommand.getAssertion().getAssertionType();
-        	SensingManager sensingManager = sensorAgent.getSensingManager();
+        	AbstractSensingManager sensingManager = sensorAgent.getSensingManager();
         	
         	boolean commandSuccess = sensingManager.getAssertionManager(assertionResourceURI).execTask(taskingCommand);
         	ACLMessage informResult = request.createReply();

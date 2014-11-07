@@ -21,7 +21,7 @@ import org.aimas.ami.cmm.agent.onto.DomainDescription;
 import org.aimas.ami.cmm.agent.onto.InformDomain;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultInformDomain;
 import org.aimas.ami.cmm.api.ApplicationUserAdaptor;
-import org.aimas.ami.cmm.exceptions.CMMConfigException;
+import org.aimas.ami.cmm.api.CMMConfigException;
 import org.osgi.framework.BundleContext;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -98,7 +98,7 @@ public class CtxUser extends CMMAgent {
 	    	// configure access to resource
     		doResourceAccessConfiguration();
     		
-    		OntModel cmmConfigModel = configurationLoader.loadAppConfiguration();
+    		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {
@@ -156,7 +156,7 @@ public class CtxUser extends CMMAgent {
 	
 	
 	private void doConnectToQueryHandler() {
-		// For now we treet the centralized-local case case, where we ask the local OrgMgr
+		// For now we treat the centralized-local case, where we ask the local OrgMgr
 		// what the address of the CtxQueryHandler is
 		DFAgentDescription queryHandlerTemplate = new DFAgentDescription();
 		ServiceDescription querySD = new ServiceDescription();
