@@ -9,14 +9,14 @@ import org.aimas.ami.contextrep.engine.api.QueryResult;
 
 import com.hp.hpl.jena.query.Query;
 
-public class UserQueryBehaviour extends SimpleAchieveREInitiator {
+public class UserQueryInitiator extends SimpleAchieveREInitiator {
     private static final long serialVersionUID = -559592994749114438L;
     
     private ACLMessage queryMessage;
     private Query query;
     private UserQueryNotifier resultNotifier;
     
-	public UserQueryBehaviour(CtxUser userAgent, UserQueryNotifier resultNotifier, 
+	public UserQueryInitiator(CtxUser userAgent, UserQueryNotifier resultNotifier, 
 			ACLMessage queryMessage, Query query) {
 		super(userAgent, queryMessage);
 		

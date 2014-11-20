@@ -11,8 +11,14 @@ public interface ContextAssertionAdaptor {
 	public static final int ASSERTION_CONTENT_UPDATE 	= 	3;
 	public static final int ASSERTION_ANNOTATION_UPDATE = 	4;
 	
-	public static final String ADAPTOR_IMPL_CLASS		= "adaptor.implementation";
-	public static final String ADAPTOR_HANDLED_SENSORS	= "adaptor.sensors";
+	/** The fully qualified name of the class implementing the ContextAssertionAdaptor service. */
+	public static final String ADAPTOR_IMPL_CLASS	= "adaptor.implementation";
+	
+	/** The URI identifying the ContextAssertion which this adaptor service instance manages. */
+	public static final String ADAPTOR_ASSERTION	= "adaptor.contextassertion";
+	
+	/** The JADE local name of the CMM CtxSensor / CtxUser that will use this adaptor service instance. */
+	public static final String ADAPTOR_CMM_AGENT	= "adaptor.cmmagent";
 	
 	// ======== ContextAssertion Capabilities ======== //
 	/**

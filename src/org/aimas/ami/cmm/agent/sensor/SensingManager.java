@@ -1,25 +1,27 @@
-package org.aimas.ami.cmm.agent.config;
+package org.aimas.ami.cmm.agent.sensor;
 
 import jade.core.AID;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.sensor.AssertionAdaptorTracker;
-import org.aimas.ami.cmm.agent.sensor.AssertionManager;
-import org.aimas.ami.cmm.api.CMMConfigException;
 import org.osgi.framework.BundleContext;
 
-public abstract class AbstractSensingManager {
-	protected CMMAgent managingAgent;
-	protected Map<String, AssertionManager> managedAssertions = new HashMap<String, AssertionManager>();
-	protected Map<String, List<AID>> assertionUpdateDestinations = new HashMap<String, List<AID>>();
+public class SensingManager {
+	public static interface AssertionActiveListener {
+		public void assertionActiveChanged(String assertionResourceURI, boolean active);
+	}
 	
-	public AbstractSensingManager(CMMAgent managingAgent) throws CMMConfigException {
+	protected CMMAgent managingAgent;
+	protected AssertionActiveListener assertionActiveListener;
+	
+	protected Map<String, AssertionManager> managedAssertions = new HashMap<String, AssertionManager>();
+	protected AID assertionUpdatesDestination;
+	
+	public SensingManager(CMMAgent managingAgent, AssertionActiveListener assertionActiveListener) {
 		this.managingAgent = managingAgent;
+		this.assertionActiveListener = assertionActiveListener;
 	}
 	
 	public CMMAgent getManagingAgent() {
@@ -34,22 +36,25 @@ public abstract class AbstractSensingManager {
 		return managedAssertions.get(assertionResourceURI);
 	}
 	
+	public AID getAssertionUpdatesDestination() {
+		return assertionUpdatesDestination;
+	}
+
+	public void setAssertionUpdateDestination(AID assertionUpdatesDestination) {
+		this.assertionUpdatesDestination = assertionUpdatesDestination;
+	}
 	
-	public void manageContextAssertion(String assertionResourceURI, String adaptorClassName,
-			String updateMode, int updateRate, Map<String, String> assertionSources, AID[] destinationCoordinators) {
+	public boolean hasUpdateDestination() {
+	    return assertionUpdatesDestination != null;
+    }
+	
+	public void addManagedContextAssertion(String assertionResourceURI, String adaptorClassName, 
+			String updateMode, int updateRate) {
 		
-		// Get the physical (sensorID, type) list which is used, together with the adaptorClassName,
-    	// to identify the matching ContextAssertionAdaptor implementation
-		List<String> sensorIdList = new LinkedList<String>();
-    	for (String instanceIdURI : assertionSources.keySet() ) {
-    		String instanceType = assertionSources.get(instanceIdURI);
-    		
-    		sensorIdList.add(instanceIdURI + " " + instanceType);
-    	}
-    	
     	// Access the assertion adaptor service instance via ServiceTracker
     	BundleContext context = managingAgent.getOSGiBridge().getBundleContext();
-    	AssertionAdaptorTracker adaptorTracker = new AssertionAdaptorTracker(context, adaptorClassName, sensorIdList);
+    	AssertionAdaptorTracker adaptorTracker = new AssertionAdaptorTracker(context, adaptorClassName, 
+    			assertionResourceURI, managingAgent.getLocalName());
     	
     	// When we create the assertion manager updates are not yet enabled.
     	// Enabling will be done by the CtxSensor agent, once it gets the OK from the CtxCoord
@@ -57,39 +62,19 @@ public abstract class AbstractSensingManager {
     	AssertionManager assertionManager = new AssertionManager(assertionResourceURI, updateMode, 
     			updateRate, adaptorTracker, this);
     	
-    	// Create the list of assertion update destinatios
-    	List<AID> assertionDestinationList = new LinkedList<AID>();
-    	for (AID destinationCoord : destinationCoordinators) {
-    		assertionDestinationList.add(destinationCoord);
-    	}
-    	
-    	assertionUpdateDestinations.put(assertionResourceURI, assertionDestinationList);
     	managedAssertions.put(assertionResourceURI, assertionManager);
 	}
 	
 	
-	public void removeContextAssertion(String assertionResourceURI) {
-		managedAssertions.remove(assertionResourceURI);
-		assertionUpdateDestinations.remove(assertionResourceURI);
+	public void removeManagedContextAssertion(String assertionResourceURI) {
+		AssertionManager assertionManager = managedAssertions.remove(assertionResourceURI);
+		assertionManager.close();
 	}
 	
 	
-	public void addCoordinatorDestination(String assertionResourceURI, AID ctxCoordinator) {
-		List<AID> destinationCoordinators = assertionUpdateDestinations.get(assertionResourceURI);
-		if (destinationCoordinators == null) {
-			destinationCoordinators = new LinkedList<AID>();
-			assertionUpdateDestinations.put(assertionResourceURI, destinationCoordinators);
+	public void notifyAssertionActive(String assertionResourceURI, boolean active) {
+		if (assertionActiveListener != null) {
+			assertionActiveListener.assertionActiveChanged(assertionResourceURI, active);
 		}
-		
-		destinationCoordinators.add(ctxCoordinator);
 	}
-	
-	
-	public void removeCoordinatorDestination(String assertionResourceURI, AID ctxCoordinator) {
-		List<AID> destinationCoordinators = assertionUpdateDestinations.get(assertionResourceURI);
-		destinationCoordinators.remove(ctxCoordinator);
-	}
-	
-	
-	public abstract void notifyAssertionActive(String assertionResourceURI, boolean updateEnabled);
 }

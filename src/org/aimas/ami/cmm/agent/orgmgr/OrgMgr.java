@@ -8,10 +8,10 @@ import jade.domain.FIPANames;
 import jade.domain.df;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.osgi.OSGIBridgeHelper;
 import jade.util.Event;
 import jade.wrapper.AgentController;
 
+import org.aimas.ami.cmm.CMMPlatformRequestExecutor;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
@@ -26,6 +26,7 @@ import org.aimas.ami.cmm.agent.sensor.CtxSensor;
 import org.aimas.ami.cmm.agent.user.CtxUser;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
+import org.aimas.ami.cmm.utils.JadeOSGIBridgeHelper;
 import org.aimas.ami.cmm.vocabulary.OrgConf;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
@@ -36,7 +37,7 @@ import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
-public class OrgMgr extends df implements CMMPlatformInterface {
+public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 	private static final long serialVersionUID = 8067387356505727111L;
     
 	public static final int INSTALL_REQUEST 	= 	0;
@@ -47,7 +48,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
     public static final String NICKNAME = "OrgMgr";
     
     /* The helper that allows access to the OSGi framework that supports this CMM deployment. */
-    OSGIBridgeHelper helper;
+    JadeOSGIBridgeHelper helper;
     AgentConfigLoader configurationLoader;
     
     /* Application and Context Domain Information */
@@ -69,8 +70,8 @@ public class OrgMgr extends df implements CMMPlatformInterface {
     	myType = (ManagerType)initArgs[1];
     	
 		// STEP 2: do sub-DF registration and register as the implementation for the CMMPlatformInterface
-    	doSubDFRegistration();
-    	registerO2AInterface(CMMPlatformInterface.class, this);
+    	doSubDFRegistration();    	
+    	registerO2AInterface(CMMPlatformRequestExecutor.class, this);
     	
     	// STEP 3: do behaviour registration
     	getContentManager().registerLanguage(CMMAgent.cmmCodec);
@@ -125,7 +126,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 	
 	private void doCMMConfiguration(String cmmBundleLocation) throws CMMConfigException {
 		try {
-	        helper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
+	        helper = (JadeOSGIBridgeHelper) getHelper(JadeOSGIBridgeHelper.SERVICE_NAME);
         }
         catch (ServiceException e) {
         	throw new CMMConfigException("Failed to configure CMM. Could not access OSGi bridge helper.", e);
@@ -167,9 +168,8 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 	
 	private void doManagedAgentConfiguration(OntModel cmmConfigModel, BundleContext context) throws Exception {
 	    // STEP 1: configure managed agents
-		
 		// setup all CtxCoordinators - for starters we will only have one
-		setupCoordinators(cmmConfigModel, context);
+		setupCoordinator(cmmConfigModel, context);
 		
 		// setup all CtxQueryHandlers
 		setupQueryHandlers(cmmConfigModel, context);
@@ -178,11 +178,11 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 		setupSensors(cmmConfigModel, context);
 		
 		// setup all CtxUsers
-		setupUsers(cmmConfigModel, context);
+		setupUser(cmmConfigModel, context);
     }
 
 	
-	private void setupCoordinators(OntModel cmmConfigModel, BundleContext context) throws Exception {
+	private void setupCoordinator(OntModel cmmConfigModel, BundleContext context) throws Exception {
 		// Every agent receives 4 arguments:
 		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
 		// 		- 2: the URI that represents their Specification resource in the configuration file
@@ -190,8 +190,10 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 		//		- 4: the AID of the local OrgMgr (the one that instantiates them)
 		AID orgMgrAID = getAID();
 		
+		
+		
 		ResIterator coordinatorIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxCoordSpec);
-		for (;coordinatorIt.hasNext();) {
+		if (coordinatorIt.hasNext()) {
 			Resource coordSpecRes = coordinatorIt.next();
 			CoordinatorSpecification coordSpec = CoordinatorSpecification.fromConfigurationModel(cmmConfigModel, coordSpecRes);
 			String agentLocalName = coordSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
@@ -200,7 +202,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 			Object[] args = new Object[] {cmmBundleLocation, coordSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			
 			AgentController coordController = getContainerController().createNewAgent(agentLocalName, CtxCoord.class.getName(), args);
-			agentManager.addManagedCoordinator(coordSpec.getAgentName(), coordSpec, coordController);
+			agentManager.setManagedCoordinator(coordSpec, coordController);
 		}
     }
 	
@@ -223,7 +225,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 			Object[] args = new Object[] {cmmBundleLocation, queryHandlerSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			
 			AgentController queryController = getContainerController().createNewAgent(agentLocalName, CtxQueryHandler.class.getName(), args);
-			agentManager.addManagedQueryHandler(queryHandlerSpec.getAgentName(), queryHandlerSpec, queryController);
+			agentManager.addManagedQueryHandler(queryHandlerSpec, queryController);
 		}
     }
 	
@@ -246,12 +248,12 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 			Object[] args = new Object[] {cmmBundleLocation, sensorSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			AgentController sensorController = getContainerController().createNewAgent(agentLocalName, CtxSensor.class.getName(), args);
 			
-			agentManager.addManagedSensor(sensorSpec.getAgentName(), sensorSpec, sensorController);
+			agentManager.addManagedSensor(appSpecification.getAppIdentifier(), sensorSpec, sensorController);
 		}
     }
 	
 	
-	private void setupUsers(OntModel cmmConfigModel, BundleContext context) throws Exception {
+	private void setupUser(OntModel cmmConfigModel, BundleContext context) throws Exception {
 		// Every agent receives 4 arguments:
 		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
 		// 		- 2: the URI that represents their Specification resource in the configuration file
@@ -260,7 +262,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 		AID orgMgrAID = getAID();
 		
 		ResIterator userIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxUserSpec);
-		for (;userIt.hasNext();) {
+		if (userIt.hasNext()) {
 			Resource userSpecRes = userIt.next();
 			UserSpecification userSpec = UserSpecification.fromConfigurationModel(cmmConfigModel, userSpecRes);
 			String agentLocalName = userSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
@@ -269,7 +271,7 @@ public class OrgMgr extends df implements CMMPlatformInterface {
 			Object[] args = new Object[] {cmmBundleLocation, userSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
 			AgentController userController = getContainerController().createNewAgent(agentLocalName, CtxUser.class.getName(), args);
 			
-			agentManager.addManagedUser(userSpec.getAgentName(), userSpec, userController);
+			agentManager.setManagedUser(appSpecification.getAppIdentifier(), userSpec, userController);
 		}
     }
 	

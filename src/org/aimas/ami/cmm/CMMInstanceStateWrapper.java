@@ -4,18 +4,20 @@ import org.aimas.ami.cmm.api.CMMPlatformManagementService.CMMInstanceState;
 
 public class CMMInstanceStateWrapper {
 	
-	private String applicationID;
-	private String contextDimensionURI;
-	private String contextDomainValueURI;
+	private ContextDomainInfoWrapper contextDomainInfo;
 	private CMMInstanceState state;
+	private CMMPlatformRequestExecutor platformRequestExecutor;
 	
-	public CMMInstanceStateWrapper(String applicationID,
+	public CMMInstanceStateWrapper(ContextDomainInfoWrapper contextDomainInfo, CMMInstanceState state) {
+		this.contextDomainInfo = contextDomainInfo;
+		this.state = state;
+	}
+	
+	public CMMInstanceStateWrapper(String applicationId,
             String contextDimensionURI, String contextDomainValueURI, CMMInstanceState state) {
-	    
-		this.applicationID = applicationID;
-	    this.contextDimensionURI = contextDimensionURI;
-	    this.contextDomainValueURI = contextDomainValueURI;
-	    this.state = state;	    
+		
+		this.contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
+		this.state = state;	    
     }
 	
 	public CMMInstanceStateWrapper(String applicationID,
@@ -28,19 +30,27 @@ public class CMMInstanceStateWrapper {
 		this.state = state;
 	}
 
-	public String getApplicationID() {
-		return applicationID;
+	public String getApplicationId() {
+		return contextDomainInfo.getApplicationId();
 	}
 
 	public String getContextDimensionURI() {
-		return contextDimensionURI;
+		return contextDomainInfo.getContextDimensionURI();
 	}
 
 	public String getContextDomainValueURI() {
-		return contextDomainValueURI;
+		return contextDomainInfo.getContextDomainValueURI();
 	}
 
 	public CMMInstanceState getState() {
 		return state;
+	}
+
+	public CMMPlatformRequestExecutor getPlatformRequestExecutor() {
+		return platformRequestExecutor;
+	}
+
+	public void setPlatformRequestExecutor(CMMPlatformRequestExecutor platformRequestExecutor) {
+		this.platformRequestExecutor = platformRequestExecutor;
 	}
 }

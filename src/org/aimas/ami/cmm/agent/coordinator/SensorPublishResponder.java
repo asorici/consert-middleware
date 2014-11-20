@@ -11,8 +11,8 @@ import jade.proto.ProposeResponder;
 import jade.util.leap.List;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.AssertionState;
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.AssertionState;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
@@ -96,50 +96,60 @@ public class SensorPublishResponder extends ProposeResponder {
 		 * ATTENTION: This mechanism might be sufficient now, but might be augmented further by analysis of the
 		 * current context and the specific annotation capabilities of the assertion !!! 
 		 */
-		SensorManager sm = coordAgent.getSensorManager();
+		ContextUpdateManager sm = coordAgent.getContextUpdateManager();
 		EnableAssertions enabledAssertions = new DefaultEnableAssertions();
 		
-		// Create the new sensor description entry
-		SensorDescription sensorDescription = new SensorDescription();
+		// Check if there already exists a SensorDescription for the sensorAgent making the publish proposal.
+		// If there isn't, create a new sensor description entry.
+		SensorDescription sensorDescription = sm.getSensorDescription(sensorAgent); 
+		if (sensorDescription == null) {		
+			sensorDescription = new SensorDescription();
+		}
 		
 		List capabilities = publishedAssertions.getCapability();
 		for (int i = 0; i < capabilities.size(); i++) {
 			AssertionCapability capability = (AssertionCapability) capabilities.get(i);
-			AssertionState state = sensorDescription.addCapability(capability);
 			
-			AssertionState existingState = sm.matchDescription(capability.getAssertion());
-			if (existingState != null) {
-				// If there is a state for such assertions
-				state.setUpdatesEnabled(existingState.isUpdatesEnabled());
-				
-				// TODO: this here is out of place, but we'll leave it be for the time being
-				// pending the implementation of a proper SensorPublish PROTOCOL
-				deliverUpdateModeCommand(sensorAgent, capability.getAssertion(), existingState);
-			}
-			else {
-				// Otherwise, check the control parameters
-				CommandManager cm = coordAgent.getCommandManager();
-				ControlParameters cp = cm.getControlParameters();
-				
-				Resource assertionRes = 
-					ResourceFactory.createResource(capability.getAssertion().getAssertionType());
-				
-				if (cp.specificUpdateEnabled().containsKey(assertionRes)) {
-					state.setUpdatesEnabled(cp.specificUpdateEnabled().get(assertionRes));
+			// Either add or update the ContextAssertion capability which the sensorAgent publishes. 
+			// In case of an update to a ContextAssertion which is already enabled, there is nothing more
+			// that needs to be done.
+			AssertionState state = sensorDescription.addOrUpdateCapability(capability);
+			
+			if (!state.isUpdatesEnabled()) {
+				AssertionState existingState = sm.matchDescription(capability.getAssertion());
+				if (existingState != null) {
+					// If there is a state for such assertions
+					state.setUpdatesEnabled(existingState.isUpdatesEnabled());
+					
+					// TODO: this here is out of place, but we'll leave it be for the time being
+					// pending the implementation of a proper SensorPublish PROTOCOL
+					deliverUpdateModeCommand(sensorAgent, capability.getAssertion(), existingState);
 				}
 				else {
-					state.setUpdatesEnabled(cp.defaultUpdateEnabled());
+					// Otherwise, check the control parameters
+					CommandManager cm = coordAgent.getCommandManager();
+					ControlParameters cp = cm.getControlParameters();
+					
+					Resource assertionRes = 
+						ResourceFactory.createResource(capability.getAssertion().getAssertionType());
+					
+					if (cp.specificUpdateEnabled().containsKey(assertionRes)) {
+						state.setUpdatesEnabled(cp.specificUpdateEnabled().get(assertionRes));
+					}
+					else {
+						state.setUpdatesEnabled(cp.defaultUpdateEnabled());
+					}
 				}
-			}
-			
-			if (state.isUpdatesEnabled()) {
-				enabledAssertions.addEnabledCapability(capability);
+				
+				if (state.isUpdatesEnabled()) {
+					enabledAssertions.addEnabledCapability(capability);
+				}
 			}
 		}
 		
 		// After analysis, register the agent and his description
 		System.out.println("Registering " + sensorAgent.getLocalName() + " as supplying " + sensorDescription.getProvidedAssertions());
-		sm.registerSensor(sensorAgent, sensorDescription);
+		sm.registerOrUpdateSensor(sensorAgent, sensorDescription);
 		
 		return enabledAssertions;
     }
@@ -156,7 +166,7 @@ public class SensorPublishResponder extends ProposeResponder {
 	    updateModeTask.setUpdateMode(updateMode);
 	    updateModeTask.setUpdateRate(updateRate);
 	    
-	    final SensorManager sensorManager = coordAgent.getSensorManager();
+	    final ContextUpdateManager sensorManager = coordAgent.getContextUpdateManager();
 	    
 	    TaskingCommand updateModeCommand = new TaskingCommand(updateModeTask) {
 			@Override

@@ -1,7 +1,5 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import java.util.List;
-
 import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -13,16 +11,15 @@ import org.osgi.util.tracker.ServiceTracker;
 public class AssertionAdaptorTracker extends ServiceTracker<ContextAssertionAdaptor, ContextAssertionAdaptor> {
 	private AssertionManager assertionManager;
 	
-	private static Filter getAdaptorFilter(BundleContext context, String adaptorClassName, List<String> sensorIdList) {
-		String serviceFilter = "(" + Constants.OBJECTCLASS + "=" + ContextAssertionAdaptor.class.getName() + ")";
-		String implFilter = "(" + ContextAssertionAdaptor.ADAPTOR_IMPL_CLASS + "=" + adaptorClassName + ")";
+	private static Filter getAdaptorFilter(BundleContext context, String adaptorClassName, 
+			String assertionResourceURI, String cmmAgentName ) {
 		
-		String sensorFilter = "";
-		for (String sensorIdInfo : sensorIdList) {
-			sensorFilter += "(" + ContextAssertionAdaptor.ADAPTOR_HANDLED_SENSORS + "=" + sensorIdInfo + ")";
-		}
+		String serviceFilter 	= 	"(" + Constants.OBJECTCLASS + "=" + ContextAssertionAdaptor.class.getName() + ")";
+		String implFilter 		= 	"(" + ContextAssertionAdaptor.ADAPTOR_IMPL_CLASS + "=" + adaptorClassName + ")";
+		String assertionFilter 	= 	"(" + ContextAssertionAdaptor.ADAPTOR_ASSERTION + "=" + assertionResourceURI + ")";
+		String agentFilter		= 	"(" + ContextAssertionAdaptor.ADAPTOR_CMM_AGENT + "=" + cmmAgentName + ")";
 		
-		String filter = "(&" + serviceFilter + implFilter + sensorFilter + ")";
+		String filter = "(&" + serviceFilter + implFilter + assertionFilter + agentFilter + ")";
 		
 		try {
 	        return context.createFilter(filter);
@@ -33,8 +30,9 @@ public class AssertionAdaptorTracker extends ServiceTracker<ContextAssertionAdap
         }
 	}
 	
-	public AssertionAdaptorTracker(BundleContext context, String adaptorClassName, List<String> sensorIdList) {
-	    super(context, getAdaptorFilter(context, adaptorClassName, sensorIdList), null);
+	public AssertionAdaptorTracker(BundleContext context, String adaptorClassName, 
+			String assertionResourceURI, String cmmAgentName) {
+	    super(context, getAdaptorFilter(context, adaptorClassName, assertionResourceURI, cmmAgentName), null);
 	}
 	
 	@Override

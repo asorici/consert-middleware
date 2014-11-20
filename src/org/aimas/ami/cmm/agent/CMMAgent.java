@@ -13,15 +13,14 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.Property;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
-import jade.osgi.OSGIBridgeHelper;
 
 import java.util.Calendar;
 
-import org.aimas.ami.cmm.CMMPlatformManager;
 import org.aimas.ami.cmm.agent.config.AgentSpecification;
 import org.aimas.ami.cmm.agent.onto.CMMAgentLangOntology;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
+import org.aimas.ami.cmm.utils.JadeOSGIBridgeHelper;
 import org.aimas.ami.contextrep.resources.SystemTimeService;
 import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
@@ -37,8 +36,8 @@ public abstract class CMMAgent extends Agent {
 	public static final Ontology cmmOntology = CMMAgentLangOntology.getInstance();
 	
 	/* Administrative helper stuff */
-	protected OSGIBridgeHelper osgiHelper;
-	protected Bundle resourceBundle;
+	protected JadeOSGIBridgeHelper osgiHelper;
+	protected Bundle cmmInstanceBundle;
 	protected AgentConfigLoader configurationLoader;
 	
 	private static TimeService timeService;
@@ -58,10 +57,12 @@ public abstract class CMMAgent extends Agent {
 	/* Agent Specification */
 	protected AgentSpecification agentSpecification;
 	
-	/* The (optional) local OrgMgr instance */
+	/* The local and (optionally) assigned OrgMgr instance */
 	protected AID localOrgMgr;
+	protected AID assignedOrgMgr;
+	protected String appIdentifier;
 	
-	public OSGIBridgeHelper getOSGiBridge() {
+	public JadeOSGIBridgeHelper getOSGiBridge() {
 		return osgiHelper;
 	}
 	
@@ -73,44 +74,65 @@ public abstract class CMMAgent extends Agent {
 		return agentSpecification;
 	}
 	
-	/**
-	 * Register CMMAgent-Lang Ontology
-	 */
-	protected void registerCMMAgentLang() {
+	public String getAppIdentifier() {
+		return appIdentifier;
+	}
+	
+	@Override
+	public void setup() {
+		// STEP 1:	retrieve the initialization arguments and set CMM agent language
+    	Object[] initArgs = getArguments();
+    	
+    	String cmmInstanceBundleLocation = (String)initArgs[0];
+    	String agentSpecURI = (String)initArgs[1];
+    	appIdentifier = (String)initArgs[2];
+    	localOrgMgr = (AID)initArgs[3];
+    	
+    	// STEP 2: configure cmm resource access
+    	try {
+	        doResourceAccessConfiguration(cmmInstanceBundleLocation);
+        }
+        catch (CMMConfigException e) {
+        	// signal our initialization failure
+    		e.printStackTrace();
+        	signalInitializationOutcome(false);
+        	return;
+        }
+    	
+    	// STEP 3: register the CMMAgent-Lang ontology
+    	registerCMMAgentLang();
+    	
+    	// STEP 4: call the agent specific setup
+    	doAgentSpecificSetup(agentSpecURI, appIdentifier);
+    	
+    	// STEP 5: after the agent specific setup all agents must register with their assigned OrgMgr, 
+    	// if they have one
+    	registerWithAssignedManager();
+	}
+	
+	/* Register CMMAgent-Lang Ontology */
+	private void registerCMMAgentLang() {
 		getContentManager().registerLanguage(cmmCodec);
 		getContentManager().registerOntology(cmmOntology);
 	}
 	
 	
-	/**
-	 * Get the OSGi helper, find the CMM resource bundle and build the agent's
-	 * configuration loader.
-	 * 
-	 * @throws CMMConfigException
-	 */
-	protected void doResourceAccessConfiguration() throws CMMConfigException {
+	/* Get the OSGi helper, find the CMM resource bundle and build the agent's configuration loader. */
+	private void doResourceAccessConfiguration(String cmmInstanceBundleLocation) throws CMMConfigException {
 		try {
-			osgiHelper = (OSGIBridgeHelper) getHelper(OSGIBridgeHelper.SERVICE_NAME);
+			osgiHelper = (JadeOSGIBridgeHelper) getHelper(JadeOSGIBridgeHelper.SERVICE_NAME);
 		}
 		catch (ServiceException e) {
-			throw new CMMConfigException("Failed to configure CMM. Could not access OSGi bridge helper.", e);
+			throw new CMMConfigException("Could not find OSGIBridgeHelper JADE kernel service", e);
 		}
 		
 		BundleContext context = osgiHelper.getBundleContext();
-		
-		// Iterate through the installed bundles to find our "cmm-resources"
-		for (Bundle candidate : context.getBundles()) {
-			if (candidate.getSymbolicName().equals(CMMPlatformManager.RESOURCE_BUNDLE_SYMBOLIC_NAME)) {
-				resourceBundle = candidate;
-				break;
-			}
-		}
+		cmmInstanceBundle = context.getBundle(cmmInstanceBundleLocation);
 		
 		// Now that we have found our resource bundle, setup the configuration
-		// loader
-		// and load the CMM configuration for located at the standard location:
-		// etc/cmm/cmm-config.ttl
-		configurationLoader = new AgentConfigLoader(new BundleResourceManager(resourceBundle));
+		// loader and load the CMM configuration for located at the standard location:
+		// etc/cmm/agent-config.ttl
+		configurationLoader = new AgentConfigLoader(new BundleResourceManager(cmmInstanceBundle));
 		
 		// Lastly, we search for the TimeService that provides the real (or simulated) time, if it was
 		// not already loaded (we store as a class variable, so every agent in a bundle will have the same
@@ -128,7 +150,7 @@ public abstract class CMMAgent extends Agent {
 	
 	
 	protected void signalInitializationOutcome(boolean success) {
-		System.out.println("[" + getName() + "]:" + "Sending INIT SUCCESS message to OrgMgr");
+		//System.out.println("[" + getName() + "]:" + "Sending INIT SUCCESS message to OrgMgr");
 		final boolean initSuccessful = success;
 		if (localOrgMgr != null) {
 			addBehaviour(new OneShotBehaviour(this) {
@@ -161,7 +183,7 @@ public abstract class CMMAgent extends Agent {
     		dfd.setName(getAID());
     		
     		ServiceDescription sd = new ServiceDescription();
-    		sd.setType(getAgentType().getServiceType());
+    		sd.setType(getAgentType().getServiceName());
     		sd.setName(appIdentifier);	// the name of the service is the appIdentifier string
     		sd.addLanguages(cmmCodec.getName());
     		sd.addOntologies(cmmOntology.getName());
@@ -199,8 +221,12 @@ public abstract class CMMAgent extends Agent {
 			}
 		}
     }
-
+	
 	
 	// public abstract AgentSpecification getAgentSpecification();
 	public abstract AgentType getAgentType();
+	
+	protected abstract void doAgentSpecificSetup(String agentSpecURI, String appIdentifier);
+	
+	protected abstract void registerWithAssignedManager();
 }

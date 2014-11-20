@@ -12,7 +12,7 @@ public interface CMMOperationFuture<V> {
 	
 	V awaitOperation(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
 	
-	public boolean operationCancelled();
+	public boolean isOperationCancelled();
 
-    public boolean operationDone();
+    public boolean isOperationDone();
 }

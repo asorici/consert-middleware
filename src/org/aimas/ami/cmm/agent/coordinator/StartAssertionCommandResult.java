@@ -5,8 +5,8 @@ import jade.lang.acl.ACLMessage;
 
 import java.util.List;
 
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.AssertionState;
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.AssertionState;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.StartSending;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
@@ -44,7 +44,7 @@ public class StartAssertionCommandResult extends AssertionCommandResult {
 		final StartSending enableRequest = new DefaultStartSending();
 		enableRequest.setAssertion(assertionDesc);
 		
-		final SensorManager sensorManager = commandManager.getCoordinatorAgent().getSensorManager();
+		final ContextUpdateManager sensorManager = commandManager.getCoordinatorAgent().getContextUpdateManager();
 		List<AID> providingSensors = sensorManager.getProviders(assertionResource);
 		
 		if (providingSensors != null) {

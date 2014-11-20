@@ -1,12 +1,12 @@
 package org.aimas.ami.cmm;
 
-public class ContextDomainWrapper {
+public class ContextDomainInfoWrapper {
 	
 	private String applicationId;
 	private String contextDimensionURI;
 	private String contextDomainValueURI;
 	
-	public ContextDomainWrapper(String contextDimensionURI, String contextDomainValueURI, String applicationId) {
+	public ContextDomainInfoWrapper(String contextDimensionURI, String contextDomainValueURI, String applicationId) {
         this.applicationId = applicationId;
 		this.contextDimensionURI = contextDimensionURI;
         this.contextDomainValueURI = contextDomainValueURI;
@@ -39,11 +39,11 @@ public class ContextDomainWrapper {
 	        return true;
         }
         
-        if (!(obj instanceof ContextDomainWrapper)) {
+        if (!(obj instanceof ContextDomainInfoWrapper)) {
 	        return false;
         }
         
-        ContextDomainWrapper other = (ContextDomainWrapper) obj;
+        ContextDomainInfoWrapper other = (ContextDomainInfoWrapper) obj;
         if (applicationId == null) {
 	        if (other.applicationId != null) {
 		        return false;

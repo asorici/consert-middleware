@@ -2,11 +2,6 @@ package org.aimas.ami.cmm.agent.user;
 
 import jade.content.onto.basic.Action;
 import jade.core.AID;
-import jade.domain.DFService;
-import jade.domain.FIPAException;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.SearchConstraints;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
 
@@ -15,6 +10,11 @@ import java.util.Hashtable;
 
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator;
+import org.aimas.ami.cmm.agent.SearchQueryHandlerInitiator;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator.SearchCoordinatorListener;
+import org.aimas.ami.cmm.agent.SearchQueryHandlerInitiator.SearchQueryHandlerListener;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
 import org.aimas.ami.cmm.agent.onto.ContextDomain;
 import org.aimas.ami.cmm.agent.onto.DomainDescription;
@@ -44,6 +44,7 @@ public class CtxUser extends CMMAgent {
     
     /* CtxUser state */
     private AID queryHandlerAgent;
+    private AID coordinatorAgent;
     private boolean actsAsSensor = false;
     
     public void setQueryHandler(AID ctxQueryHandler) {
@@ -58,6 +59,18 @@ public class CtxUser extends CMMAgent {
     	return queryHandlerAgent != null;
     }
     
+	public AID getCoordinatorAgent() {
+		return coordinatorAgent;
+	}
+
+	public void setCoordinatorAgent(AID coordinatorAgent) {
+		this.coordinatorAgent = coordinatorAgent;
+	}
+	
+	public boolean hasCoordinatorAgent() {
+		return coordinatorAgent != null;
+	}
+	
 	public void setActsAsSensor(boolean actsAsSensor) {
 		this.actsAsSensor = actsAsSensor;
 	}
@@ -75,29 +88,12 @@ public class CtxUser extends CMMAgent {
 	// SETUP
 	//////////////////////////////////////////////////////////////////////////
 	@Override
-	public void setup() {
-		// ======== STEP 1:	retrieve the initialization arguments and set CMM agent language
-    	Object[] initArgs = getArguments();
-    	
-    	// first argument is always the URI of the AgentSpecification resource in the 
-    	String agentSpecURI = (String)initArgs[0];
-    	
+	public void doAgentSpecificSetup(String agentSpecURI, String appIdentifier) {
     	// second one is always the application unique identifier
-    	appIdentifier = (String)initArgs[1];
+    	this.appIdentifier = appIdentifier;
     	
-    	// third one is optional and denotes the AID of a local OrgMgr
-    	if (initArgs.length == 3) {
-    		localOrgMgr = (AID)initArgs[2];
-    	}
-    	
-    	// register the CMMAgent-Lang ontology
-    	registerCMMAgentLang();
-    	
-    	// ======== STEP 2: configure the agent according to its specification	
+    	// ======== STEP 1: configure the agent according to its specification	
     	try {
-	    	// configure access to resource
-    		doResourceAccessConfiguration();
-    		
     		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
@@ -109,6 +105,7 @@ public class CtxUser extends CMMAgent {
     		// retrieve specification and access the configured application adaptor service
     		agentSpecification = UserSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		userSpecification = (UserSpecification)agentSpecification;
+    		assignedOrgMgr = userSpecification.getAssignedManagerAddress().getAID();
     		
     		setupApplicationAdaptor();
     	}
@@ -118,23 +115,29 @@ public class CtxUser extends CMMAgent {
     		return;
     	}
     	
-    	// ======== STEP 3:	setup the CtxUser specific permanent behaviours
+    	// ======== STEP 3:	setup the CtxUser specific permanent behaviors
     	setupUserBehaviours();
-    	
-    	// ======== STEP 4: check existence of a CtxQueryHandler to be able to pose queries.
-    	// This check involves the following steps:
-    	//   - if we are in a centralized app setting (what we are doing in this initial version):
-    	//     ask the local OrgMgr for the address of the CtxQueryHandler
-    	//   - if we are in the decentralized app setting, we either have a remote OrgMgr specification, or
-    	//     we operate in the dynamic mode which means we will receive the remote OrgMgr address
-    	//     from our local OrgMgr. We then repeat the same thing as above with the remote OrgMgr
-    	doConnectToQueryHandler();
     	
     	// after this step initialization of the CtxSensor is complete, so we signal a successful init
     	signalInitializationOutcome(true);
     	
+    	
+    	// ======== STEP 4: check existence of a CtxQueryHandler to be able to pose queries.
+    	// We ask the assigned (or local) OrgMgr for a CtxQueryHandler. If none is found, then
+    	// it means we are in dynamic mode, so we will receive our assigned OrgMgr when we enter
+    	// a ContextDomain
+    	findQueryHandler();
+    	findCoordinator();
+    	
     	findContextDomain();
 	}
+	
+	@Override
+    protected void registerWithAssignedManager() {
+		if (assignedOrgMgr != null) {
+			addBehaviour(new RegisterCMMAgentInitiator(this));
+		}
+    }
 	
 
 	private void setupApplicationAdaptor() {
@@ -154,13 +157,47 @@ public class CtxUser extends CMMAgent {
 	    // NOTHING TO SETUP FOR THE MOMENT
     }
 	
+	private void findQueryHandler() {
+	    SearchQueryHandlerListener listener = new SearchQueryHandlerListener() {
+			@Override
+			public void queryHandlerAgentNotFound(ACLMessage msg) {
+				System.out.println(msg);
+			}
+			
+			@Override
+			public void queryHandlerAgentFound(AID agentAID) {
+				setQueryHandler(agentAID);
+			}
+		};
+		
+		addBehaviour(new SearchQueryHandlerInitiator(this, listener));
+    }
 	
+	
+	private void findCoordinator() {
+	    SearchCoordinatorListener listener = new SearchCoordinatorListener() {
+			@Override
+			public void coordinatorAgentNotFound(ACLMessage msg) {
+				System.out.println(msg);
+			}
+			
+			@Override
+			public void coordinatorAgentFound(AID agentAID) {
+				coordinatorAgent = agentAID;
+				applicationAdaptor.setUserUpdateDestination(agentAID);
+			}
+		};
+		
+		addBehaviour(new SearchCoordinatorInitiator(this, listener));
+    }
+	
+	/*
 	private void doConnectToQueryHandler() {
 		// For now we treat the centralized-local case, where we ask the local OrgMgr
 		// what the address of the CtxQueryHandler is
 		DFAgentDescription queryHandlerTemplate = new DFAgentDescription();
 		ServiceDescription querySD = new ServiceDescription();
-		querySD.setType(AgentType.CTX_QUERY_HANDLER.getServiceType());
+		querySD.setType(AgentType.CTX_QUERY_HANDLER.getServiceName());
 		querySD.setName(appIdentifier);
 		queryHandlerTemplate.addServices(querySD);
 		
@@ -180,45 +217,48 @@ public class CtxUser extends CMMAgent {
 			}
 		}
     }
-	
+	*/
 	
 	void findContextDomain() {
 	    // We only have to call this if we have a defined OrgMgr.
 		// Otherwise, it means we are in a dynamic mode and we will be in fact informed
 		// when entering a Context Domain
-		if (localOrgMgr != null) {
-			ACLMessage informDomainMsg = new ACLMessage(ACLMessage.REQUEST);
-			informDomainMsg.setLanguage(CMMAgent.cmmCodec.getName());
-			informDomainMsg.setOntology(CMMAgent.cmmOntology.getName());
-			informDomainMsg.addReceiver(localOrgMgr);
+		AID manager = assignedOrgMgr != null ? assignedOrgMgr : localOrgMgr;
+		
+		
+		ACLMessage informDomainMsg = new ACLMessage(ACLMessage.REQUEST);
+		informDomainMsg.setLanguage(CMMAgent.cmmCodec.getName());
+		informDomainMsg.setOntology(CMMAgent.cmmOntology.getName());
+		informDomainMsg.addReceiver(manager);
+		
+		InformDomain informDomain = new DefaultInformDomain();
+		informDomain.setAppIdentifier(appIdentifier);
+		
+		try {
+            Action informDomainAction = new Action(manager, informDomain);
+			getContentManager().fillContent(informDomainMsg, informDomainAction);
+        }
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
+		
+		addBehaviour(new SimpleAchieveREInitiator(this, informDomainMsg) {
+            private static final long serialVersionUID = 1L;
 			
-			InformDomain informDomain = new DefaultInformDomain();
-			informDomain.setAppIdentifier(appIdentifier);
-			
-			try {
-	            Action informDomainAction = new Action(localOrgMgr, informDomain);
-				getContentManager().fillContent(informDomainMsg, informDomainAction);
-            }
-            catch (Exception e) {
-            	e.printStackTrace();
-            }
-			
-			addBehaviour(new SimpleAchieveREInitiator(this, informDomainMsg) {
-                private static final long serialVersionUID = 1L;
-				
-                @Override
-                public void handleInform(ACLMessage msg) {
-                	try {
-	                    DomainDescription domainDesc = (DomainDescription)getContentManager().extractContent(msg);
-	                    ContextDomain domain = domainDesc.getDomain();
-	                    
-	                    applicationAdaptor.setDomainValue(domain.getDomainValue());
-                	}
-                    catch (Exception e) {
-                    	e.printStackTrace();
-                    }
+            @Override
+            public void handleInform(ACLMessage msg) {
+            	try {
+                    DomainDescription domainDesc = (DomainDescription)getContentManager().extractContent(msg);
+                    ContextDomain domain = domainDesc.getDomain();
+                    
+                    applicationAdaptor.setDomainValue(domain.getDomainValue());
+                    applicationAdaptor.setContextDimension(domain.getDomainDimension());
+            	}
+                catch (Exception e) {
+                	e.printStackTrace();
                 }
-			});
-		}
+            }
+		});
+		
     }
 }

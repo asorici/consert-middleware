@@ -26,19 +26,19 @@ public abstract class CMMInstanceStateOp implements Callable<Void> {
 		}
 	}
 	
-	protected ContextDomainWrapper contextDomainInfo;
+	protected ContextDomainInfoWrapper contextDomainInfo;
 	protected CMMStateOperationType operationType;
 	protected CMMPlatformManager cmmPlatformManager;
 	
 	
-	protected CMMInstanceStateOp(ContextDomainWrapper contextDomainInfo, 
+	protected CMMInstanceStateOp(ContextDomainInfoWrapper contextDomainInfo, 
 			CMMStateOperationType operationType, CMMPlatformManager cmmPlatformManager) {
 		this.contextDomainInfo = contextDomainInfo;
 		this.operationType = operationType;
 		this.cmmPlatformManager = cmmPlatformManager;
 	}
 	
-	public ContextDomainWrapper getContextDomainInfo() {
+	public ContextDomainInfoWrapper getContextDomainInfo() {
 		return contextDomainInfo;
 	}
 	

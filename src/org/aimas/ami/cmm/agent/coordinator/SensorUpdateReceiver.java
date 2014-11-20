@@ -28,7 +28,7 @@ public class SensorUpdateReceiver extends SimpleBehaviour {
 				if (msg.getPerformative() != ACLMessage.INFORM) 
 					return false;
 				
-				if (!coordAgent.getSensorManager().isRegistered(msg.getSender()))
+				if (!coordAgent.getContextUpdateManager().isRegistered(msg.getSender()))
 					return false;
 				
 				if (!msg.getOntology().equals(CMMAgent.cmmOntology.getName())) 
@@ -77,7 +77,7 @@ public class SensorUpdateReceiver extends SimpleBehaviour {
 		try {
 			//System.out.println("["+ coordAgent.getName() +"]: receving AssertionUpdate from " + msg.getSender().getName() );
 			AssertionUpdated assertionUpdate = (AssertionUpdated)coordAgent.getContentManager().extractContent(msg);
-	        coordAgent.getSensorManager().insertAssertion(msg.getSender(), assertionUpdate);
+	        coordAgent.getContextUpdateManager().insertAssertion(msg.getSender(), assertionUpdate);
 		}
         catch (Exception e) {
         	e.printStackTrace();

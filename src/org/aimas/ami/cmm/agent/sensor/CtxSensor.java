@@ -8,11 +8,15 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
 
+import java.util.List;
 import java.util.Map;
 
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator.SearchCoordinatorListener;
+import org.aimas.ami.cmm.agent.config.SensingPolicy;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
@@ -20,12 +24,16 @@ import org.aimas.ami.cmm.agent.onto.ExecTask;
 import org.aimas.ami.cmm.agent.onto.PublishAssertions;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultPublishAssertions;
+import org.aimas.ami.cmm.agent.sensor.SensingManager.AssertionActiveListener;
 import org.aimas.ami.cmm.api.CMMConfigException;
+import org.aimas.ami.cmm.vocabulary.CoordConf;
+import org.aimas.ami.cmm.vocabulary.SensorConf;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
 
-public class CtxSensor extends CMMAgent {
+public class CtxSensor extends CMMAgent implements AssertionActiveListener {
     private static final long serialVersionUID = 4254689617972269011L;
     
     public static enum SensorState {
@@ -36,11 +44,15 @@ public class CtxSensor extends CMMAgent {
     private String appIdentifier;
     private SensorSpecification sensorSpecification;
     
-    /* SensingManager, CtxSensor state and the CtxCoord currently connected to (there will be more 
-     * in the extended decentralized hierarchical version) */
-    private AbstractSensingManager sensedAssertionsManager;
+    /* SensingManager, CtxSensor state and the CtxCoord currently connected to */
+    private SensingManager sensedAssertionsManager;
     private SensorState sensorState = SensorState.INACTIVE;
+    private AID currentCoordinator;
     
+    @Override
+	public AgentType getAgentType() {
+		return AgentType.CTX_SENSOR;
+	}
     
     SensorState getSensorState() {
     	return sensorState;
@@ -50,7 +62,7 @@ public class CtxSensor extends CMMAgent {
     	this.sensorState = state;
     }
     
-    AbstractSensingManager getSensingManager() {
+    SensingManager getSensingManager() {
     	return sensedAssertionsManager;
     }
     
@@ -58,43 +70,27 @@ public class CtxSensor extends CMMAgent {
     	return sensorSpecification;
     }
     
+    AID getCurrentCoordinator() {
+    	return currentCoordinator;
+    }
+    
     @Override
-    public void setup() {
-    	// ======== STEP 1:	retrieve the initialization arguments and set CMM agent language
-    	Object[] initArgs = getArguments();
-    	
-    	// first argument is always the URI of the AgentSpecification resource in the 
-    	String agentSpecURI = (String)initArgs[0];
-    	
-    	// second one is always the application unique identifier
-    	appIdentifier = (String)initArgs[1];
-    	
-    	// third one is optional and denotes the AID of a local OrgMgr
-    	if (initArgs.length == 3) {
-    		localOrgMgr = (AID)initArgs[2];
-    	}
-    	
-    	// register the CMMAgent-Lang ontology
-    	registerCMMAgentLang();
-    	
-    	// ======== STEP 2a: configure the agent according to its specification	
+    public void doAgentSpecificSetup(String agentSpecURI, String appIdentifier) {
+    	// ======== STEP 1: configure the agent according to its specification	
     	try {
-	    	// configure access to resource
-    		doResourceAccessConfiguration();
-    		
     		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {
-    			throw new CMMConfigException("No CtxSensor specification found in configuration model "
-    					+ "for URI " + agentSpecURI);
+    			throw new CMMConfigException("No CtxSensor specification found in configuration model " + "for URI " + agentSpecURI);
     		}
     		
     		// retrieve specification and create sensed assertions manager
     		agentSpecification = SensorSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		sensorSpecification = (SensorSpecification)agentSpecification;
+    		assignedOrgMgr = sensorSpecification.getAssignedManagerAddress().getAID();
     		
-    		sensedAssertionsManager = new SensingManager(this, sensorSpecification.getSensingPolicies());
+    		configureSensingManager(sensorSpecification.getSensingPolicies());
     		
     		// after this step initialization of the CtxSensor is complete, so we signal a successful init
     		signalInitializationOutcome(true);
@@ -105,32 +101,101 @@ public class CtxSensor extends CMMAgent {
     	catch(CMMConfigException e) {
     		// if we have a local OrgMgr we must signal our initialization failure
     		signalInitializationOutcome(false);
+    		return;
     	}
     	
-    	// ======== STEP 2b: if there is a local OrgMgr register with it as part of the DF
+    	// ======== STEP 2: if there is a local OrgMgr register with it as part of the DF
     	// A CMM agent will specify two attributes in its service description: app-name
     	// and agent-type.
     	registerSensorService();
     	
-    	// ======== STEP 3:	setup the CtxSensor specific permanent behaviours
+    	// ======== STEP 3:	setup the CtxSensor specific permanent behaviors
     	setupSensorBehaviours();
     	
-    	// ======== STEP 4: connect to the CtxCoord by publishing the proposal to supply updates
-    	// of the sensed ContextAssertions. This step may in fact be more complex, when we will operate
-    	// in a decentralized hierarchical - multi-coordinator setting, but for this first version
-    	// we only need to connect to the specified CtxCoord
-    	doConnectProposal();
-    	
+    	// ======== STEP 4: Find the CtxCoord by asking the assigned (or local) OrgMgr and then 
+    	// connect to the CtxCoord by publishing the proposal to supply updates of the sensed ContextAssertions.
+    	// If we do not find a coordinator, it means we are in dynamic mode, and we will receive an assignedOrgMgr
+    	findCoordinator();
     }
     
-    /**
-     * If there is a local OrgMgr (which acts as DF) register the sensing service with it
-     */
+    
+    private void configureSensingManager(List<SensingPolicy> sensingPolicies) throws CMMConfigException {
+    	sensedAssertionsManager = new SensingManager(this, this);
+    	
+    	for (SensingPolicy sensingPolicy : sensingPolicies) {
+	    	Resource assertionRes = sensingPolicy.getContextAssertionRes();
+	    	String adaptorClassName = sensingPolicy.getAssertionAdaptorClass();
+	    	String configureDoc = sensingPolicy.getFileNameOrURI();
+	    	
+	    	// Retrieve the ContextAssertion-specific sensing policy, the one that specifies
+	    	// update mode, update rate and the list of physical sensor IDs to which it applies
+	    	OntModel sensingConfigModel = getConfigurationLoader().load(configureDoc);
+	    	Resource assertionSenseSpec = 
+	    		sensingConfigModel.listResourcesWithProperty(CoordConf.forContextAssertion, assertionRes).next();
+	    	
+	    	// Get the updateMode and updateRate assertion update specifications
+	    	String updateMode = assertionSenseSpec.getPropertyResourceValue(SensorConf.hasUpdateMode).getLocalName();
+	    	int updateRate = 0;
+	    	
+	    	Statement updateRateStmt = assertionSenseSpec.getProperty(SensorConf.hasUpdateRate);
+	    	if (updateRateStmt != null) {
+	    		updateRate = updateRateStmt.getInt();
+	    	}
+	    	
+	    	// When we create the assertion manager updates are not yet enabled.
+	    	// Enabling will be done by the CtxSensor agent, once it gets the OK from the CtxCoord
+	    	// for the ContextAssertions it wants to publish.
+	    	sensedAssertionsManager.addManagedContextAssertion(assertionRes.getURI(), adaptorClassName, updateMode, updateRate);
+	    }
+    }
+    
+    @Override
+    public void assertionActiveChanged(String assertionResourceURI, boolean active) {
+    	if (active) {
+	    	// It means that one of the managed assertions has resumed updates, so we set the
+	    	// CtxSensor in a TRANSMITTING state if we are in the CONNECTED one
+	    	if (sensorState == SensorState.CONNECTED) {
+	    		sensorState = SensorState.TRANSMITTING;
+	    	}
+	    }
+	    else {
+	    	// If we are in the transmitting state and one of our assertions stops its updates,
+	    	// then we need to figure out if others we are managing are still active. If no more
+	    	// are active, set the state to just CONNECTED
+	    	if (sensorState == SensorState.TRANSMITTING) {
+	    		boolean hasActive = false;
+	    		
+	    		for (String assertionURI : sensedAssertionsManager.getManagedAssertions().keySet()) {
+	    			if (!assertionURI.equals(assertionResourceURI)) {
+	    				AssertionManager assertionManager = sensedAssertionsManager.getManagedAssertions().get(assertionURI);
+	    				if (assertionManager.isActive() && assertionManager.updateEnabled()) {
+	    					hasActive = true;
+	    					break;
+	    				}
+	    			}
+	    		}
+	    		
+	    		if (!hasActive) {
+	    			sensorState = SensorState.CONNECTED;
+	    		}
+	    	}
+	    }
+    }
+    
+    /** If there is a local OrgMgr (which acts as DF) register the sensing service with it */
 	private void registerSensorService() {
 	    registerAgentService(appIdentifier, null);
     }
-
-
+	
+	
+	@Override
+    protected void registerWithAssignedManager() {
+		if (assignedOrgMgr != null) {
+			addBehaviour(new RegisterCMMAgentInitiator(this));
+		}
+    }
+	
+	
 	@SuppressWarnings("serial")
     private void setupSensorBehaviours() {
 		// The only permanent behaviour we need to add here is the TASKING Command handler
@@ -159,12 +224,29 @@ public class CtxSensor extends CMMAgent {
 		
 		addBehaviour(new TaskingCommandBehaviour(this, taskCommandTemplate));
     }
+	
+	
+	private void findCoordinator() {
+	    SearchCoordinatorListener listener = new SearchCoordinatorListener() {
+			@Override
+			public void coordinatorAgentNotFound(ACLMessage msg) {
+				System.out.println(msg);
+			}
+			
+			@Override
+			public void coordinatorAgentFound(AID agentAID) {
+				currentCoordinator = agentAID;
+				sensedAssertionsManager.setAssertionUpdateDestination(agentAID);
+				
+				doConnectProposal(agentAID);
+			}
+		};
+		
+		addBehaviour(new SearchCoordinatorInitiator(this, listener));
+    }
 
 	
-	private void doConnectProposal() {
-	    // retrieve the CtxCoord AID
-		// TODO: in the future, handle case of connecting to several CtxCoord agents per appIdentifier
-		final AID coordinatorAID = sensorSpecification.getAssignedCoordinatorAddress().getAID();
+	private void doConnectProposal(final AID coordinatorAID) {
 		PublishAssertions publishContent = new DefaultPublishAssertions();
 		
 		Map<String, AssertionManager> managedAssertions = sensedAssertionsManager.getManagedAssertions();
@@ -192,7 +274,7 @@ public class CtxSensor extends CMMAgent {
 			Action publishAssertionsAction = new Action(getAID(), publishContent);
 			
 	        getContentManager().fillContent(publishMsg, publishAssertionsAction);
-	        addBehaviour(new PublishAssertionsBehaviour(this, publishMsg));
+	        addBehaviour(new PublishAssertionsBehaviour(this, sensedAssertionsManager, publishMsg));
         }
         catch (CodecException e) {
 	        e.printStackTrace();
@@ -201,10 +283,4 @@ public class CtxSensor extends CMMAgent {
 	        e.printStackTrace();
         }
     }
-	
-	@Override
-	public AgentType getAgentType() {
-		return AgentType.CTX_SENSOR;
-	}
-	
 }

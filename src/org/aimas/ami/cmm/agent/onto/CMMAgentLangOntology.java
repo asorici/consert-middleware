@@ -92,6 +92,32 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     public static final String QUERYRESULT_ERRORMESSAGE="errorMessage";
     public static final String QUERYRESULT_ISASK="isAsk";
     public static final String QUERYRESULT="QueryResult";
+    
+    public static final String REGISTERCMMAGENT_AGENTTYPE="agentType";
+    public static final String REGISTERCMMAGENT_AGENTACTIVE="agentActive";
+    public static final String REGISTERCMMAGENT_APPIDENTIFIER="appIdentifier";
+    public static final String REGISTERCMMAGENT="RegisterCMMAgent";
+    
+    public static final String DEREGISTERCMMAGENT_AGENTTYPE="agentType";
+    public static final String DEREGISTERCMMAGENT_APPIDENTIFIER="appIdentifier";
+    public static final String DEREGISTERCMMAGENT="DeregisterCMMAgent";
+    
+    public static final String SEARCHCOORDINATORAGENT="SearchCoordinatorAgent";
+    public static final String SEARCHQUERYHANDLERAGENT="SearchQueryHandlerAgent";
+    
+    public static final String FOUNDCOORDINATORAGENT_AGENT="agent";
+    public static final String FOUNDCOORDINATORAGENT="FoundCoordinatorAgent";
+    public static final String FOUNDQUERYHANDLERAGENT_AGENT="agent";
+    public static final String FOUNDQUERYHANDLERAGENT="FoundQueryHandlerAgent";
+    
+    public static final String UPDATEENTITYDESCRIPTIONS_ENTITYCONTENTS="entityContents";
+    public static final String UPDATEENTITYDESCRIPTIONS="UpdateEntityDescriptions";
+    
+    public static final String UPDATEPROFILEDASSERTION_ASSERTIONCONTENT="assertionContent";
+    public static final String UPDATEPROFILEDASSERTION_ASSERTION="assertion";
+    public static final String UPDATEPROFILEDASSERTION="UpdateProfiledAssertion";
+    
+    
   /**
    * Constructor
   */
@@ -136,7 +162,24 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     add(stopSendingSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultStopSending.class);
     AgentActionSchema enableAssertionsSchema = new AgentActionSchema(ENABLEASSERTIONS);
     add(enableAssertionsSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultEnableAssertions.class);
+    
+    AgentActionSchema registerCMMAgentSchema = new AgentActionSchema(REGISTERCMMAGENT);
+    add(registerCMMAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultRegisterCMMAgent.class);
+    AgentActionSchema deregisterCMMAgentSchema = new AgentActionSchema(DEREGISTERCMMAGENT);
+    add(deregisterCMMAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultDeregisterCMMAgent.class);
+    
+    AgentActionSchema searchCoordinatorAgentSchema = new AgentActionSchema(SEARCHCOORDINATORAGENT);
+    add(searchCoordinatorAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultSearchCoordinatorAgent.class);
 
+    AgentActionSchema searchQueryHandlerAgentSchema = new AgentActionSchema(SEARCHQUERYHANDLERAGENT);
+    add(searchQueryHandlerAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultSearchQueryHandlerAgent.class);    
+    
+    AgentActionSchema updateEntityDescriptionsSchema = new AgentActionSchema(UPDATEENTITYDESCRIPTIONS);
+    add(updateEntityDescriptionsSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultUpdateEntityDescriptions.class);
+    
+    AgentActionSchema updateProfiledAssertionSchema = new AgentActionSchema(UPDATEPROFILEDASSERTION);
+    add(updateProfiledAssertionSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultUpdateProfiledAssertion.class);
+    
     // adding AID(s)
 
     // adding Predicate(s)
@@ -158,9 +201,12 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     add(userQuerySchema, org.aimas.ami.cmm.agent.onto.impl.DefaultUserQuery.class);
     PredicateSchema queryResultSchema = new PredicateSchema(QUERYRESULT);
     add(queryResultSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultUserQueryResult.class);
+    PredicateSchema foundCoordinatorAgentSchema = new PredicateSchema(FOUNDCOORDINATORAGENT);
+    add(foundCoordinatorAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultFoundCoordinatorAgent.class);
+    PredicateSchema foundQueryHandlerAgentSchema = new PredicateSchema(FOUNDQUERYHANDLERAGENT);
+    add(foundQueryHandlerAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultFoundQueryHandlerAgent.class);
     
-
-
+    
     // adding fields
     assertionAssignmentSchema.add(ASSERTIONASSIGNMENT_COORDINATOR, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     assertionAssignmentSchema.add(ASSERTIONASSIGNMENT_CAPABILITY, assertionCapabilitySchema, 1, ObjectSchema.UNLIMITED);
@@ -201,6 +247,19 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     queryResultSchema.add(QUERYRESULT_QUERYRESULTSET, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     queryResultSchema.add(QUERYRESULT_ASKRESULT, (TermSchema)getSchema(BasicOntology.BOOLEAN), ObjectSchema.MANDATORY);
     
+    registerCMMAgentSchema.add(REGISTERCMMAGENT_APPIDENTIFIER, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    registerCMMAgentSchema.add(REGISTERCMMAGENT_AGENTACTIVE, (TermSchema)getSchema(BasicOntology.BOOLEAN), ObjectSchema.MANDATORY);
+    registerCMMAgentSchema.add(REGISTERCMMAGENT_AGENTTYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    
+    deregisterCMMAgentSchema.add(DEREGISTERCMMAGENT_APPIDENTIFIER, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    deregisterCMMAgentSchema.add(DEREGISTERCMMAGENT_AGENTTYPE, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    
+    foundCoordinatorAgentSchema.add(FOUNDCOORDINATORAGENT_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
+    foundQueryHandlerAgentSchema.add(FOUNDQUERYHANDLERAGENT_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
+    
+    updateEntityDescriptionsSchema.add(UPDATEENTITYDESCRIPTIONS_ENTITYCONTENTS, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
+    updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_ASSERTIONCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     
     // adding name mappings
 

@@ -1,5 +1,7 @@
 package org.aimas.ami.cmm.api;
 
+import org.osgi.framework.BundleContext;
+
 
 
 public interface CMMPlatformManagementService {
@@ -41,7 +43,7 @@ public interface CMMPlatformManagementService {
 	
 	// Manage Deployment Platform changes
 	//////////////////////////////////////////////////////////////////////////////
-	public void addPlatformMtpAddress(String host, int port);
+	public boolean addPlatformMtpAddress(String host, int port);
 	
 	public void removePlatformMtpAddress(String host, int port);
 }

@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.SensorDescription;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.SensorDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
@@ -241,7 +241,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 				AssertionDescription desc = new DefaultAssertionDescription();
 				desc.setAssertionType(assertionRes.getURI());
 				
-				java.util.List<AID> providers = coordAgent.getSensorManager().getProviders(assertionRes);
+				java.util.List<AID> providers = coordAgent.getContextUpdateManager().getProviders(assertionRes);
 				System.out.println("Looking for providers of assertionRes : " + assertionRes);
 				
 				if (providers != null) {
@@ -297,7 +297,7 @@ public class EnableAssertionResponder extends AchieveREResponder {
 						requiredAssertionSatisfied.put(enabledAssertionRes, true);
 						
 						// and mark it as such in CtxCoordinator sensor state manager for this sensor agent
-						SensorDescription sensorDesc = coordAgent.getSensorManager().getSensorDescription(resultMessage.getSender());
+						SensorDescription sensorDesc = coordAgent.getContextUpdateManager().getSensorDescription(resultMessage.getSender());
 						AssertionDescription assertionDesc = sensorDesc.getAssertionByURI(enabledAssertionRes.getURI());
 						if (assertionDesc != null) {
 							sensorDesc.getAssertionState(assertionDesc).setUpdatesEnabled(true);

@@ -50,12 +50,12 @@ public class CMMInstanceStateOpWrapper extends FutureTask<Void> implements CMMOp
 	
 	
 	@Override
-    public boolean operationCancelled() {
+    public boolean isOperationCancelled() {
 	    return isCancelled();
     }
 
 	@Override
-    public boolean operationDone() {
+    public boolean isOperationDone() {
 	    return isDone();
     }
 	

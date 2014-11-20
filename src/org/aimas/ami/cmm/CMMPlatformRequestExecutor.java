@@ -1,8 +1,8 @@
-package org.aimas.ami.cmm.agent.orgmgr;
+package org.aimas.ami.cmm;
 
 import jade.util.Event;
 
-public interface CMMPlatformInterface {
+public interface CMMPlatformRequestExecutor {
 	public Event createCMMInstance();
 	
 	public Event startCMMInstance();

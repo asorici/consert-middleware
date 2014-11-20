@@ -7,7 +7,7 @@ import jade.content.onto.basic.Action;
 import jade.lang.acl.ACLMessage;
 import jade.proto.ProposeInitiator;
 
-import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor.SensorState;
@@ -15,13 +15,14 @@ import org.aimas.ami.cmm.agent.sensor.CtxSensor.SensorState;
 public class PublishAssertionsBehaviour extends ProposeInitiator {
     private static final long serialVersionUID = -5902093606245078978L;
     
-    private CtxSensor sensorAgent;
-    //private PublishAssertions publishContent;
+    private CMMAgent cmmAgent;
+    private SensingManager sensingManager;
     
-	public PublishAssertionsBehaviour(CtxSensor sensorAgent, ACLMessage msg) throws UngroundedException, CodecException, OntologyException {
-	    super(sensorAgent, msg);
-	    this.sensorAgent = sensorAgent;
-	    //this.publishContent = (PublishAssertions)sensorAgent.getContentManager().extractContent(msg);
+    
+	public PublishAssertionsBehaviour(CMMAgent cmmAgent, SensingManager sensingManager, ACLMessage msg) throws UngroundedException, CodecException, OntologyException {
+	    super(cmmAgent, msg);
+	    this.cmmAgent = cmmAgent;
+	    this.sensingManager = sensingManager;
     }
 	
 	@Override
@@ -29,14 +30,14 @@ public class PublishAssertionsBehaviour extends ProposeInitiator {
 		/* Since our PublishAssertion messages are 1-to-1, if we get an accept it is the  
 		 * only one we will get and it means that the CtxCoordinator is OK with us supplying
 		 * updates for the published ContextAssertions. */
-		sensorAgent.setSensorState(SensorState.CONNECTED);
+		if (cmmAgent instanceof CtxSensor) {
+			((CtxSensor)cmmAgent).setSensorState(SensorState.CONNECTED);
+		}
 		
 		// See if the CtxCoordinator has told us to enable anything
-		AbstractSensingManager sensingManager = sensorAgent.getSensingManager();
-		
 		Action actionContent = null;
 		try {
-	        actionContent = (Action)sensorAgent.getContentManager().extractContent(acceptProposal);
+	        actionContent = (Action)cmmAgent.getContentManager().extractContent(acceptProposal);
 	        if (actionContent.getAction() instanceof EnableAssertions) {
 	        	EnableAssertions enabledAssertions = (EnableAssertions)actionContent.getAction();
 	        	for (int i = 0; i < enabledAssertions.getEnabledCapability().size(); i++) {

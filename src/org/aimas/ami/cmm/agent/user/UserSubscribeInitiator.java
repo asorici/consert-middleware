@@ -1,7 +1,6 @@
 package org.aimas.ami.cmm.agent.user;
 
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.UnreadableException;
 import jade.proto.SubscriptionInitiator;
 
 import java.util.ArrayList;
@@ -20,14 +19,14 @@ import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 
-public class UserSubscribeBehaviour extends SubscriptionInitiator {
+public class UserSubscribeInitiator extends SubscriptionInitiator {
     private static final long serialVersionUID = 1482335988271649414L;
     
     private ACLMessage subscribeMessage;
     private Query query;
     private UserQueryNotifier resultNotifier;
     
-	public UserSubscribeBehaviour(CtxUser userAgent, UserQueryNotifier resultNotifier, 
+	public UserSubscribeInitiator(CtxUser userAgent, UserQueryNotifier resultNotifier, 
 			ACLMessage subscribeMessage, Query query) {
 	    super(userAgent, subscribeMessage);
 	    
@@ -112,7 +111,8 @@ public class UserSubscribeBehaviour extends SubscriptionInitiator {
 		
 		return new ContextResultSet(resultVars, bindings);
     }
-
+	
+	
 	private Binding detachBinding(Binding binding) {
 		Iterator<Var> varsIt = binding.vars();
 		Binding initial = BindingFactory.binding();

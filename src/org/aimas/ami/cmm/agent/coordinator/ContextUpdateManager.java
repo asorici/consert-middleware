@@ -17,11 +17,14 @@ import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
+import org.aimas.ami.cmm.agent.onto.UpdateEntityDescriptions;
+import org.aimas.ami.cmm.agent.onto.UpdateProfiledAssertion;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.sensing.ContextAssertionAdaptor;
 import org.aimas.ami.contextrep.engine.api.InsertResult;
 import org.aimas.ami.contextrep.engine.api.InsertionHandler;
 import org.aimas.ami.contextrep.engine.api.InsertionResultNotifier;
+import org.aimas.ami.contextrep.engine.api.StatsHandler.AssertionEnableStatus;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
@@ -32,7 +35,7 @@ import com.hp.hpl.jena.update.UpdateFactory;
 import com.hp.hpl.jena.update.UpdateRequest;
 
 
-public class SensorManager implements InsertionResultNotifier {
+public class ContextUpdateManager implements InsertionResultNotifier {
 	private CtxCoord coordAgent;
 	private InsertionHandler engineInsertionAdaptor;
 	
@@ -42,7 +45,7 @@ public class SensorManager implements InsertionResultNotifier {
 	private List<TaskingCommand> pendingCommands;
 	private Map<UpdateRequest, Resource> pendingInsertions;
 	
-	public SensorManager(CtxCoord ctxCoordinator) throws CMMConfigException {
+	public ContextUpdateManager(CtxCoord ctxCoordinator) throws CMMConfigException {
 		this.coordAgent = ctxCoordinator;
 		
 		registeredSensors = new HashMap<AID, SensorDescription>();
@@ -75,8 +78,13 @@ public class SensorManager implements InsertionResultNotifier {
 		pendingCommands.remove(taskingCommand);
 	}
 	
-	public void registerSensor(AID sensorAgent, SensorDescription sensorDescription) {
-		registeredSensors.put(sensorAgent, sensorDescription);
+	public void registerOrUpdateSensor(AID sensorAgent, SensorDescription sensorDescription) {
+		boolean update = registeredSensors.containsKey(sensorAgent);
+		
+		if (!update) {
+			registeredSensors.put(sensorAgent, sensorDescription);
+		}
+		
 		for (AssertionDescription desc : sensorDescription.getProvidedAssertions()) {
 			Resource assertionRes = ResourceFactory.createResource(desc.getAssertionType());
 			
@@ -85,7 +93,15 @@ public class SensorManager implements InsertionResultNotifier {
 				assertionResProviders = new LinkedList<AID>();
 				assertionProviderMap.put(assertionRes, assertionResProviders);
 			}
-			assertionResProviders.add(sensorAgent);
+			
+			if (update) {
+				if (!assertionResProviders.contains(sensorAgent)) {
+					assertionResProviders.add(sensorAgent);
+				}
+			}
+			else {
+				assertionResProviders.add(sensorAgent);
+			}
 		}
 	}
 	
@@ -133,6 +149,35 @@ public class SensorManager implements InsertionResultNotifier {
 		return assertionProviderMap.get(assertionResource);
 	}
 	
+	// USER ENTITY DESCRIPTION + PROFILED ASSERTION UPDATE MANAGEMENT
+	//////////////////////////////////////////////////////////////////////////////
+	public void updateEntityDescriptions(UpdateEntityDescriptions entitiesUpdate) {
+		String updateRequestString = entitiesUpdate.getEntityContents();
+        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
+        
+        engineInsertionAdaptor.updateEntityDescriptions(updateRequest);
+	}
+	
+	
+	public boolean updateProfiledAssertion(UpdateProfiledAssertion profiledAssertionUpdate) {
+		AssertionDescription assertionDesc = profiledAssertionUpdate.getAssertion();
+		String updateRequestString = profiledAssertionUpdate.getAssertionContent();
+		
+        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
+        Resource assertionRes = ResourceFactory.createResource(assertionDesc.getAssertionType());
+        
+        AssertionEnableStatus status = coordAgent.getCommandManager().getEngineStatsAdaptor()
+        		.getAssertionEnableStatus(assertionRes);
+        
+        if (status.updatesEnabled()) {
+        	pendingInsertions.put(updateRequest, assertionRes);
+        	engineInsertionAdaptor.updateProfiledAssertion(updateRequest, this);
+        	return true;
+        }
+        
+        return false;
+	}
+	
 	// SENSOR ASSERTION UPDATE
 	//////////////////////////////////////////////////////////////////////////////
 	public void insertAssertion(AID sensorAgent, AssertionUpdated assertionUpdate) {
@@ -157,22 +202,25 @@ public class SensorManager implements InsertionResultNotifier {
 		
 		// mark insertion as pending (awaiting notification of insertion) and submit to CONSERT Engine
 		pendingInsertions.put(updateRequest, assertionRes);
-		engineInsertionAdaptor.insert(updateRequest, this, updateMode);
+		engineInsertionAdaptor.insertAssertion(updateRequest, this, updateMode);
 	}
 	
 	@Override
     public void notifyInsertionResult(InsertResult insertResult) {
-		if (insertResult.hasConstraintViolations()) {
-	    	System.out.println("OH OH!!! We're in trouuuuble !!!");
-	    }
+		/* For now, the only thing we do in the ContextAssertion result notification handler
+		 * is to remove the insertion form pending status and notify the commandManager that there has been
+		 * an update of the particular ContextAssertion. 
+		 * It remains to be seen if the update process HAS to be an ASYNCHRONOUS TWO-WAY PROCESS, i.e. if the
+		 * CtxSensor or CtxUser have to be notified of the insertion result. 
+		 * Intuition says that in the case of Context Level Agreements it could be useful for the providers to
+		 * know IF (i.e. were there any errors or constraint violations) and HOW FAST their update was processed. */
 		
-		// If no errors occurred, remove the updated Assertion from the pending inserts and notify the 
-		// command manager of its update.
-		if (!insertResult.hasConstraintViolations() && !insertResult.hasExecError()) {
-			Resource updatedAssertionResource = pendingInsertions.remove(insertResult.getInsertRequest());
-			if (updatedAssertionResource != null) {
-				coordAgent.getCommandManager().notifyAssertionUpdated(updatedAssertionResource);
-			}
+		// Remove the updated Assertion from the pending inserts.
+		// If no errors occurred, notify the command manager of its update.
+		Resource updatedAssertionResource = pendingInsertions.remove(insertResult.getInsertRequest());
+		if (!insertResult.hasConstraintViolations() && !insertResult.hasExecError() 
+				&& updatedAssertionResource != null) {
+			coordAgent.getCommandManager().notifyAssertionUpdated(updatedAssertionResource);
 		}
     }
 	
@@ -187,21 +235,54 @@ public class SensorManager implements InsertionResultNotifier {
 			providedAssertionsState = new HashMap<AssertionDescription, AssertionState>();
 		}
 		
-		public AssertionState addCapability(AssertionCapability capability) {
+		public AssertionState addOrUpdateCapability(AssertionCapability capability) {
 			AssertionDescription assertionDesc = capability.getAssertion();
 			String updateMode = capability.getAvailableUpdateMode();
 			int updateRate = capability.getAvailableUpdateRate();
 			
-			AssertionState assertionState = new AssertionState(false, updateMode, updateRate);
-			providedAssertions.add(assertionDesc);
-			providedAssertionsState.put(assertionDesc, assertionState);
+			// First check to see if this assertion description already exists
+			AssertionState assertionState = getAssertionState(assertionDesc);
+			if (assertionState == null) {
+				AssertionDescription existingDescription = getAssertionByURI(assertionDesc.getAssertionType());  
+				
+				// If the description differs, but the assertion type is the same => we have an update
+				if (existingDescription != null) {
+					// Replace the current description
+					providedAssertions.remove(existingDescription);
+					providedAssertions.add(assertionDesc);
+					
+					// Get the current state of the existing description and remove the mapping
+					AssertionState existingState = providedAssertionsState.remove(existingDescription);
+					if (!existingState.isUpdatesEnabled()) {
+						// If updates are not enabled, set the new state as given by the assertion capability
+						assertionState = new AssertionState(false, updateMode, updateRate);
+						providedAssertionsState.put(assertionDesc, assertionState);
+					}
+					else {
+						// Updates are enabled, meaning that the desired update mode is already configured by this
+						// coordinator. A CHANGE IN UPDATE MODE REQUESTED BY THE CtxSensor AGENT IS HANDLED
+						// HANDLED IN ANOTHER BEHAVIOR (TODO).
+						// Here we just replace the previous mapping, following the description change
+						providedAssertionsState.put(assertionDesc, existingState);
+					}
+				}
+				else {
+					// There is no existing assertion type => new capability
+					assertionState = new AssertionState(false, updateMode, updateRate);
+					providedAssertions.add(assertionDesc);
+					providedAssertionsState.put(assertionDesc, assertionState);
+				}
+			}
+			else {
+				// If the AssertionDescription already exists, we will only update the state if updates are
+				// not currently enabled
+				if (!assertionState.isUpdatesEnabled()) {
+					assertionState.setUpdateMode(updateMode);
+					assertionState.setUpdateRate(updateRate);
+				}
+			}
 			
 			return assertionState;
-		}
-		
-		public void addCapability(AssertionDescription assertionDesc, AssertionState assertionState) {
-			providedAssertions.add(assertionDesc);
-			providedAssertionsState.put(assertionDesc, assertionState);
 		}
 		
 		
@@ -210,8 +291,7 @@ public class SensorManager implements InsertionResultNotifier {
 		}
 
 		/**
-		 * Retrieve an assertion description based on the given ContextAssertion URI.
-		 * If there are more than one, retrieve one at random.
+		 * Retrieve the assertion description based on the given ContextAssertion URI.
 		 * @param assertionURI
 		 * @return An assertion description matching the given ContextAssertion resource URI, 
 		 *  or null if no such assertion exists

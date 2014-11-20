@@ -5,7 +5,7 @@ import java.util.List;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 
-import org.aimas.ami.cmm.agent.coordinator.SensorManager.AssertionState;
+import org.aimas.ami.cmm.agent.coordinator.ContextUpdateManager.AssertionState;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.SetUpdateMode;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
@@ -64,7 +64,7 @@ public class UpdateModeCommandResult extends AssertionCommandResult {
 	    updateModeTask.setUpdateMode(updateMode);
 	    updateModeTask.setUpdateRate(updateRate);
 	    
-	    final SensorManager sensorManager = commandManager.getCoordinatorAgent().getSensorManager();
+	    final ContextUpdateManager sensorManager = commandManager.getCoordinatorAgent().getContextUpdateManager();
 	    List<AID> providingSensors = sensorManager.getProviders(assertionResource);
 	    
 	    if (providingSensors != null) {

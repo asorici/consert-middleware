@@ -28,7 +28,7 @@ public class ConnectToCoordinatorBehaviour extends SimpleAchieveREInitiator {
 		String conversationId = ctxQueryAgent.getName() + "-QueryHandlerPresent-" + System.currentTimeMillis();
 		connectRequest.setConversationId(conversationId);
 		
-		AID assignedCoord = spec.getAssignedCoordinatorAddress().getAID();
+		AID assignedCoord = spec.getAssignedManagerAddress().getAID();
 		connectRequest.addReceiver(assignedCoord);
 		
 		QueryHandlerPresent presenceContent = new DefaultQueryHandlerPresent();

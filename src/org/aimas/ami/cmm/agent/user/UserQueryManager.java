@@ -144,7 +144,7 @@ public class UserQueryManager {
 		protected int repeatInterval;
 		
 		protected ACLMessage queryMessage;
-		private UserQueryBehaviour handlerBehaviour;
+		private UserQueryInitiator handlerBehaviour;
 		
 		protected UserQueryWrapper(Query query, int queryType,
                 QueryNotificationHandler notificationHandler,
@@ -173,14 +173,14 @@ public class UserQueryManager {
 				queryDesc.setDomain_lower_bound(domainLowerBoundURI);
 			}
 			else {
-				queryDesc.setDomain_lower_bound(userAgent.getApplicationAdaptor().getDomainValue());
+				queryDesc.setDomain_lower_bound(userAgent.getApplicationAdaptor().getContextDomainValue());
 			}
 			
 			if (domainUpperBoundURI != null) {
 				queryDesc.setDomain_upper_bound(domainUpperBoundURI);
 			}
 			else {
-				queryDesc.setDomain_upper_bound(userAgent.getApplicationAdaptor().getDomainValue());
+				queryDesc.setDomain_upper_bound(userAgent.getApplicationAdaptor().getContextDomainValue());
 			}
 			
 			queryDesc.setRepeatInterval(repeatInterval);
@@ -218,7 +218,7 @@ public class UserQueryManager {
 		}
 		
 		Event submitBlocking() {
-			handlerBehaviour = new UserQueryBehaviour(userAgent, this, queryMessage, query);
+			handlerBehaviour = new UserQueryInitiator(userAgent, this, queryMessage, query);
 			notificationEvent = new Event(QUERY_RESULT_NOTIFICATION, handlerBehaviour);
 			
 			userAgent.addBehaviour(handlerBehaviour);
@@ -226,7 +226,7 @@ public class UserQueryManager {
 		}
 		
 		protected void submit() {
-			handlerBehaviour = new UserQueryBehaviour(userAgent, this, queryMessage, query);
+			handlerBehaviour = new UserQueryInitiator(userAgent, this, queryMessage, query);
 			userAgent.addBehaviour(handlerBehaviour);
 		}
 		
@@ -291,7 +291,7 @@ public class UserQueryManager {
 	}
 	
 	private class UserSubscriptionWrapper extends UserQueryWrapper {
-		private UserSubscribeBehaviour handlerBehaviour;
+		private UserSubscribeInitiator handlerBehaviour;
 		
 		protected UserSubscriptionWrapper(Query query, int queryType,
                 QueryNotificationHandler notificationHandler,
@@ -303,7 +303,7 @@ public class UserQueryManager {
 		
 		@Override
 		protected void submit() {
-			handlerBehaviour = new UserSubscribeBehaviour(userAgent, this, queryMessage, query);
+			handlerBehaviour = new UserSubscribeInitiator(userAgent, this, queryMessage, query);
 			userAgent.addBehaviour(handlerBehaviour);
 		}
 		

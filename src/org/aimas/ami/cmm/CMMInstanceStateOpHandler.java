@@ -58,9 +58,9 @@ public class CMMInstanceStateOpHandler {
 		
 		@Override
         public void run() {
-	        synchronized(opSyncObj) {
-	        	if (active) {
-		        	// wait until there is smth in the buffer
+        	while (active) {
+        		synchronized(opSyncObj) {
+	        		// wait until there is smth in the buffer
 		        	while(operationBuffer.isEmpty()) {
 		        		try {
 		                    opSyncObj.wait();
@@ -73,9 +73,10 @@ public class CMMInstanceStateOpHandler {
 		        	
 		        	// we have something in the buffer
 		        	currentOperation = operationBuffer.poll();
-		        	currentOperation.run();
-	        	}
-	        }
+        		}
+        		
+        		currentOperation.run();
+        	}
         }
 		
 	}

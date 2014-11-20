@@ -22,7 +22,7 @@ public class QueryHandlerSpecification extends AgentSpecification {
 		return isPrimary;
 	}
 	
-	public AgentAddress getAssignedCoordinatorAddress() {
+	public AgentAddress getAssignedManagerAddress() {
 		return assignedOrgMgrAddress;
 	}
 	

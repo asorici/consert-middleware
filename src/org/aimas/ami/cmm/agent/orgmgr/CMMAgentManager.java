@@ -1,5 +1,6 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
+import jade.core.AID;
 import jade.wrapper.AgentController;
 
 import java.util.HashMap;
@@ -18,143 +19,144 @@ public class CMMAgentManager {
 		ACTIVE, INACTIVE
 	}
 	
-	private Map<String, ManagedAgentWrapper<CoordinatorSpecification>> managedCoordinators;
-	private Map<String, ManagedAgentWrapper<QueryHandlerSpecification>> managedQueryHandlers;
-	private Map<String, ManagedAgentWrapper<UserSpecification>> managedUsers;
-	private Map<String, ManagedAgentWrapper<SensorSpecification>> managedSensors;
+	/* There is only one CtxCoordinator per OrgMgr (i.e. per ContextDomain) */
+	private ManagedAgentWrapper<CoordinatorSpecification> managedCoordinator;
 	
+	/* There can be one or more CtxQueryHandlers (a linear scaling) per OrgMgr (i.e. per ContextDomain) */
+	private ManagedAgentList<QueryHandlerSpecification> managedQueryHandlers;
+	
+	/* There can be one CtxUser per applicationId, that registers with the OrgMgr */
+	private Map<String, ManagedAgentWrapper<UserSpecification>> managedUsers;
+	
+	/* There can be one or more CtxSensors per applicationId, that register with the OrgMgr 
+	 * in order to get access to the CtxCoordinator */
+	private Map<String, ManagedAgentList<SensorSpecification>> managedSensors;
 	
 	public CMMAgentManager() {
-		managedCoordinators = new HashMap<String, ManagedAgentWrapper<CoordinatorSpecification>>();
-		managedQueryHandlers = new HashMap<String, ManagedAgentWrapper<QueryHandlerSpecification>>();
+		managedQueryHandlers = new ManagedAgentList<QueryHandlerSpecification>();
 		managedUsers = new HashMap<String, ManagedAgentWrapper<UserSpecification>>();
-		managedSensors = new HashMap<String, ManagedAgentWrapper<SensorSpecification>>();
+		managedSensors = new HashMap<String, ManagedAgentList<SensorSpecification>>();
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////
-	public void addManagedCoordinator(String agentName, CoordinatorSpecification spec, AgentController controller) {
-		managedCoordinators.put(agentName, new ManagedAgentWrapper<CoordinatorSpecification>(controller, spec));
+	public void setManagedCoordinator(CoordinatorSpecification spec, AgentController controller) {
+		managedCoordinator = new ManagedAgentWrapper<CoordinatorSpecification>(controller, spec);
 	}
 	
-	public void addManagedQueryHandler(String agentName, QueryHandlerSpecification spec, AgentController controller) {
-		managedQueryHandlers.put(agentName, new ManagedAgentWrapper<QueryHandlerSpecification>(controller, spec));
+	public void setManagedCoordinator(AID agentAID, State agentState) {
+		managedCoordinator = new ManagedAgentWrapper<CoordinatorSpecification>(agentAID, agentState);
 	}
 	
-	public void addManagedUser(String agentName, UserSpecification spec, AgentController controller) {
-		managedUsers.put(agentName, new ManagedAgentWrapper<UserSpecification>(controller, spec));
+	public void addManagedQueryHandler(QueryHandlerSpecification spec, AgentController controller) {
+		managedQueryHandlers.add(new ManagedAgentWrapper<QueryHandlerSpecification>(controller, spec));
 	}
 	
-	public void addManagedSensor(String agentName, SensorSpecification spec, AgentController controller) {
-		managedSensors.put(agentName, new ManagedAgentWrapper<SensorSpecification>(controller, spec));
+	public void addManagedQueryHandler(AID agentAID, State agentState) {
+		managedQueryHandlers.add(new ManagedAgentWrapper<QueryHandlerSpecification>(agentAID, agentState));
 	}
 	
-	public List<ManagedAgentWrapper<CoordinatorSpecification>> getManagedCoordinators() {
-		return new LinkedList<ManagedAgentWrapper<CoordinatorSpecification>>(managedCoordinators.values());
+	
+	public void setManagedUser(String applicationId, UserSpecification spec, AgentController controller) {
+		managedUsers.put(applicationId, new ManagedAgentWrapper<UserSpecification>(controller, spec));
+	}
+	
+	public void setManagedUser(String applicationId, AID agentAID, State agentState) {
+		managedUsers.put(applicationId, new ManagedAgentWrapper<UserSpecification>(agentAID, agentState));
+	}
+	
+	public void addManagedSensor(String applicationId, SensorSpecification spec, AgentController controller) {
+		ManagedAgentList<SensorSpecification> agentList = managedSensors.get(applicationId);
+		if (agentList == null) {
+			agentList = new ManagedAgentList<SensorSpecification>();
+			managedSensors.put(applicationId, agentList);
+		}
+		
+		agentList.add(new ManagedAgentWrapper<SensorSpecification>(controller, spec));
+	}
+	
+	public void addManagedSensor(String applicationId, AID agentAID, State agentState) {
+		ManagedAgentList<SensorSpecification> agentList = managedSensors.get(applicationId);
+		if (agentList == null) {
+			agentList = new ManagedAgentList<SensorSpecification>();
+			managedSensors.put(applicationId, agentList);
+		}
+		
+		agentList.add(new ManagedAgentWrapper<SensorSpecification>(agentAID, agentState));
+	}
+	
+	// Get agents 
+	//////////////////////////////////////////////////////////////////////////////////////
+	public ManagedAgentWrapper<CoordinatorSpecification> getManagedCoordinator() {
+		return managedCoordinator;
 	}
 	
 	public List<ManagedAgentWrapper<QueryHandlerSpecification>> getManagedQueryHandlers() {
-		return new LinkedList<ManagedAgentWrapper<QueryHandlerSpecification>>(managedQueryHandlers.values());
+		return managedQueryHandlers;
 	}
 	
 	public List<ManagedAgentWrapper<SensorSpecification>> getManagedSensors() {
-		return new LinkedList<ManagedAgentWrapper<SensorSpecification>>(managedSensors.values());
+		List<ManagedAgentWrapper<SensorSpecification>> agentList = 
+				new LinkedList<ManagedAgentWrapper<SensorSpecification>>();
+		
+		for (String applicationId : managedSensors.keySet()) {
+			ManagedAgentList<SensorSpecification> appSensors = managedSensors.get(applicationId);
+			agentList.addAll(appSensors);
+		}
+		
+		return agentList;
 	}
 	
 	public List<ManagedAgentWrapper<UserSpecification>> getManagedUsers() {
 		return new LinkedList<ManagedAgentWrapper<UserSpecification>>(managedUsers.values());
 	}
 	
-	private ManagedAgentWrapper<?> findManagedAgent(String agentName) {
-		if (managedCoordinators.containsKey(agentName)) 
-			return managedCoordinators.get(agentName);
+	// Get specific agents
+	//////////////////////////////////////////////////////////////////////////////////////
+	public ManagedAgentWrapper<QueryHandlerSpecification> getManagedQueryHandler(AID agentAID) {
+		return managedQueryHandlers.getByAID(agentAID);
+	}
+	
+	public List<ManagedAgentWrapper<SensorSpecification>> getManagedSensors(String applicationId) {
+		return managedSensors.get(applicationId);
+	}
+	
+	public ManagedAgentWrapper<SensorSpecification> getManagedSensor(AID agentAID) {
+		for (String applicationId : managedSensors.keySet()) {
+			ManagedAgentList<SensorSpecification> appAgentList = managedSensors.get(applicationId);
+			if (appAgentList.getByAID(agentAID) != null) {
+				return appAgentList.getByAID(agentAID);
+			}
+		}
 		
-		if (managedQueryHandlers.containsKey(agentName)) 
-			return managedQueryHandlers.get(agentName);
+		return null;
+	}
+	
+	public ManagedAgentWrapper<SensorSpecification> getManagedSensor(String applicationId, AID agentAID) {
+		ManagedAgentList<SensorSpecification> appAgentList = managedSensors.get(applicationId);
+		if (appAgentList != null) {
+			return appAgentList.getByAID(agentAID);
+		}
 		
-		if (managedUsers.containsKey(agentName)) 
-			return managedUsers.get(agentName);
-		
-		return managedSensors.get(agentName);
-    }
+		return null;
+	}
+	
+	public ManagedAgentWrapper<UserSpecification> getManagedUser(String applicationId) {
+		return managedUsers.get(applicationId);
+	}
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////
-	public void startAgent(String agentName) throws Exception {
-		ManagedAgentWrapper<?> managedAgent = findManagedAgent(agentName);
-		
-		if (managedAgent != null)
-			managedAgent.start();
-	}
-	
-	public void stopAgent(String agentName) throws Exception {
-		ManagedAgentWrapper<?> managedAgent = findManagedAgent(agentName);
-		
-		if (managedAgent != null)
-			managedAgent.stop();
-	}
-	
-	public State getAgentState(String agentName) {
-		ManagedAgentWrapper<?> managedAgent = findManagedAgent(agentName);
-		
-		if (managedAgent != null)
-			return managedAgent.getState();
-		
-		return null;
-	}
-	
-	
-	public boolean managesAgent(String agentName) {
-		return findManagedAgent(agentName) != null;
-	}
-	
-	//////////////////////////////////////////////////////////////////////////////////////
-	public AgentSpecification getAgentSpecification(String agentName) {
-		ManagedAgentWrapper<?> managedAgent = findManagedAgent(agentName);
-		
-		if (managedAgent != null) {
-			return managedAgent.getAgentSpecification();
+	private static class ManagedAgentList<T extends AgentSpecification> extends LinkedList<ManagedAgentWrapper<T>> {
+        private static final long serialVersionUID = 1L;
+
+		public ManagedAgentWrapper<T> getByAID(AID agentAID) {
+			for (ManagedAgentWrapper<T> managedAgent : this) {
+				if (managedAgent.getAgentAID().equals(agentAID)) {
+					return managedAgent;
+				}
+			}
+			
+			return null;
 		}
-		
-		return null;
-	}
-	
-	public CoordinatorSpecification getCoordinatorSpecification(String agentName) {
-		ManagedAgentWrapper<CoordinatorSpecification> managedAgent = managedCoordinators.get(agentName);
-		
-		if (managedAgent != null) {
-			return managedAgent.getAgentSpecification();
-		}
-		
-		return null;
-	}
-	
-	public QueryHandlerSpecification getQueryHandlerSpecification(String agentName) {
-		ManagedAgentWrapper<QueryHandlerSpecification> managedAgent = managedQueryHandlers.get(agentName);
-		
-		if (managedAgent != null) {
-			return managedAgent.getAgentSpecification();
-		}
-		
-		return null;
-	}
-	
-	public UserSpecification getUserSpecification(String agentName) {
-		ManagedAgentWrapper<UserSpecification> managedAgent = managedUsers.get(agentName);
-		
-		if (managedAgent != null) {
-			return managedAgent.getAgentSpecification();
-		}
-		
-		return null;
-	}
-	
-	public SensorSpecification getSensorSpecification(String agentName) {
-		ManagedAgentWrapper<SensorSpecification> managedAgent = managedSensors.get(agentName);
-		
-		if (managedAgent != null) {
-			return managedAgent.getAgentSpecification();
-		}
-		
-		return null;
 	}
 }

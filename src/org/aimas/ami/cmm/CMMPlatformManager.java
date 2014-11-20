@@ -5,16 +5,19 @@ import jade.core.Agent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.core.Runtime;
-import jade.osgi.OSGIBridgeHelper;
+import jade.mtp.http.MessageTransportProtocol;
 import jade.util.ExtendedProperties;
 import jade.util.leap.Properties;
 import jade.wrapper.AgentContainer;
 import jade.wrapper.AgentController;
+import jade.wrapper.ControllerException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.aimas.ami.cmm.agent.AgentManagementService;
+import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CMMAgentContainer;
 import org.aimas.ami.cmm.agent.config.PlatformSpecification;
 import org.aimas.ami.cmm.api.CMMConfigException;
@@ -22,6 +25,7 @@ import org.aimas.ami.cmm.api.CMMInstanceStateOpCallback;
 import org.aimas.ami.cmm.api.CMMOperationFuture;
 import org.aimas.ami.cmm.api.CMMPlatformManagementService;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
+import org.aimas.ami.cmm.utils.JadeOSGIBridgeService;
 import org.aimas.ami.cmm.utils.PlatformConfigLoader;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
@@ -38,18 +42,29 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	public static final String 	DEFAULT_JADE_MTP_HOST 	= 	"localhost";
 	public static final int		DEFAULT_JADE_MTP_PORT 	= 	7778;
 	
+	private static CMMPlatformManager instance;
+	
+	public static CMMPlatformManager getInstance() {
+		return instance;
+	}
+	
+	private BundleContext cmmBundleContext;
+	
 	private CMMInstanceTracker cmmInstanceBundleTracker;
 	private BundleResourceManager defaultInstanceResourceManager;
 	
 	private AgentContainer jadeAgentContainer;
 	private PlatformSpecification platformSpecification;
 	
-	private Map<ContextDomainWrapper, CMMInstanceStateWrapper> cmmInstanceStateMap = new HashMap<ContextDomainWrapper, CMMInstanceStateWrapper>();
+	private Map<ContextDomainInfoWrapper, CMMInstanceStateWrapper> cmmInstanceStateMap = new HashMap<ContextDomainInfoWrapper, CMMInstanceStateWrapper>();
+	private CMMInstanceStateOpHandler cmmInstanceStateOpHandler; 
 	
 	// Platform Start / Stop Management
 	/////////////////////////////////////////////////////////////////////////
 	@Override
     public void start(BundleContext context) throws Exception {
+		instance = this;
+		
 		cmmInstanceBundleTracker = new CMMInstanceTracker(context);
 		cmmInstanceBundleTracker.open();
 		
@@ -72,19 +87,51 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     	CMMAgentContainer platformContainerSpec = platformSpecification.getPlatformAgentContainer();
     	createJadePlatform(platformContainerSpec);
     	
-    	// STEP 4: now there should normally be a default CMM instance configuration (cmm-config file), so we start looking for one
+    	// STEP 4: create and start the CMM Instance State Operations Handler
+    	cmmInstanceStateOpHandler = new CMMInstanceStateOpHandler();
+    	cmmInstanceStateOpHandler.start();
+    	
+    	// STEP 4: now there should normally be a default CMM instance configuration (agent-config file), so we start looking for one
     	// However, if we don't find one, there's no error, since the application still has the means to "call" for the instantiation of
     	// such an instance itself.
     	try {
     		AgentConfigLoader agentConfigLoader = new AgentConfigLoader(defaultInstanceResourceManager);
     		OntModel agentConfigModel = agentConfigLoader.loadAgentConfiguration();
     		
+    		ApplicationSpecification defaultAppSpecification = ApplicationSpecification.fromConfigurationModel(agentConfigModel); 
+    		String defaultApplicationId = defaultAppSpecification.getAppIdentifier();
+    		String defaultContextDimension = defaultAppSpecification.getLocalContextDomain().hasDomainDimension() ? 
+    				defaultAppSpecification.getLocalContextDomain().getDomainDimension().getURI() : null;
+    		String defaultContextDomain = defaultAppSpecification.getLocalContextDomain().hasDomainValue() ? 
+    				defaultAppSpecification.getLocalContextDomain().getDomainValue().getURI() : null;
     		
+    		CMMOperationFuture<Void> installTask = installCMMInstance(defaultApplicationId, defaultContextDimension, defaultContextDomain);
+    		installTask.awaitOperation();
     	}
     	catch(CMMConfigException ex) {
     		System.out.println("There is no default CMM Agent Configuration - application must instantiate one");
     	}
-    	
+    }
+	
+	
+	@Override
+    public void stop(BundleContext context) throws Exception {
+		// TODO: stop all active CMM Instances
+		for (CMMInstanceStateWrapper wrapper : cmmInstanceStateMap.values()) {
+			if (wrapper.getState() != CMMInstanceState.NOT_INSTALLED) {
+				CMMOperationFuture<Void> killTask = uninstallCMMInstance(wrapper.getApplicationId(), 
+						wrapper.getContextDimensionURI(), wrapper.getContextDomainValueURI());
+				
+				killTask.awaitOperation(5, TimeUnit.SECONDS);
+				
+			}
+		}
+		
+		// stop the CMM Instance State Operation Handler
+		cmmInstanceStateOpHandler.close();
+		
+		// close the CMM Instance Bundle Tracker
+		cmmInstanceBundleTracker.close();
     }
 	
 
@@ -120,8 +167,8 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 		String mtpSpecifierString = "jade.mtp.http.MessageTransportProtocol(" + "http://" + mtpHost + ":" + mtpPort + "/jade" + ")";
 		props.setProperty(Profile.MTPS, mtpSpecifierString);
 		
-		// register the OsgiBridgeHelper JADE kernel service
-		props.setProperty(Profile.SERVICES, OSGIBridgeHelper.class.getName());
+		// register the JadeOsgiBridgeService JADE kernel service
+		props.setProperty(Profile.SERVICES, JadeOSGIBridgeService.class.getName());
 		
 		profile = new ProfileImpl(props);
 		Runtime.instance().setCloseVM(false);
@@ -132,12 +179,12 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 			jadeAgentContainer = Runtime.instance().createAgentContainer(profile);
 		}
 	}
-
-
-	@Override
-    public void stop(BundleContext context) throws Exception {
-		cmmInstanceBundleTracker.close();
-    }
+	
+	// OSGi Context
+	/////////////////////////////////////////////////////////////////////////
+	public BundleContext getBundleContext() {
+		return cmmBundleContext;
+	}
 	
 	// Application Info
 	/////////////////////////////////////////////////////////////////////////
@@ -154,7 +201,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	// CMM Instance State Management
 	/////////////////////////////////////////////////////////////////////////
 	public CMMInstanceState getCMMInstanceState(String applicationId, String contextDimensionURI, String contextDomainValueURI) {
-		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(new ContextDomainWrapper(contextDimensionURI, 
+		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId)); 
 		
 		if (stateWrapper != null) {
@@ -164,7 +211,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 		return CMMInstanceState.NOT_INSTALLED;
 	}
 	
-	public CMMInstanceState getCMMInstanceState(ContextDomainWrapper contextDomainInfo) {
+	public CMMInstanceState getCMMInstanceState(ContextDomainInfoWrapper contextDomainInfo) {
 		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(contextDomainInfo); 
 		
 		if (stateWrapper != null) {
@@ -174,106 +221,177 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 		return CMMInstanceState.NOT_INSTALLED;
 	}
 	
+	
+	public void setCMMInstanceState(ContextDomainInfoWrapper contextDomainInfo, CMMInstanceState state) {
+		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(contextDomainInfo);
+		if (stateWrapper != null) {
+			stateWrapper.setInstanceState(state);
+		}
+	}
+	
+	
+	public CMMPlatformRequestExecutor getRequestExecutor(ContextDomainInfoWrapper contextDomainInfo) {
+		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(contextDomainInfo);
+		if (stateWrapper != null) {
+			return stateWrapper.getPlatformRequestExecutor();
+		}
+		
+		return null;
+	}
+	
+	
+	public void setRequestExecutor(ContextDomainInfoWrapper contextDomainInfo, CMMPlatformRequestExecutor executor) {
+		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(contextDomainInfo);
+		if (stateWrapper != null) {
+			stateWrapper.setPlatformRequestExecutor(executor);
+		}
+	}
+	
 	@Override
     public void installCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
     		CMMInstanceStateOpCallback operationCallback) {
-	    // TODO Auto-generated method stub
-	    
+		// Create domain info wrapper
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		// Create entry in cmmInstanceStateMap if none exists
+		CMMInstanceStateWrapper wrapper = cmmInstanceStateMap.get(contextDomainInfo);
+		if (wrapper == null) {
+			wrapper = new CMMInstanceStateWrapper(applicationId, contextDimensionURI, contextDomainValueURI);
+			cmmInstanceStateMap.put(contextDomainInfo, wrapper);
+		}
+		
+		cmmInstanceStateOpHandler.execOperation(new CMMInstallInstanceOp(contextDomainInfo, this), operationCallback);
     }
 	
 	@Override
     public void startCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
-	    // TODO Auto-generated method stub
-	    
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		cmmInstanceStateOpHandler.execOperation(new CMMStartInstanceOp(contextDomainInfo, this), operationCallback);
     }
 	
 	@Override
     public void stopCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
-	    // TODO Auto-generated method stub
-	    
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		cmmInstanceStateOpHandler.execOperation(new CMMStopInstanceOp(contextDomainInfo, this), operationCallback);
     }
 	
 	@Override
     public void uninstallCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
-	    // TODO Auto-generated method stub
-	    
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		cmmInstanceStateOpHandler.execOperation(new CMMKillInstanceOp(contextDomainInfo, this), operationCallback);
     }
 	
 	
 	@Override
     public CMMOperationFuture<Void> installCMMInstance(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
-	    return null;
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		// Create entry in cmmInstanceStateMap if none exists
+		CMMInstanceStateWrapper wrapper = cmmInstanceStateMap.get(contextDomainInfo);
+		if (wrapper == null) {
+			wrapper = new CMMInstanceStateWrapper(applicationId, contextDimensionURI, contextDomainValueURI);
+			cmmInstanceStateMap.put(contextDomainInfo, wrapper);
+		}
+		
+		return cmmInstanceStateOpHandler.execOperation(new CMMInstallInstanceOp(contextDomainInfo, this));
     }
 	
 	@Override
     public CMMOperationFuture<Void> startCMMInstance(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
-	    // TODO Auto-generated method stub
-	    return null;
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		return cmmInstanceStateOpHandler.execOperation(new CMMStartInstanceOp(contextDomainInfo, this));
     }
 
 	@Override
     public CMMOperationFuture<Void> stopCMMInstance(String applicationId, 
             String contextDimensionURI, String contextDomainValueURI) {
-	    return null;
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		return cmmInstanceStateOpHandler.execOperation(new CMMStopInstanceOp(contextDomainInfo, this));
     }
 
 	@Override
     public CMMOperationFuture<Void> uninstallCMMInstance(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
-	    return null;
+		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
+				contextDomainValueURI, applicationId);
+		
+		return cmmInstanceStateOpHandler.execOperation(new CMMKillInstanceOp(contextDomainInfo, this));
     }
 	
+	
 	@Override
-    public void addPlatformMtpAddress(String host, int port) {
-	    // TODO Auto-generated method stub
+    public boolean addPlatformMtpAddress(String host, int port) {
+	    String mtpAddress = "http://" + host + ":" + port + "/jade";
 	    
-    }
+		try {
+	        jadeAgentContainer.installMTP(mtpAddress, MessageTransportProtocol.class.getName());
+        }
+        catch (Exception e) {
+	        e.printStackTrace();
+	        return false;
+        }
+        
+    
+		return true;
+	}
 	
 	
 	@Override
     public void removePlatformMtpAddress(String host, int port) {
-	    // TODO Auto-generated method stub
+		String mtpAddress = "http://" + host + ":" + port + "/jade";
 	    
+		try {
+	        jadeAgentContainer.uninstallMTP(mtpAddress);
+        }
+        catch (Exception e) {
+	        e.printStackTrace();
+        }
     }
 
 	// CMM Agent Management Service
 	/////////////////////////////////////////////////////////////////////////
 	@Override
     public AgentController createNewAgent(String localName, String className, Object[] args) throws Exception {
-	    // TODO Auto-generated method stub
 		return jadeAgentContainer.createNewAgent(localName, className, args);
     }
 
 
 	@Override
     public void removeAgent(AID agentAID) {
-	    // TODO Auto-generated method stub
-	    
+	    try {
+	        jadeAgentContainer.getAgent(agentAID.getName(), true).kill();
+        }
+        catch (ControllerException e) {
+	        e.printStackTrace();
+        }
     }
 
 
 	@Override
     public AgentController acceptNewAgent(String localName, Agent agent) throws Exception {
-	    // TODO Auto-generated method stub
-	    return null;
-    }
-
-
-	@Override
-    public String getContainerName() {
-	    // TODO Auto-generated method stub
-	    return null;
+		return jadeAgentContainer.acceptNewAgent(localName, agent);
     }
 
 
 	@Override
     public String getPlatformName() {
-	    // TODO Auto-generated method stub
-	    return null;
+	    return jadeAgentContainer.getPlatformName();
     }
 }

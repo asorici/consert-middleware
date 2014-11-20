@@ -11,8 +11,6 @@ public interface AgentManagementService {
 	public void removeAgent(AID agentAID);
 	
 	public AgentController acceptNewAgent(String localName, Agent agent) throws Exception;
-	
-	public String getContainerName();
 
 	public String getPlatformName();
 }

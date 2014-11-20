@@ -1,6 +1,5 @@
 package org.aimas.ami.cmm.agent.sensor;
 
-import org.aimas.ami.cmm.agent.config.AbstractSensingManager;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.AssertionUpdated;
 import org.aimas.ami.cmm.agent.onto.ExecTask;
@@ -35,7 +34,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	/** The current update rate (in seconds) for this ContextAssertion */
 	private int updateRate;
 	
-	private AbstractSensingManager sensingManager;
+	private SensingManager sensingManager;
 	private AssertionAdaptorTracker assertionAdaptorTracker;
 	
 	/**
@@ -44,7 +43,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	 * @param updateRate
 	 */
     public AssertionManager(String assertionResourceURI, String updateMode, int updateRate,
-    		AssertionAdaptorTracker assertionAdaptorTracker, AbstractSensingManager sensingManager) {
+    		AssertionAdaptorTracker assertionAdaptorTracker, SensingManager sensingManager) {
 	    this.assertionResourceURI = assertionResourceURI;
 	    this.updateMode = updateMode;
 	    this.updateRate = updateRate;
@@ -64,6 +63,13 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	    }
     }
     
+    
+    public void close() {
+    	active = false;
+    	assertionAdaptorTracker.close();
+    }
+    
+    
     @Override
     public void deliverUpdate(ContextAssertionDescription assertionDesc, UpdateRequest update) {
 	    // Create the AssertionUpdated message
@@ -71,12 +77,14 @@ public class AssertionManager implements ApplicationSensingAdaptor {
     	assertionUpdate.setAssertion(fromAdaptor(assertionDesc));
     	assertionUpdate.setAssertionContent(update.toString());
     	
-    	AssertionUpdateBehaviour updateBehaviour = new AssertionUpdateBehaviour(sensingManager.getManagingAgent(), assertionUpdate);
+    	AssertionUpdateBehaviour updateBehaviour = new AssertionUpdateBehaviour(sensingManager.getManagingAgent(), 
+    					sensingManager.getAssertionUpdatesDestination(), assertionUpdate);
     	sensingManager.getManagingAgent().addBehaviour(updateBehaviour);
     }
     
+    
     public AssertionDescription getAssertionDescription() {
-    	System.out.println("[Assertion Manager " + assertionResourceURI + "] Getting description");
+    	//System.out.println("[Assertion Manager " + assertionResourceURI + "] Getting description");
     	
     	ContextAssertionAdaptor assertionAdaptor = assertionAdaptorTracker.getService();
 	    if (assertionAdaptor != null) {
@@ -90,6 +98,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
 	    return null;
     }
     
+   
     private AssertionDescription fromAdaptor(ContextAssertionDescription desc) {
     	DefaultAssertionDescription info = new DefaultAssertionDescription();
     	info.setAssertionType(desc.getContextAssertionURI());
@@ -100,6 +109,7 @@ public class AssertionManager implements ApplicationSensingAdaptor {
     	
     	return info;
     }
+    
     
     public void setActive(boolean active) {
     	this.active = active;

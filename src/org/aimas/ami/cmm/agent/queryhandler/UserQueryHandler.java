@@ -421,7 +421,7 @@ public class UserQueryHandler {
 			QueryHandlerSpecification spec = (QueryHandlerSpecification)manager.getCtxQueryAgent().getAgentSpecification();
 			String conversationId = manager.getCtxQueryAgent().getName() + "-EnableAssertions-" + System.currentTimeMillis(); 
 			
-			enableAssertionsMsg.addReceiver(spec.getAssignedCoordinatorAddress().getAID());
+			enableAssertionsMsg.addReceiver(spec.getAssignedManagerAddress().getAID());
 			enableAssertionsMsg.setConversationId(conversationId);
 			enableAssertionsMsg.setLanguage(CMMAgent.cmmCodec.getName());
 			enableAssertionsMsg.setOntology(CMMAgent.cmmOntology.getName());
@@ -440,7 +440,7 @@ public class UserQueryHandler {
 			}
 			
 			try {
-				Action enableAssertionsAction = new Action(spec.getAssignedCoordinatorAddress().getAID(), msgContent);
+				Action enableAssertionsAction = new Action(spec.getAssignedManagerAddress().getAID(), msgContent);
 	            manager.getCtxQueryAgent().getContentManager().fillContent(enableAssertionsMsg, enableAssertionsAction);
             }
             catch (Exception e) {

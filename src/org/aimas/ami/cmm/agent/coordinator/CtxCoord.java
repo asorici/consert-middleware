@@ -1,9 +1,8 @@
 package org.aimas.ami.cmm.agent.coordinator;
 
-import jade.core.AID;
-
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.api.ApplicationControlAdaptor;
 import org.aimas.ami.cmm.api.CMMConfigException;
@@ -15,12 +14,11 @@ import com.hp.hpl.jena.rdf.model.Resource;
 public class CtxCoord extends CMMAgent {
     private static final long serialVersionUID = 6296494181541059651L;
     
-    /* Application unique identifier, agent specification */
-    private String appIdentifier;
+    /* agent specification */
     private CoordinatorSpecification coordinatorSpecification;
     
     /* Coordinator state and internal structures */
-    private SensorManager sensorManager;
+    private ContextUpdateManager contextUpdateManager;
     private QueryHandlerManager queryHandlerManager;
     private CommandManager commandManager;
     
@@ -33,8 +31,8 @@ public class CtxCoord extends CMMAgent {
 		return AgentType.CTX_COORD;
 	}
 	
-	public SensorManager getSensorManager() {
-		return sensorManager;
+	public ContextUpdateManager getContextUpdateManager() {
+		return contextUpdateManager;
 	}
 
 	public QueryHandlerManager getQueryHandlerManager() {
@@ -48,32 +46,10 @@ public class CtxCoord extends CMMAgent {
 	// SETUP
 	//////////////////////////////////////////////////////////////////////////
 	@Override
-	public void setup() {
-		// ======== STEP 1:	retrieve the initialization arguments and set CMM agent language
-    	Object[] initArgs = getArguments();
-    	
-    	// first argument is always the URI of the AgentSpecification resource in the 
-    	String agentSpecURI = (String)initArgs[0];
-    	
-    	// second one is always the application unique identifier
-    	appIdentifier = (String)initArgs[1];
-    	
-    	// third one is optional and denotes the AID of a local OrgMgr
-    	if (initArgs.length == 3) {
-    		localOrgMgr = (AID)initArgs[2];
-    	}
-    	
-    	System.out.println("Agent " + getName() + " starting: " + "spec: " + agentSpecURI + ", appId: " + appIdentifier + ", localOrgMgr: " + localOrgMgr);
-    	
-    	// register the CMMAgent-Lang ontology
-    	registerCMMAgentLang();
-    	
-    	// ======== STEP 2a: configure the agent according to its specification	
+	public void doAgentSpecificSetup(String agentSpecURI, String appIdentifier) {
+    	// ======== STEP 1: configure the agent according to its specification	
     	try {
-	    	// configure access to resource
-    		doResourceAccessConfiguration();
-    		
-    		OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
+	    	OntModel cmmConfigModel = configurationLoader.loadAgentConfiguration();
     		Resource agentSpecRes = cmmConfigModel.getResource(agentSpecURI);
     		
     		if (agentSpecRes == null) {
@@ -84,12 +60,11 @@ public class CtxCoord extends CMMAgent {
     		// retrieve specification and access the configured application adaptor service
     		agentSpecification = CoordinatorSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		coordinatorSpecification = (CoordinatorSpecification)agentSpecification;
-    		
-    		System.out.println("["+ getName() + "]: " + "Configuration has been parsed.");
+    		assignedOrgMgr = coordinatorSpecification.getAssignedManagerAddress().getAID();
     		
     		setupManagementStructures();
     		
-    		System.out.println("["+ getName() + "]: " + "Management structures setup.");
+    		//System.out.println("["+ getName() + "]: " + "Management structures setup.");
     	}
     	catch(CMMConfigException e) {
     		// if we have a local OrgMgr we must signal our initialization failure
@@ -98,7 +73,7 @@ public class CtxCoord extends CMMAgent {
     		return;
     	}
     	
-    	// STEP 2b: register CtxCoord service
+    	// STEP 2: register CtxCoord service
     	registerCoordinatorService();
     	
     	// ======== STEP 3:	setup the CtxUser specific permanent behaviours
@@ -112,12 +87,20 @@ public class CtxCoord extends CMMAgent {
 	
 	private void registerCoordinatorService() {
 		registerAgentService(appIdentifier, null);
-		System.out.println("["+ getName() + "]: " + "Coordinator service registered.");
+    }
+	
+	
+	@Override
+    protected void registerWithAssignedManager() {
+	    // all we have to do is register a behavior of type RegisterCMMAgentInitiator, if we have an `assigned' OrgMgr
+		if (assignedOrgMgr != null) {
+			addBehaviour(new RegisterCMMAgentInitiator(this));
+		}
     }
 	
 	private void setupManagementStructures() throws CMMConfigException {
         // setup the SensorManager
-		sensorManager = new SensorManager(this);
+		contextUpdateManager = new ContextUpdateManager(this);
 		
 		// setup the QueryHandler Manager
 		queryHandlerManager = new QueryHandlerManager(this);
@@ -142,4 +125,5 @@ public class CtxCoord extends CMMAgent {
 		// Start the provisioning management service
 		commandManager.setCommandRuleServiceActive(true);
     }
+
 }

@@ -21,7 +21,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	
 	
 	private CMMInstanceBundleWrapper defaultInstanceBundle;
-	private Map<ContextDomainWrapper, CMMInstanceBundleWrapper> cmmInstanceMap;
+	private Map<ContextDomainInfoWrapper, CMMInstanceBundleWrapper> cmmInstanceMap;
 	
 	/**
 	 * Constructs a tracker for CONSERT CMM-Instance bundles. A corresponding wrapper is returned
@@ -32,7 +32,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	public CMMInstanceTracker(BundleContext context) {
 	    super(context, Bundle.INSTALLED | Bundle.ACTIVE, null);
 	    
-	    cmmInstanceMap = new HashMap<ContextDomainWrapper, CMMInstanceBundleWrapper>();
+	    cmmInstanceMap = new HashMap<ContextDomainInfoWrapper, CMMInstanceBundleWrapper>();
     }
 	
 	/**
@@ -45,7 +45,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	}
 	
 	public Bundle getCMMInstanceBundle(String applicationId, String contextDimensionURI, String contextDomainValueURI) {
-		ContextDomainWrapper domainWrapper = new ContextDomainWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
+		ContextDomainInfoWrapper domainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
 		CMMInstanceBundleWrapper bundleWrapper = cmmInstanceMap.get(domainWrapper);
 		
 		return bundleWrapper != null ? bundleWrapper.getCmmInstanceBundle() : null;
@@ -64,7 +64,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 		// First check for the existence of the default instance bundle
 		if (bundleSymbolicName.equals(DEFAULT_INSTANCE_BUNDLE_SYMBOLIC_NAME)) {
 			if (defaultInstanceBundle == null) {
-				defaultInstanceBundle = new CMMInstanceBundleWrapper(new ContextDomainWrapper(contextDimensionURI, contextDomainValueURI, applicationId), bundle);
+				defaultInstanceBundle = new CMMInstanceBundleWrapper(new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId), bundle);
 			}
 			else {
 				defaultInstanceBundle.updateCmmInstanceBundle(bundle);
@@ -74,7 +74,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 		}
 		// Otherwise there must be a contextDimension, a contextDomainValueURI and an applicationId
 		else if (contextDimensionURI != null && contextDomainValueURI != null && applicationId != null) {
-			ContextDomainWrapper contextDomainWrapper = new ContextDomainWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
+			ContextDomainInfoWrapper contextDomainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
 			CMMInstanceBundleWrapper instanceBundleWrapper = cmmInstanceMap.get(contextDomainWrapper);
 			
 			if (instanceBundleWrapper == null) {
@@ -104,7 +104,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 			defaultInstanceBundle.updateCmmInstanceBundle(bundle);
 		}
 		else if (applicationId != null && contextDimensionURI != null && contextDomainValueURI != null) {
-			ContextDomainWrapper contextDomainWrapper = new ContextDomainWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
+			ContextDomainInfoWrapper contextDomainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
 			CMMInstanceBundleWrapper instanceBundleWrapper = cmmInstanceMap.get(contextDomainWrapper);
 			
 			if (instanceBundleWrapper != null) {
@@ -127,7 +127,7 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 			}
 		}
 		else if (applicationId != null && contextDimensionURI != null && contextDomainValueURI != null) {
-			ContextDomainWrapper contextDomainWrapper = new ContextDomainWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
+			ContextDomainInfoWrapper contextDomainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
 			
 			if (event.getType() == BundleEvent.UNINSTALLED) {
 				cmmInstanceMap.remove(contextDomainWrapper);
@@ -137,10 +137,10 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	
 	
 	public static class CMMInstanceBundleWrapper {
-		private ContextDomainWrapper contextDomainInfo;
+		private ContextDomainInfoWrapper contextDomainInfo;
 		private Bundle cmmInstanceBundle;
 		
-		public CMMInstanceBundleWrapper(ContextDomainWrapper contextDomainInfo, Bundle cmmInstanceBundle) {
+		public CMMInstanceBundleWrapper(ContextDomainInfoWrapper contextDomainInfo, Bundle cmmInstanceBundle) {
 	        
 			this.contextDomainInfo = contextDomainInfo;
 	        this.cmmInstanceBundle = cmmInstanceBundle;

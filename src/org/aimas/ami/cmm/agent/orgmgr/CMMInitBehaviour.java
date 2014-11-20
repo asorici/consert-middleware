@@ -41,24 +41,30 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     	this.initializedAgents = new LinkedList<ManagedAgentWrapper<?>>();
     	
     	// add the sub-behaviours
-    	List<ManagedAgentWrapper<CoordinatorSpecification>> managedCoordinators = orgMgr.agentManager.getManagedCoordinators();
-    	for (ManagedAgentWrapper<CoordinatorSpecification> managedAgent : managedCoordinators) {
-    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, COORD_TIMEOUT));
+    	ManagedAgentWrapper<CoordinatorSpecification> managedCoordinator = orgMgr.agentManager.getManagedCoordinator();
+    	if (managedCoordinator.isLocalAgent()) {
+    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedCoordinator, COORD_TIMEOUT));
     	}
     	
-    	List<ManagedAgentWrapper<QueryHandlerSpecification>> managedQueryHandlers = orgMgr.agentManager.getManagedQueryHandlers();
-    	for (ManagedAgentWrapper<QueryHandlerSpecification> managedAgent : managedQueryHandlers) {
-    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, QUERY_HANDLER_TIMEOUT));
+    	List<ManagedAgentWrapper<QueryHandlerSpecification>> managedLocalQueryHandlers = orgMgr.agentManager.getManagedQueryHandlers();
+    	for (ManagedAgentWrapper<?> managedAgent : managedLocalQueryHandlers) {
+    		if (managedAgent.isLocalAgent()) {
+    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, QUERY_HANDLER_TIMEOUT));
+    		}
     	}
     	
-    	List<ManagedAgentWrapper<SensorSpecification>> managedSensors = orgMgr.agentManager.getManagedSensors();
-    	for (ManagedAgentWrapper<SensorSpecification> managedAgent : managedSensors) {
-    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, SENSOR_TIMEOUT));
+    	List<ManagedAgentWrapper<SensorSpecification>> managedLocalSensors = orgMgr.agentManager.getManagedSensors();
+    	for (ManagedAgentWrapper<?> managedAgent : managedLocalSensors) {
+    		if (managedAgent.isLocalAgent()) {
+    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, SENSOR_TIMEOUT));
+    		}
     	}
     	
-    	List<ManagedAgentWrapper<UserSpecification>> managedUsers = orgMgr.agentManager.getManagedUsers();
-    	for (ManagedAgentWrapper<UserSpecification> managedAgent : managedUsers) {
-    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, USER_TIMEOUT));
+    	List<ManagedAgentWrapper<UserSpecification>> managedLocalUsers = orgMgr.agentManager.getManagedUsers();
+    	for (ManagedAgentWrapper<?> managedAgent : managedLocalUsers) {
+    		if (managedAgent.isLocalAgent()) {
+    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, USER_TIMEOUT));
+    		}
     	}
     }
     
