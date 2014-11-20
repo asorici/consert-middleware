@@ -1,5 +1,8 @@
 Bundle-Version: 1.0.0.${tstamp}
-Bundle-Activator: org.aimas.ami.cmm.agent.AgentActivator
+Bundle-Activator: org.aimas.ami.cmm.CMMPlatformManager
+Bundle-Name: consert-middleware-agents
+Bundle-Description: The core of the CONSERT CMM operational functionality: the multi-agent system implementing the general manager, coordinator, query handler, sensor and user functionalities
+
 Private-Package:  \
 	org.aimas.ami.cmm.agent.config,\
 	org.aimas.ami.cmm.agent.coordinator,\
@@ -15,27 +18,32 @@ Private-Package:  \
 	org.aimas.ami.cmm.vocabulary,\
 	org.aimas.ami.cmm.agent,\
 	org.aimas.ami.cmm
-Bundle-Name: consert-middleware-agents
-Bundle-Description: The core of the CONSERT CMM operational functionality: the multi-agent system implementing the general manager, coordinator, query handler, sensor and user functionalities
 Import-Package:  \
-	jade.content;resolution:=optional,\
-	jade.content.lang;resolution:=optional,\
-	jade.content.lang.sl;resolution:=optional,\
-	jade.content.onto;resolution:=optional,\
-	jade.content.schema;resolution:=optional,\
-	jade.core;resolution:=optional,\
-	jade.core.behaviours;resolution:=optional,\
-	jade.domain;resolution:=optional,\
-	jade.domain.FIPAAgentManagement;resolution:=optional,\
-	jade.lang.acl;resolution:=optional,\
-	jade.osgi;resolution:=optional,\
-	jade.osgi.service.agentFactory;resolution:=optional,\
-	jade.osgi.service.runtime;resolution:=optional,\
-	jade.proto;resolution:=optional,\
-	jade.proto.states;resolution:=optional,\
-	jade.util;resolution:=optional,\
-	jade.util.leap;resolution:=optional,\
-	jade.wrapper;resolution:=optional,\
+	jade.content,\
+	jade.content.lang,\
+	jade.content.lang.sl,\
+	jade.content.onto,\
+	jade.content.schema,\
+	jade.core,\
+	jade.core.behaviours,\
+	jade.domain,\
+	jade.domain.FIPAAgentManagement,\
+	jade.lang.acl,\
+	jade.proto,\
+	jade.proto.states,\
+	jade.util,\
+	jade.util.leap,\
+	jade.wrapper,\
+	javax.swing;resolution:=optional,\
+	javax.swing.border;resolution:=optional,\
+	javax.swing.event;resolution:=optional,\
+	javax.swing.filechooser;resolution:=optional,\
+	javax.swing.table;resolution:=optional,\
+	javax.swing.text;resolution:=optional,\
+	javax.swing.tree;resolution:=optional,\
 	*
+Include-Resource: lib=lib/
+Bundle-ClassPath: ., lib/jade.jar
+
 Export-Package:  \
 	org.aimas.ami.cmm.api
