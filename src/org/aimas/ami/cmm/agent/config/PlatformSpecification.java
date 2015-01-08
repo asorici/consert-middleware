@@ -8,7 +8,6 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 
 public class PlatformSpecification {
-	
 	private CMMAgentContainer platformAgentContainer;
 	
 	public PlatformSpecification(CMMAgentContainer platformAgentContainer) {
@@ -20,7 +19,7 @@ public class PlatformSpecification {
 	}
 	
 	public static PlatformSpecification fromConfigurationModel(OntModel platformConfigModel) {
-		Resource platformSpec = platformConfigModel.listResourcesWithProperty(RDF.type, OrgConf.ApplicationSpec).next();
+		Resource platformSpec = platformConfigModel.listResourcesWithProperty(RDF.type, OrgConf.PlatformSpec).next();
 		
 		CMMAgentContainer platformAgentContainer = CMMAgentContainer.fromConfigurationModel(platformConfigModel, 
 				platformSpec.getPropertyResourceValue(OrgConf.hasAgentContainer));

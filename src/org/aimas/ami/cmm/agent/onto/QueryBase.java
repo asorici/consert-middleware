@@ -4,21 +4,22 @@ package org.aimas.ami.cmm.agent.onto;
 import jade.util.leap.*;
 
 /**
+* Contains the number of query handlers to which a given query/subscription has to be forwarded.
+For each queryHandler, the adapted form of the query is indicated (e.g. for an upper limit broadcast query, the upper limit is always adapted during each hop).
 * Protege name: QueryBase
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/31, 13:46:14
+* @version 2014/12/16, 20:08:31
 */
 public interface QueryBase extends jade.content.Predicate {
 
    /**
-   * Indicates the address of a CtxQueryHandler agent that can be used to respond to the query that needs to be posed.
-   * Protege name: queryHandler
+   * Protege name: baseItems
    */
-   public void addQueryHandler(jade.core.AID elem);
-   public boolean removeQueryHandler(jade.core.AID elem);
-   public void clearAllQueryHandler();
-   public Iterator getAllQueryHandler();
-   public List getQueryHandler();
-   public void setQueryHandler(List l);
+   public void addBaseItem(QueryBaseItem elem);
+   public boolean removeBaseItem(QueryBaseItem elem);
+   public void clearAllBaseItems();
+   public Iterator getAllBaseItems();
+   public List getBaseItems();
+   public void setBaseItems(List l);
 
 }

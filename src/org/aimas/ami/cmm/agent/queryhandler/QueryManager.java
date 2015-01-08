@@ -11,7 +11,9 @@ import org.aimas.ami.contextrep.engine.api.AssertionUpdateListener;
 import org.aimas.ami.contextrep.engine.api.QueryHandler;
 import org.aimas.ami.contextrep.engine.api.StatsHandler;
 import org.aimas.ami.contextrep.model.ContextAssertion;
+import org.aimas.ami.contextrep.resources.CMMConstants;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
 public class QueryManager implements AssertionUpdateListener {
@@ -21,32 +23,46 @@ public class QueryManager implements AssertionUpdateListener {
 	
 	private Map<AID, UserQueryHandler> managedQueries;
 	
-	public QueryManager(CtxQueryHandler ctxQueryAgent) throws CMMConfigException {
+	public QueryManager(CtxQueryHandler ctxQueryAgent, String appIdentifier) throws CMMConfigException {
 	    this.ctxQueryAgent = ctxQueryAgent;
-	    setup();
+	    setup(appIdentifier);
 	}
 	
 	/**
 	 * Find the CONSERT Engine query and stats adaptor
+	 * @param appIdentifier 
 	 * @throws CMMConfigException
 	 */
-	private void setup() throws CMMConfigException {
+	private void setup(String appIdentifier) throws CMMConfigException {
 		BundleContext context = ctxQueryAgent.getOSGiBridge().getBundleContext();
 		managedQueries = new HashMap<AID, UserQueryHandler>();
 		
-		ServiceReference<QueryHandler> queryAdaptorRef = context.getServiceReference(QueryHandler.class);
-		if (queryAdaptorRef == null) {
-			throw new CMMConfigException("CtxQueryHandler " + ctxQueryAgent.getName() + 
-				" could not find reference for CONSERT Engine service: " + QueryHandler.class.getName());
-		}
+		ServiceReference<StatsHandler> statsAdaptorRef = null;
+		ServiceReference<QueryHandler> queryAdaptorRef = null;
+		
+		try {
+	        statsAdaptorRef = context.getServiceReferences(StatsHandler.class, 
+	        		"(" + CMMConstants.CONSERT_APPLICATION_ID_PROP + "=" + appIdentifier + ")").iterator().next();
+	        if (statsAdaptorRef == null) {
+				throw new CMMConfigException("CtxQueryHandler " + ctxQueryAgent.getName() + 
+						" could not find reference for CONSERT Engine service: " + StatsHandler.class.getName());
+			}
+	        
+	        queryAdaptorRef = context.getServiceReferences(QueryHandler.class, 
+	        		"(" + CMMConstants.CONSERT_APPLICATION_ID_PROP + "=" + appIdentifier + ")").iterator().next();
+	        if (queryAdaptorRef == null) {
+				throw new CMMConfigException("CtxQueryHandler " + ctxQueryAgent.getName() + 
+						" could not find reference for CONSERT Engine service: " + QueryHandler.class.getName());
+			}
+        }
+        catch (InvalidSyntaxException e) {
+	        e.printStackTrace();
+	        throw new CMMConfigException(e);
+        }
+		
 		engineQueryAdaptor = context.getService(queryAdaptorRef);
 		engineQueryAdaptor.registerAssertionUpdateListener(this);
 		
-		ServiceReference<StatsHandler> statsAdaptorRef = context.getServiceReference(StatsHandler.class);
-		if (statsAdaptorRef == null) {
-			throw new CMMConfigException("CtxQueryHandler " + ctxQueryAgent.getName() + 
-				" could not find reference for CONSERT Engine service: " + StatsHandler.class.getName());
-		}
 		engineStatsAdaptor = context.getService(statsAdaptorRef);
 	}
 	

@@ -29,8 +29,6 @@ import org.aimas.ami.cmm.sensing.ContextAssertionDescription;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 import org.aimas.ami.contextrep.vocabulary.ConsertCore;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -337,13 +335,13 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
             UpdateRequest profiledAssertionUpdate, BroadcastTarget broadcastTarget, 
             String contextDomainLimit) throws DisconnectedCoordinatorException {
 	    // TODO: future implementation
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException("Not implemented, yet.");
     }
 
 	@Override
     public void broadcastEntityDescriptions(Model entityDescriptionsModel,
             BroadcastTarget broadcastTarget, String contextDomainLimit) throws DisconnectedCoordinatorException {
 	    // TODO: future implementation
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException("Not implemented, yet.");
     }
 }

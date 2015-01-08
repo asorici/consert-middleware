@@ -10,11 +10,17 @@ import org.aimas.ami.cmm.agent.onto.impl.DefaultRegisterCMMAgent;
 public class RegisterCMMAgentInitiator extends SimpleAchieveREInitiator {
     private static final long serialVersionUID = -5365253149880996392L;
     
-    private CMMAgent cmmAgent;
+    public static interface RegisterCMMAgentNotifier {
+    	public void cmmAgentRegistered();
+    }
     
-	public RegisterCMMAgentInitiator(CMMAgent agent) {
+    private CMMAgent cmmAgent;
+    private RegisterCMMAgentNotifier registrationNotifier;
+    
+	public RegisterCMMAgentInitiator(CMMAgent agent, RegisterCMMAgentNotifier registrationNotifier) {
 		super(agent, null);
 		this.cmmAgent = agent;
+		this.registrationNotifier = registrationNotifier;
 	}
 	
 	@Override
@@ -29,7 +35,7 @@ public class RegisterCMMAgentInitiator extends SimpleAchieveREInitiator {
 		registerRequest.addReceiver(cmmAgent.assignedOrgMgr);
 		
 		RegisterCMMAgent registerContent = new DefaultRegisterCMMAgent();
-		registerContent.setAgentService(cmmAgent.getAgentType().getServiceName());
+		registerContent.setAgentType(cmmAgent.getAgentType().getServiceName());
 		registerContent.setAppIdentifier(cmmAgent.getAppIdentifier());
 		registerContent.setAgentActive(true);
 		
@@ -51,8 +57,11 @@ public class RegisterCMMAgentInitiator extends SimpleAchieveREInitiator {
 	protected void handleRefuse(ACLMessage msg){}
 	
 	@Override
-	protected void handleInform(ACLMessage msg) {
-		// TODO: see if we do something once we receive confirmation. For now we assume
-		// this always succeeds and there's no reason in keeping any score.
+	protected void handleInform(ACLMessage msg) {		
+		// After we have registered with the assigned OrgMgr, call the notifier
+		// his associated CtxQueryHandler and CtxCoordinator, as well as the domain data
+		if (registrationNotifier != null) {
+			registrationNotifier.cmmAgentRegistered();
+		}
 	}
 }

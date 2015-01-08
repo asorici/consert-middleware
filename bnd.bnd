@@ -1,10 +1,11 @@
 -sub:  \
 	*.bnd
 -buildpath:  \
-    lib/jade.jar;version=file,\
 	osgi.core;version=5.0,\
 	jena-bundle-2.7.2;version=2.7,\
 	consert-model;version=1.0,\
 	consert-engine.engine;version=1.0,\
-	consert-engine.resources;version=1.0,\
-	org.apache.felix.configadmin;version=1.8
+	org.apache.felix.dependencymanager;version=3.1,\
+	org.apache.felix.configadmin;version=1.8,\
+	consert-engine.cmm-resources;version=1.0,\
+	jade-bundle;version=4.3

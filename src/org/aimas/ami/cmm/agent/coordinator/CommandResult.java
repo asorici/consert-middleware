@@ -100,7 +100,7 @@ public abstract class CommandResult {
 	private static List<CommandResult> getUpdateModeCommands(Model newTriples) {
 		List<CommandResult> results = new LinkedList<CommandResult>();
 	    
-	    ResIterator resultIt = newTriples.listSubjectsWithProperty(RDF.type, CoordConf.StopRuleCommand);
+	    ResIterator resultIt = newTriples.listSubjectsWithProperty(RDF.type, CoordConf.UpdateModeCommand);
 	    for (; resultIt.hasNext(); ) {
 	    	Resource commandRes = resultIt.next();
 	    	Resource assertionResource = commandRes.getPropertyResourceValue(CoordConf.forContextAssertion);

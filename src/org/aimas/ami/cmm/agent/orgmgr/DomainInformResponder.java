@@ -41,11 +41,9 @@ public class DomainInformResponder extends AchieveREResponder {
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		
-		String appIdentifier = null;
 		try {
 			Action contentAction = (Action)orgMgr.getContentManager().extractContent(request);
 			InformDomain requestContent = (InformDomain) contentAction.getAction();
-	        appIdentifier = requestContent.getAppIdentifier();
 		}
         catch (Exception e) {
         	e.printStackTrace();
@@ -60,6 +58,10 @@ public class DomainInformResponder extends AchieveREResponder {
 		domain.setDomainEntity(orgMgr.appSpecification.getLocalContextDomain().getDomainEntity().getURI());
 		domain.setDomainValue(orgMgr.appSpecification.getLocalContextDomain().getDomainValue().getURI());
 		domainDesc.setDomain(domain);
+		
+		// Set also the coordinator and query responder for this context domain.
+		domainDesc.setCoordinator(orgMgr.agentManager.getManagedCoordinator().getAgentAID());
+		domainDesc.setQueryHandler(orgMgr.agentManager.getManagedQueryHandlers().get(0).getAgentAID());
 		
 		try {
 	        orgMgr.getContentManager().fillContent(domainInformMsg, domainDesc);

@@ -18,9 +18,9 @@ import java.util.Calendar;
 
 import org.aimas.ami.cmm.agent.config.AgentSpecification;
 import org.aimas.ami.cmm.agent.onto.CMMAgentLangOntology;
+import org.aimas.ami.cmm.agent.osgi.JadeOSGIBridgeHelper;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
-import org.aimas.ami.cmm.utils.JadeOSGIBridgeHelper;
 import org.aimas.ami.contextrep.resources.SystemTimeService;
 import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
@@ -61,6 +61,7 @@ public abstract class CMMAgent extends Agent {
 	protected AID localOrgMgr;
 	protected AID assignedOrgMgr;
 	protected String appIdentifier;
+	protected String contextDomainValueURI;
 	
 	public JadeOSGIBridgeHelper getOSGiBridge() {
 		return osgiHelper;
@@ -78,6 +79,14 @@ public abstract class CMMAgent extends Agent {
 		return appIdentifier;
 	}
 	
+	public String getContextDomainValueURI() {
+		return contextDomainValueURI;
+	}
+	
+	public AID getAssignedOrgManager() {
+		return assignedOrgMgr;
+	}
+	
 	@Override
 	public void setup() {
 		// STEP 1:	retrieve the initialization arguments and set CMM agent language
@@ -87,6 +96,10 @@ public abstract class CMMAgent extends Agent {
     	String agentSpecURI = (String)initArgs[1];
     	appIdentifier = (String)initArgs[2];
     	localOrgMgr = (AID)initArgs[3];
+    	
+    	if (initArgs.length == 5) {
+    		contextDomainValueURI = (String)initArgs[4];
+    	}
     	
     	// STEP 2: configure cmm resource access
     	try {

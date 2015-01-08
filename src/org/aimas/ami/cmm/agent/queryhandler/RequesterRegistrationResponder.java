@@ -8,13 +8,12 @@ import jade.lang.acl.MessageTemplate.MatchExpression;
 import jade.proto.AchieveREResponder;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.onto.RegisterUser;
+import org.aimas.ami.cmm.agent.onto.RegisterQueryRequester;
 
-public class UserRegistrationBehaviour extends AchieveREResponder {
+public class RequesterRegistrationResponder extends AchieveREResponder {
     private static final long serialVersionUID = -417343153663138535L;
 
 	private static MessageTemplate getUserRegistrationTemplate(final CtxQueryHandler ctxQueryAgent) {
-		// We consider a match if we receive either a QUERY_REF, QUERY_IF, SUBSCRIBE, OR CANCEL message
 		MessageTemplate mt = new MessageTemplate(new MatchExpression() {
             private static final long serialVersionUID = 1L;
 
@@ -24,8 +23,12 @@ public class UserRegistrationBehaviour extends AchieveREResponder {
 			}
 			
 			private boolean matchesLanguage(ACLMessage msg) {
-				return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
+				if (msg.getLanguage() != null && msg.getOntology() != null) {
+					return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
 						msg.getOntology().equals(CMMAgent.cmmOntology.getName());
+				}
+				
+				return false;
 			}
 			
 			private boolean matchesContent(ACLMessage msg) {
@@ -35,7 +38,7 @@ public class UserRegistrationBehaviour extends AchieveREResponder {
 				
 				try {
 	                Action actionContent = (Action)ctxQueryAgent.getContentManager().extractContent(msg);
-	                if (!(actionContent.getAction() instanceof RegisterUser)) {
+	                if (!(actionContent.getAction() instanceof RegisterQueryRequester)) {
 	                	return false;
 	                }
 				}
@@ -52,7 +55,7 @@ public class UserRegistrationBehaviour extends AchieveREResponder {
 		return mt;
 	}
 	
-	public UserRegistrationBehaviour(CtxQueryHandler ctxQueryAgent) {
+	public RequesterRegistrationResponder(CtxQueryHandler ctxQueryAgent) {
 		super(ctxQueryAgent, getUserRegistrationTemplate(ctxQueryAgent));
 	}
 	

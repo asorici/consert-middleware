@@ -11,24 +11,15 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class SensorSpecification extends AgentSpecification {
-	private AgentAddress assignedOrgMgrAddress;
 	private List<SensingPolicy> sensingPolicies;
 	
 	public SensorSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, 
 			AgentAddress assignedOrgMgrAddress, List<SensingPolicy> sensingPolicies) {
-	    super(agentAddress, AgentType.CTX_SENSOR, controlPolicy);
 	    
-	    this.assignedOrgMgrAddress = assignedOrgMgrAddress;
+		super(agentAddress, AgentType.CTX_SENSOR, controlPolicy, assignedOrgMgrAddress);
 	    this.sensingPolicies = sensingPolicies;
     }
 
-	public AgentAddress getAssignedManagerAddress() {
-		return assignedOrgMgrAddress;
-	}
-	
-	public boolean hasAssignedManager() {
-		return assignedOrgMgrAddress != null;
-	}
 	
 	public List<SensingPolicy> getSensingPolicies() {
 		return sensingPolicies;

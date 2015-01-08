@@ -30,7 +30,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     static final long USER_TIMEOUT = 10000;
     
     private Event cmmInitEvent;
-    private CMMEventResult initResult;
+    private CMMOpEventResult initResult;
     
     private List<ManagedAgentWrapper<?>> initializedAgents;
     
@@ -42,7 +42,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     	
     	// add the sub-behaviours
     	ManagedAgentWrapper<CoordinatorSpecification> managedCoordinator = orgMgr.agentManager.getManagedCoordinator();
-    	if (managedCoordinator.isLocalAgent()) {
+    	if (managedCoordinator != null && managedCoordinator.isLocalAgent()) {
     		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedCoordinator, COORD_TIMEOUT));
     	}
     	
@@ -82,7 +82,7 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     			ManagedAgentWrapper<?> faultyAgent = currentInitBehaviour.getCMMAgent();
     			Exception initError = currentInitBehaviour.getInitError();
     			
-    			initResult = new CMMEventResult(initError, faultyAgent);
+    			initResult = new CMMOpEventResult(initError, faultyAgent);
     		}
     	}
     	
@@ -95,13 +95,19 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     		// yey, we had no errors during the initialization chain
     		System.out.println("CMM INIT SUCCESSFUL!");
     		
-    		initResult = new CMMEventResult();
+    		initResult = new CMMOpEventResult();
     	}
     	else {
     		if (initResult.hasResult()) {
-	    		System.out.println("CMM INIT FAILED. No initialization confirmation received from " 
+	    		// We know to interpret a value for the initResult as an indication of the agent that failed.
+    			// For the external reply however, we need to wrap this as an exception.
+    			System.out.println("CMM INIT FAILED. No initialization confirmation received from " 
 	    			+ ((ManagedAgentWrapper<?>)initResult.getResult()).getAgentSpecification().getAgentName());
-	    	}
+    			
+    			initResult = new CMMOpEventResult(new Exception("CMM INIT FAILED. "
+    					+ "No initialization confirmation received from " 
+    	    			+ ((ManagedAgentWrapper<?>)initResult.getResult()).getAgentSpecification().getAgentName()));
+    		}
 	    	else {
 	    		System.out.println("CMM INIT FAILED. Exception during initialization: " + initResult.getError());
 	    	}

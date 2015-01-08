@@ -9,13 +9,16 @@ import com.hp.hpl.jena.rdf.model.Resource;
 
 public class AgentSpecification {
 	protected AgentAddress agentAddress;
+	protected AgentAddress assignedManagerAddress;
 	protected AgentPolicy controlPolicy;
 	protected AgentType agentType;
 	
-	public AgentSpecification(AgentAddress agentAddress, AgentType agentType, AgentPolicy controlPolicy) {
+	public AgentSpecification(AgentAddress agentAddress, AgentType agentType, AgentPolicy controlPolicy, 
+			AgentAddress assignedManagerAddress) {
 	    this.agentAddress = agentAddress;
 	    this.agentType = agentType;
 	    this.controlPolicy = controlPolicy;
+	    this.assignedManagerAddress = assignedManagerAddress;
     }
 	
 	public AgentAddress getAgentAddress() {
@@ -38,6 +41,13 @@ public class AgentSpecification {
 		return controlPolicy != null;
 	}
 	
+	public AgentAddress getAssignedManagerAddress() {
+		return assignedManagerAddress;
+	}
+	
+	public boolean hasAssignedManagerAddress() {
+		return assignedManagerAddress != null;
+	}
 	
 	public static AgentAddress getAddressFromConfig(OntModel cmmConfigModel, Resource agentSpec) {
 		AgentAddress agentAddress = AgentAddress.fromConfigurationModel(cmmConfigModel, 

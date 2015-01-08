@@ -1,5 +1,7 @@
 package org.aimas.ami.cmm.agent.config;
 
+import java.io.Serializable;
+
 import org.aimas.ami.cmm.vocabulary.OrgConf;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -7,14 +9,13 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 
 public class CMMAgentContainer {
-	
+    
 	private String platformName;
 	private String containerHost;
 	private int containerPort;
 	private boolean isMainContainer;
 	private String mtpHost;
 	private int mtpPort;
-	
 	
 	private CMMAgentContainer mainContainer;
 

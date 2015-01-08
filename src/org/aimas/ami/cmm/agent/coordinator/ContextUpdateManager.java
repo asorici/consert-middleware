@@ -25,8 +25,6 @@ import org.aimas.ami.contextrep.engine.api.InsertResult;
 import org.aimas.ami.contextrep.engine.api.InsertionHandler;
 import org.aimas.ami.contextrep.engine.api.InsertionResultNotifier;
 import org.aimas.ami.contextrep.engine.api.StatsHandler.AssertionEnableStatus;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -45,7 +43,7 @@ public class ContextUpdateManager implements InsertionResultNotifier {
 	private List<TaskingCommand> pendingCommands;
 	private Map<UpdateRequest, Resource> pendingInsertions;
 	
-	public ContextUpdateManager(CtxCoord ctxCoordinator) throws CMMConfigException {
+	public ContextUpdateManager(CtxCoord ctxCoordinator, InsertionHandler engineInsertionAdaptor) throws CMMConfigException {
 		this.coordAgent = ctxCoordinator;
 		
 		registeredSensors = new HashMap<AID, SensorDescription>();
@@ -53,19 +51,9 @@ public class ContextUpdateManager implements InsertionResultNotifier {
 		pendingCommands = new LinkedList<TaskingCommand>();
 		pendingInsertions = new HashMap<UpdateRequest, Resource>();
 		
-		setupInsertService();
+		this.engineInsertionAdaptor = engineInsertionAdaptor;
 	}
 	
-	private void setupInsertService() throws CMMConfigException {
-		BundleContext context = coordAgent.getOSGiBridge().getBundleContext();
-		
-		// Get insertion handler
-		ServiceReference<InsertionHandler> insertHandlerRef = context.getServiceReference(InsertionHandler.class);
-		if (insertHandlerRef == null) {
-			throw new CMMConfigException("No reference found for CONSERT Engine service: " + InsertionHandler.class.getName());
-		}
-		engineInsertionAdaptor = context.getService(insertHandlerRef);
-    }
 	
 	// MANAGEMENT METHODS 
 	/////////////////////////////////////////////////////////////////////////////

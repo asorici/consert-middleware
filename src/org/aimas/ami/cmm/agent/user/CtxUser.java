@@ -11,9 +11,10 @@ import java.util.Hashtable;
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator.RegisterCMMAgentNotifier;
 import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator;
-import org.aimas.ami.cmm.agent.SearchQueryHandlerInitiator;
 import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator.SearchCoordinatorListener;
+import org.aimas.ami.cmm.agent.SearchQueryHandlerInitiator;
 import org.aimas.ami.cmm.agent.SearchQueryHandlerInitiator.SearchQueryHandlerListener;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
 import org.aimas.ami.cmm.agent.onto.ContextDomain;
@@ -32,7 +33,6 @@ public class CtxUser extends CMMAgent {
     private static final long serialVersionUID = 8709944221448592230L;
     
     /* Application unique identifier, agent specification */
-    private String appIdentifier;
     private UserSpecification userSpecification;
     
     /* Application Adaptor */
@@ -48,7 +48,8 @@ public class CtxUser extends CMMAgent {
     private boolean actsAsSensor = false;
     
     public void setQueryHandler(AID ctxQueryHandler) {
-		this.queryHandlerAgent = ctxQueryHandler;
+		System.out.println("["+getClass().getSimpleName()+"] INFO: Setting queryHandler - " + ctxQueryHandler.getName());
+    	this.queryHandlerAgent = ctxQueryHandler;
 	}
     
     AID getQueryAgent() {
@@ -105,7 +106,10 @@ public class CtxUser extends CMMAgent {
     		// retrieve specification and access the configured application adaptor service
     		agentSpecification = UserSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		userSpecification = (UserSpecification)agentSpecification;
-    		assignedOrgMgr = userSpecification.getAssignedManagerAddress().getAID();
+    		
+    		if (userSpecification.hasAssignedManagerAddress()) {
+    			assignedOrgMgr = userSpecification.getAssignedManagerAddress().getAID();
+    		}
     		
     		setupApplicationAdaptor();
     	}
@@ -120,22 +124,31 @@ public class CtxUser extends CMMAgent {
     	
     	// after this step initialization of the CtxSensor is complete, so we signal a successful init
     	signalInitializationOutcome(true);
-    	
-    	
-    	// ======== STEP 4: check existence of a CtxQueryHandler to be able to pose queries.
-    	// We ask the assigned (or local) OrgMgr for a CtxQueryHandler. If none is found, then
-    	// it means we are in dynamic mode, so we will receive our assigned OrgMgr when we enter
-    	// a ContextDomain
-    	findQueryHandler();
-    	findCoordinator();
-    	
-    	findContextDomain();
 	}
 	
 	@Override
     protected void registerWithAssignedManager() {
 		if (assignedOrgMgr != null) {
-			addBehaviour(new RegisterCMMAgentInitiator(this));
+			// If there is an assigned OrgMgr we will find his associated query handler and coordinator agents
+			// after we register with him as a CtxUser.
+			addBehaviour(new RegisterCMMAgentInitiator(this, new RegisterCMMAgentNotifier() {
+				@Override
+				public void cmmAgentRegistered() {
+					findQueryHandler();
+			    	findCoordinator();
+			    	
+			    	findContextDomain();
+				}
+			}));
+		}
+		else {
+			// Otherwise, we ask the local OrgMgr for a CtxQueryHandler and CtxCoordinator. If none is found, then
+	    	// it means we are in dynamic mode, so we will receive our assigned OrgMgr when we enter
+	    	// a ContextDomain
+	    	findQueryHandler();
+	    	findCoordinator();
+	    	
+	    	findContextDomain();
 		}
     }
 	
@@ -157,7 +170,7 @@ public class CtxUser extends CMMAgent {
 	    // NOTHING TO SETUP FOR THE MOMENT
     }
 	
-	private void findQueryHandler() {
+	void findQueryHandler() {
 	    SearchQueryHandlerListener listener = new SearchQueryHandlerListener() {
 			@Override
 			public void queryHandlerAgentNotFound(ACLMessage msg) {
@@ -174,7 +187,7 @@ public class CtxUser extends CMMAgent {
     }
 	
 	
-	private void findCoordinator() {
+	void findCoordinator() {
 	    SearchCoordinatorListener listener = new SearchCoordinatorListener() {
 			@Override
 			public void coordinatorAgentNotFound(ACLMessage msg) {

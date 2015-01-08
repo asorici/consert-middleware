@@ -11,8 +11,11 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.util.Event;
 import jade.wrapper.AgentController;
 
+import java.util.Collection;
+
 import org.aimas.ami.cmm.CMMPlatformRequestExecutor;
 import org.aimas.ami.cmm.agent.CMMAgent;
+import org.aimas.ami.cmm.agent.config.AgentAddress;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CoordinatorSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
@@ -21,16 +24,21 @@ import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.config.SensorSpecification;
 import org.aimas.ami.cmm.agent.config.UserSpecification;
 import org.aimas.ami.cmm.agent.coordinator.CtxCoord;
+import org.aimas.ami.cmm.agent.onto.RegisterManager;
+import org.aimas.ami.cmm.agent.osgi.JadeOSGIBridgeHelper;
 import org.aimas.ami.cmm.agent.queryhandler.CtxQueryHandler;
 import org.aimas.ami.cmm.agent.sensor.CtxSensor;
 import org.aimas.ami.cmm.agent.user.CtxUser;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
-import org.aimas.ami.cmm.utils.JadeOSGIBridgeHelper;
 import org.aimas.ami.cmm.vocabulary.OrgConf;
+import org.aimas.ami.contextrep.resources.CMMConstants;
+import org.aimas.ami.contextrep.resources.TimeService;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.ResIterator;
@@ -61,28 +69,49 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
     
     /* The index and control of managed agents */
     CMMAgentManager agentManager = new CMMAgentManager();
+    DomainManagementHelper domainManager;
     
-    
+    @Override
     public void setup() {
+    	
 		// STEP 1: retrieve the initialization arguments
     	Object[] initArgs = getArguments();
     	cmmBundleLocation = (String)initArgs[0];
     	myType = (ManagerType)initArgs[1];
+    	Event initializationReadyEvent = (Event)initArgs[2];
     	
 		// STEP 2: do sub-DF registration and register as the implementation for the CMMPlatformInterface
-    	doSubDFRegistration();    	
     	registerO2AInterface(CMMPlatformRequestExecutor.class, this);
+    	doSubDFRegistration();    	
     	
     	// STEP 3: do behaviour registration
     	getContentManager().registerLanguage(CMMAgent.cmmCodec);
     	getContentManager().registerOntology(CMMAgent.cmmOntology);
     	doBehaviourRegistration();
+    	
+    	// STEP 4: signal that the OrgMgr is set up
+    	initializationReadyEvent.notifyProcessed(null);
 	}
 	
 	
 	private void doBehaviourRegistration() {
 	    // 1) Domain Inform Responder
 		addBehaviour(new DomainInformResponder(this));
+		
+		// 2) CMMAgent Registration Responder
+		addBehaviour(new RegisterCMMAgentResponder(this));
+		
+		// 3) Related OrgMgr Registration Responder
+		addBehaviour(new RegisterManagerResponder(this));
+		
+		// 4) Search Coordinator Responder
+		addBehaviour(new SearchCoordinatorResponder(this));
+		
+		// 5) Related OrgMgr Registration Responder
+		addBehaviour(new SearchQueryHandlerResponder(this));
+		
+		// 6) Resolve Query Base Responder
+		addBehaviour(new ResolveQueryBaseResponder(this));
     }
 
 
@@ -98,7 +127,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 			setDescriptionOfThisDF(getOrgMgrDFDescription());
 			
 			// Show the default Gui of a df.
-			super.showGui();
+			//super.showGui();
 			
 			DFService.register(this, parentName, getOrgMgrDFDescription());
 			addParent(parentName, getOrgMgrDFDescription());
@@ -150,6 +179,27 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		appSpecification = ApplicationSpecification.fromConfigurationModel(cmmConfigModel);
 		mySpecification = ManagerSpecification.fromConfigurationModel(cmmConfigModel);
 		
+		// set the provisioning group instance-specific TimeService, which must be defined in the default
+		// provisioning group bundle
+		String timeServiceFilter = "(" + CMMConstants.CONSERT_APPLICATION_ID_PROP + "=" + appSpecification.getAppIdentifier() + ")";
+		try {
+	        Collection<ServiceReference<TimeService>> timeServiceRefs = context.getServiceReferences(TimeService.class, timeServiceFilter);
+	        if (!timeServiceRefs.isEmpty()) {
+	        	// We know there will normally be only one TimeService instance that corresponds to our filter,
+	        	// so we take the first one
+	        	TimeService timeService = context.getService(timeServiceRefs.iterator().next());
+	        	CMMAgent.setTimeService(timeService);
+	        }
+	        else {
+	        	throw new CMMConfigException("No TimeService instance matches the configuration requirement for " 
+	        			+ appSpecification.getAppIdentifier() + " context provisioning group.");
+	        }
+		}
+        catch (InvalidSyntaxException e) {
+	        e.printStackTrace();
+	        throw new CMMConfigException("Failed to configure TimeService for agent of context provisioning group.", e);
+        }
+		
 		// build agent configuration and start agents
 		try {
 	        doManagedAgentConfiguration(cmmConfigModel, context);
@@ -158,6 +208,19 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
         	e.printStackTrace();
         	throw new CMMConfigException("Failed to configure and initialize CMM Agents", e);
         }
+		
+		// instantiate the domain management helper and register behaviours that connect the OrgMgr
+		// to other domain manager agents
+		domainManager = new DomainManagementHelper(this, appSpecification.getLocalContextDomain());
+		if (myType == ManagerType.Node && mySpecification.getParentManagerAddress() != null) {
+			AID targetManager = mySpecification.getParentManagerAddress().getAID();
+			addBehaviour(new RegisterManagerInitiator(this, RegisterManager.CHILD, targetManager));
+		}
+		else if (myType == ManagerType.Root && mySpecification.getKnownRootManagers() != null) {
+			for (AgentAddress knownRootMgr : mySpecification.getKnownRootManagers()) {
+				addBehaviour(new RegisterManagerInitiator(this, RegisterManager.ROOT, knownRootMgr.getAID()));
+			}
+		}
     }
 	
 	
@@ -191,15 +254,22 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		AID orgMgrAID = getAID();
 		
 		
-		
 		ResIterator coordinatorIt = cmmConfigModel.listResourcesWithProperty(RDF.type, OrgConf.CtxCoordSpec);
 		if (coordinatorIt.hasNext()) {
 			Resource coordSpecRes = coordinatorIt.next();
 			CoordinatorSpecification coordSpec = CoordinatorSpecification.fromConfigurationModel(cmmConfigModel, coordSpecRes);
-			String agentLocalName = coordSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
+			String agentLocalName = coordSpec.getAgentLocalName();
+			Resource contextDomainValue = appSpecification.getLocalContextDomain().getDomainValue();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {cmmBundleLocation, coordSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			Object[] args = null;
+			if (contextDomainValue == null) {
+				args = new Object[] {cmmBundleLocation, coordSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			}
+			else {
+				args = new Object[] {cmmBundleLocation, coordSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID, 
+						contextDomainValue.getURI()};
+			}
 			
 			AgentController coordController = getContainerController().createNewAgent(agentLocalName, CtxCoord.class.getName(), args);
 			agentManager.setManagedCoordinator(coordSpec, coordController);
@@ -219,10 +289,18 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		for (;queryHandlerIt.hasNext();) {
 			Resource queryHandlerSpecRes = queryHandlerIt.next();
 			QueryHandlerSpecification queryHandlerSpec = QueryHandlerSpecification.fromConfigurationModel(cmmConfigModel, queryHandlerSpecRes);
-			String agentLocalName = queryHandlerSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
+			String agentLocalName = queryHandlerSpec.getAgentLocalName();
+			Resource contextDomainValue = appSpecification.getLocalContextDomain().getDomainValue();
 			
 			// Prepare the arguments
-			Object[] args = new Object[] {cmmBundleLocation, queryHandlerSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			Object[] args = null;
+			if (contextDomainValue == null) {
+				args = new Object[] {cmmBundleLocation, queryHandlerSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
+			}
+			else {
+				args = new Object[] {cmmBundleLocation, queryHandlerSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID, 
+						contextDomainValue.getURI()};
+			}
 			
 			AgentController queryController = getContainerController().createNewAgent(agentLocalName, CtxQueryHandler.class.getName(), args);
 			agentManager.addManagedQueryHandler(queryHandlerSpec, queryController);
@@ -242,7 +320,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		for (;sensorIt.hasNext();) {
 			Resource sensorSpecRes = sensorIt.next();
 			SensorSpecification sensorSpec = SensorSpecification.fromConfigurationModel(cmmConfigModel, sensorSpecRes);
-			String agentLocalName = sensorSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
+			String agentLocalName = sensorSpec.getAgentLocalName();
 			
 			// Prepare the arguments
 			Object[] args = new Object[] {cmmBundleLocation, sensorSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
@@ -265,7 +343,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		if (userIt.hasNext()) {
 			Resource userSpecRes = userIt.next();
 			UserSpecification userSpec = UserSpecification.fromConfigurationModel(cmmConfigModel, userSpecRes);
-			String agentLocalName = userSpec.getAgentLocalName() + "__" + appSpecification.getAppIdentifier();
+			String agentLocalName = userSpec.getAgentLocalName();
 			
 			// Prepare the arguments
 			Object[] args = new Object[] {cmmBundleLocation, userSpecRes.getURI(), appSpecification.getAppIdentifier(), orgMgrAID};
@@ -289,19 +367,19 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 	
 	private void doCMMStart(Event startCMMEvent) {
 	    // TODO Do an actual start
-	    startCMMEvent.notifyProcessed(new CMMEventResult());
+	    startCMMEvent.notifyProcessed(new CMMOpEventResult());
     }
 	
 	
 	private void doCMMStop(Event stopCMMEvent) {
 	    // TODO Do an actual stop
-		stopCMMEvent.notifyProcessed(new CMMEventResult());
+		stopCMMEvent.notifyProcessed(new CMMOpEventResult());
     }
 	
 	
 	private void doCMMKill(Event killCMMEvent) {
 	    // TODO Do an actual kill
-		killCMMEvent.notifyProcessed(new CMMEventResult());
+		killCMMEvent.notifyProcessed(new CMMOpEventResult());
     }
 	
 	
@@ -320,7 +398,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 	        doCMMConfiguration(cmmBundleLocation);
         }
         catch (CMMConfigException e) {
-        	initCMMEvent.notifyProcessed(new CMMEventResult(e));
+        	initCMMEvent.notifyProcessed(new CMMOpEventResult(e));
         }
     	
     	doCMMInit(initCMMEvent);

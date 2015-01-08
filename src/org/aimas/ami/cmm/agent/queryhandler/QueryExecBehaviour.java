@@ -53,10 +53,12 @@ public class QueryExecBehaviour extends OneShotBehaviour implements QueryResultN
     public void notifyQueryResult(QueryResult queryResult) {
 		if (!queryResult.hasError()) {
 			/*
-			System.out.println("[INFO " + getClass().getName() + "] RESULTS FOR QUERY WITH ID: " + queryIdentifier);
-			while(queryResult.getResultSet().hasNext()) {
-    			System.out.println(queryResult.getResultSet().nextSolution());
-    		}
+			if (queryIdentifier.contains("CtxUser__AirConditioning")) {
+				System.out.println("[INFO " + getClass().getName() + "] RESULTS FOR QUERY WITH ID: " + queryIdentifier);
+				while(queryResult.getResultSet().hasNext()) {
+	    			System.out.println(queryResult.getResultSet().nextSolution());
+	    		}
+			}
 			queryResult.getResultSet().reset();
 			*/
 			userQueryHandler.notifyQueryResult(queryType, queryIdentifier, queryResult);

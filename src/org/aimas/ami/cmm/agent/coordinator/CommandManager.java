@@ -21,8 +21,6 @@ import org.aimas.ami.contextrep.engine.api.EngineInferenceStats;
 import org.aimas.ami.contextrep.engine.api.EngineQueryStats;
 import org.aimas.ami.contextrep.engine.api.StatsHandler;
 import org.aimas.ami.contextrep.model.ContextAssertion.ContextAssertionType;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.topbraid.spin.arq.ARQFactory;
 
 import com.hp.hpl.jena.graph.compose.MultiUnion;
@@ -68,8 +66,12 @@ public class CommandManager implements ApplicationControlAdaptor {
 	
 	// SETUP
 	////////////////////////////////////////////////////////////////////////////////////
-	public CommandManager(CtxCoord coordAgent, CoordinatorSpecification specification) throws CMMConfigException {
+	public CommandManager(CtxCoord coordAgent, CoordinatorSpecification specification, 
+			CommandHandler engineCommandAdaptor, StatsHandler engineStatsAdaptor) throws CMMConfigException {
 		this.coordAgent = coordAgent;
+		this.engineCommandAdaptor = engineCommandAdaptor;
+		this.engineStatsAdaptor = engineStatsAdaptor;
+		
 		setup(specification);
 	}
 	
@@ -79,9 +81,6 @@ public class CommandManager implements ApplicationControlAdaptor {
 		
 		OntModel controlModel = coordAgent.getConfigurationLoader().load(controlPolicy.getFileNameOrURI());
 		controlParameters = new ControlParameters(controlModel);
-				
-		// Retrieve the CONSERT Engine stats and command adaptors
-		connectToCONSERTEngine();
 		
 		// Configure CONSERT Engine
 		configureCONSERTEngine();
@@ -93,23 +92,6 @@ public class CommandManager implements ApplicationControlAdaptor {
 		commandExecutionService = Executors.newSingleThreadScheduledExecutor();
 	}
 	
-	private void connectToCONSERTEngine() throws CMMConfigException {
-		BundleContext context = coordAgent.getOSGiBridge().getBundleContext();
-		
-		// Get stats handler
-		ServiceReference<StatsHandler> statsHandlerRef = context.getServiceReference(StatsHandler.class);
-		if (statsHandlerRef == null) {
-			throw new CMMConfigException("No reference found for CONSERT Engine service: " + StatsHandler.class.getName());
-		}
-		engineStatsAdaptor = context.getService(statsHandlerRef);
-		
-		// Get command handler
-		ServiceReference<CommandHandler> commandHandlerRef = context.getServiceReference(CommandHandler.class);
-		if (commandHandlerRef == null) {
-			throw new CMMConfigException("No reference found for CONSERT Engine service: " + CommandHandler.class.getName());
-		}
-		engineCommandAdaptor = context.getService(commandHandlerRef);
-    }
 	
 	private void configureCONSERTEngine() {
 		// STEP 1a: configure CONSERT Engine defaults
@@ -329,6 +311,19 @@ public class CommandManager implements ApplicationControlAdaptor {
 				statsResource.addLiteral(CoordConf.nrQueries, nrQueries);
 			}
 			
+			// nrSubscriptions
+			Map<Resource, Integer> nrSubscriptionsMap = queryStats.nrSubscriptions();
+			for (Resource assertionRes : nrSubscriptionsMap.keySet()) {
+				Resource statsResource = assertionStatsMap.get(assertionRes);
+				if (statsResource == null) {
+					statsResource = createAssertionStatsResource(assertionRes, statsModel);
+					assertionStatsMap.put(assertionRes, statsResource);
+				}
+				
+				int nrSubs = nrSubscriptionsMap.get(assertionRes) == null ? 0 : nrSubscriptionsMap.get(assertionRes).intValue();
+				statsResource.addLiteral(CoordConf.nrSubscriptions, nrSubs);
+			}
+			
 			// nr. successful queries
 			Map<Resource, Integer> nrSuccessfulQueryMap = queryStats.nrSuccessfulQueries();
 			for (Resource assertionRes : nrSuccessfulQueryMap.keySet()) {
@@ -338,7 +333,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 					assertionStatsMap.put(assertionRes, statsResource);
 				}
 				
-				int nrQueries = nrQueryMap.get(assertionRes) == null ? 0 : nrSuccessfulQueryMap.get(assertionRes).intValue();
+				int nrQueries = nrSubscriptionsMap.get(assertionRes) == null ? 0 : nrSuccessfulQueryMap.get(assertionRes).intValue();
 				statsResource.addLiteral(CoordConf.nrSuccessfulQueries, nrQueries);
 			}
 			

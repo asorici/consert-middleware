@@ -1,6 +1,5 @@
 package org.aimas.ami.cmm.api;
 
-import org.osgi.framework.BundleContext;
 
 
 
@@ -9,36 +8,41 @@ public interface CMMPlatformManagementService {
 		NOT_INSTALLED, INSTALLED, ACTIVE
 	}
 	
-	// Manage CONSERT Middleware instance deployment
+	// Manage Platform start/stop management
 	//////////////////////////////////////////////////////////////////////////////
-	public CMMInstanceState getCMMInstanceState(String applicationId, String contextDimensionURI, 
+	public void startCMMPlatform() throws Exception;
+	public void stopCMMPlatform() throws Exception;
+	
+	// Manage CONSERT Provisioning Group deployment
+	//////////////////////////////////////////////////////////////////////////////
+	public CMMInstanceState getProvisioningGroupState(String applicationId, String contextDimensionURI, 
 			String contextDomainValueURI);
 	
-	public void installCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
+	public void installProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
 			CMMInstanceStateOpCallback operationCallback);
 	
-	public CMMOperationFuture<?> installCMMInstance(String applicationId, 
+	public CMMOperationFuture<?> installProvisioningGroup(String applicationId, 
 			String contextDimensionURI, String contextDomainValueURI);
 	
 	
-	public void startCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
+	public void startProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
 			CMMInstanceStateOpCallback operationCallback);
 	
-	public CMMOperationFuture<?> startCMMInstance(String applicationId, 
+	public CMMOperationFuture<?> startProvisioningGroup(String applicationId, 
 			String contextDimensionURI, String contextDomainValueURI);
 	
 	
-	public void stopCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
+	public void stopProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI,
 			CMMInstanceStateOpCallback operationCallback);
 	
-	public CMMOperationFuture<?> stopCMMInstance(String applicationId, 
+	public CMMOperationFuture<?> stopProvisioningGroup(String applicationId, 
 			String contextDimensionURI, String contextDomainValueURI);
 	
 	
-	public void uninstallCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
+	public void uninstallProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI,
 			CMMInstanceStateOpCallback operationCallback);
 	
-	public CMMOperationFuture<?> uninstallCMMInstance(String applicationId, 
+	public CMMOperationFuture<?> uninstallProvisioningGroup(String applicationId, 
 			String contextDimensionURI, String contextDomainValueURI);
 	
 	// Manage Deployment Platform changes

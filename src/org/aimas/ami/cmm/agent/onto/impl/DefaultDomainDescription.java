@@ -1,6 +1,8 @@
 package org.aimas.ami.cmm.agent.onto.impl;
 
 
+import jade.core.AID;
+
 import org.aimas.ami.cmm.agent.onto.*;
 
 /**
@@ -11,32 +13,62 @@ import org.aimas.ami.cmm.agent.onto.*;
 */
 public class DefaultDomainDescription implements DomainDescription {
 
-  private static final long serialVersionUID = 5438106203733924709L;
-
-  private String _internalInstanceName = null;
-
-  public DefaultDomainDescription() {
-    this._internalInstanceName = "";
-  }
-
-  public DefaultDomainDescription(String instance_name) {
-    this._internalInstanceName = instance_name;
-  }
-
-  public String toString() {
-    return _internalInstanceName;
-  }
-
-   /**
-   * The detected ContextDomain.
-   * Protege name: domain
-   */
-   private ContextDomain domain;
-   public void setDomain(ContextDomain value) { 
-    this.domain=value;
-   }
-   public ContextDomain getDomain() {
-     return this.domain;
-   }
+	private static final long serialVersionUID = 5438106203733924709L;
+	
+	private String _internalInstanceName = null;
+	
+	public DefaultDomainDescription() {
+		this._internalInstanceName = "";
+	}
+	
+	public DefaultDomainDescription(String instance_name) {
+		this._internalInstanceName = instance_name;
+	}
+	
+	public String toString() {
+		return _internalInstanceName;
+	}
+	
+	/**
+	 * The detected ContextDomain. Protege name: domain
+	 */
+	private ContextDomain domain;
+	
+	public void setDomain(ContextDomain value) {
+		this.domain = value;
+	}
+	
+	public ContextDomain getDomain() {
+		return this.domain;
+	}
+	
+	/**
+	 * Protege name: coordinator
+	 */
+	private AID coordinator;
+	@Override
+	public void setCoordinator(AID value) {
+		this.coordinator = value;
+	}
+	
+	@Override
+	public AID getCoordinator() {
+		return coordinator;
+	}
+	
+	/**
+	 * Protege name: queryHandler
+	 */
+	private AID queryHandler;
+	
+	@Override
+	public void setQueryHandler(AID value) {
+		this.queryHandler = value;
+	}
+	
+	@Override
+	public AID getQueryHandler() {
+		return queryHandler;
+	}
 
 }

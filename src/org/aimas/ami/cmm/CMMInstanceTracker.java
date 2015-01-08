@@ -5,19 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.aimas.ami.cmm.CMMInstanceTracker.CMMInstanceBundleWrapper;
+import org.aimas.ami.contextrep.resources.CMMConstants;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.Constants;
 import org.osgi.util.tracker.BundleTracker;
 
 public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> {
-	public static final String CONSERT_APPLICATION_ID_HEADER 		= "Consert-ApplicationId";
-	public static final String CONSERT_CONTEXT_DIMENSION_HEADER 	= "Consert-ContextDimension";
-	public static final String CONSERT_CONTEXT_DOMAIN_HEADER 		= "Consert-ContextDomain";
-	
-	public static final String DEFAULT_INSTANCE_BUNDLE_SYMBOLIC_NAME = "consert-engine.cmm-default-instance";
-	public static final String JADE_BUNDLE_SYMBOLIC_NAME = "jade.jadeOsgi";
-	public static final String AGENT_BUNDLE_SYMBOLIC_NAME = "consert-middleware.agent-bundle";
+	public static final String DEFAULT_INSTANCE_BUNDLE_NAME = "cmm-instance-default";
+	//public static final String JADE_BUNDLE_SYMBOLIC_NAME = "jade.jadeOsgi";
+	//public static final String AGENT_BUNDLE_SYMBOLIC_NAME = "consert-middleware.agent-bundle";
 	
 	
 	private CMMInstanceBundleWrapper defaultInstanceBundle;
@@ -41,28 +39,39 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	 * @return The default CMM Instance bundle or null if no such bundle exists. 
 	 */
 	public Bundle getDefaultInstanceBundle() {
-		return defaultInstanceBundle.getCmmInstanceBundle();
+		if (defaultInstanceBundle != null) {
+			return defaultInstanceBundle.getCmmInstanceBundle();
+		}
+		
+		return null;
 	}
 	
 	public Bundle getCMMInstanceBundle(String applicationId, String contextDimensionURI, String contextDomainValueURI) {
 		ContextDomainInfoWrapper domainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
-		CMMInstanceBundleWrapper bundleWrapper = cmmInstanceMap.get(domainWrapper);
 		
+		// First try the default provisioning group bundle
+		if (defaultInstanceBundle.matchesContextDomain(domainWrapper)) {
+			return defaultInstanceBundle.getCmmInstanceBundle();
+		}
+		
+		// Then look for specifics if the default doesn't match
+		CMMInstanceBundleWrapper bundleWrapper = cmmInstanceMap.get(domainWrapper);
 		return bundleWrapper != null ? bundleWrapper.getCmmInstanceBundle() : null;
 	}
 	
 	@Override
 	public CMMInstanceBundleWrapper addingBundle(Bundle bundle, BundleEvent event) {
 		// Determine if this is a valid CONSERT CMM-Instance bundle and check to see if it is the defaultCMMInstance bundle
-		String bundleSymbolicName = bundle.getSymbolicName();
-		
 		Dictionary<String, String> headers = bundle.getHeaders();
-		String applicationId = headers.get(CONSERT_APPLICATION_ID_HEADER);
-		String contextDimensionURI = headers.get(CONSERT_CONTEXT_DIMENSION_HEADER);
-		String contextDomainValueURI = headers.get(CONSERT_CONTEXT_DOMAIN_HEADER);
+		
+		String applicationId = headers.get(CMMConstants.CONSERT_APPLICATION_ID_HEADER);
+		String contextDimensionURI = headers.get(CMMConstants.CONSERT_CONTEXT_DIMENSION_HEADER);
+		String contextDomainValueURI = headers.get(CMMConstants.CONSERT_CONTEXT_DOMAIN_HEADER);
+		
+		String bundleName = headers.get(Constants.BUNDLE_NAME);
 		
 		// First check for the existence of the default instance bundle
-		if (bundleSymbolicName.equals(DEFAULT_INSTANCE_BUNDLE_SYMBOLIC_NAME)) {
+		if (bundleName.equals(DEFAULT_INSTANCE_BUNDLE_NAME)) {
 			if (defaultInstanceBundle == null) {
 				defaultInstanceBundle = new CMMInstanceBundleWrapper(new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId), bundle);
 			}
@@ -96,11 +105,12 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	@Override
 	public void modifiedBundle(Bundle bundle, BundleEvent event, final CMMInstanceBundleWrapper cmmInstanceBundleWrapper) {
 		Dictionary<String, String> headers = bundle.getHeaders();
-		String applicationId = headers.get(CONSERT_APPLICATION_ID_HEADER);
-		String contextDimensionURI = headers.get(CONSERT_CONTEXT_DIMENSION_HEADER);
-		String contextDomainValueURI = headers.get(CONSERT_CONTEXT_DOMAIN_HEADER);
+		String applicationId = headers.get(CMMConstants.CONSERT_APPLICATION_ID_HEADER);
+		String contextDimensionURI = headers.get(CMMConstants.CONSERT_CONTEXT_DIMENSION_HEADER);
+		String contextDomainValueURI = headers.get(CMMConstants.CONSERT_CONTEXT_DOMAIN_HEADER);
+		String bundleName = headers.get(Constants.BUNDLE_NAME);
 		
-		if (bundle.getSymbolicName().equals(DEFAULT_INSTANCE_BUNDLE_SYMBOLIC_NAME)) {
+		if (bundleName.equals(DEFAULT_INSTANCE_BUNDLE_NAME)) {
 			defaultInstanceBundle.updateCmmInstanceBundle(bundle);
 		}
 		else if (applicationId != null && contextDimensionURI != null && contextDomainValueURI != null) {
@@ -117,21 +127,21 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 	@Override
 	public void removedBundle(Bundle bundle, BundleEvent event, CMMInstanceBundleWrapper deployConfigWrapper) {
 		Dictionary<String, String> headers = bundle.getHeaders();
-		String applicationId = headers.get(CONSERT_APPLICATION_ID_HEADER);
-		String contextDimensionURI = headers.get(CONSERT_CONTEXT_DIMENSION_HEADER);
-		String contextDomainValueURI = headers.get(CONSERT_CONTEXT_DOMAIN_HEADER);
+		String applicationId = headers.get(CMMConstants.CONSERT_APPLICATION_ID_HEADER);
+		String contextDimensionURI = headers.get(CMMConstants.CONSERT_CONTEXT_DIMENSION_HEADER);
+		String contextDomainValueURI = headers.get(CMMConstants.CONSERT_CONTEXT_DOMAIN_HEADER);
 		
-		if (bundle.getSymbolicName().equals(DEFAULT_INSTANCE_BUNDLE_SYMBOLIC_NAME)) {
-			if (event.getType() == BundleEvent.UNINSTALLED) {
+		if (bundle.getSymbolicName().equals(DEFAULT_INSTANCE_BUNDLE_NAME)) {
+			//if (event != null && event.getType() == BundleEvent.UNINSTALLED) {
 				defaultInstanceBundle = null;
-			}
+			//}
 		}
 		else if (applicationId != null && contextDimensionURI != null && contextDomainValueURI != null) {
 			ContextDomainInfoWrapper contextDomainWrapper = new ContextDomainInfoWrapper(contextDimensionURI, contextDomainValueURI, applicationId);
 			
-			if (event.getType() == BundleEvent.UNINSTALLED) {
+			//if (event != null && event.getType() == BundleEvent.UNINSTALLED) {
 				cmmInstanceMap.remove(contextDomainWrapper);
-			}
+			//}
 		}
 	}
 	
@@ -152,6 +162,10 @@ public class CMMInstanceTracker extends BundleTracker<CMMInstanceBundleWrapper> 
 
 		public String getContextDomainValueURI() {
 			return contextDomainInfo.getContextDomainValueURI();
+		}
+		
+		public boolean matchesContextDomain(ContextDomainInfoWrapper otherDomainInfo) {
+			return contextDomainInfo.equals(otherDomainInfo);
 		}
 		
 		public Bundle getCmmInstanceBundle() {

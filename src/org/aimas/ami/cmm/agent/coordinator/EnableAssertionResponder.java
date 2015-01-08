@@ -86,6 +86,14 @@ public class EnableAssertionResponder extends AchieveREResponder {
 			EnableAssertions enableRequest = (EnableAssertions)contentAction.getAction();
 	        List requiredAssertions = enableRequest.getEnabledCapability();
 	        
+	        /*
+	        System.out.println("[CtxCoord] INFO: Required Enable Assertions");
+	        for (int i = 0; i < requiredAssertions.size(); i++) {
+	        	AssertionCapability assertion = (AssertionCapability)requiredAssertions.get(i);
+	        	System.out.println(assertion.getAssertion().getAssertionType());
+	        }
+	        */
+	        
 	        /* We need to data structures: a list of sensed disabled ContextAssertion
 	         * A map (built recursively) for all derived disabled ContextAssertions to the sensed disabled CAs on which they
 	         * depend. 
@@ -133,8 +141,8 @@ public class EnableAssertionResponder extends AchieveREResponder {
         	}
 		}
         catch (Exception e) {
-	        throw new NotUnderstoodException("Enable Assertions message not understood. "
-	        		+ "Reason: " + e.getMessage());
+        	e.printStackTrace();
+	        throw new NotUnderstoodException("Enable Assertions message not understood. " + "Reason: " + e.getMessage());
         }
 		
 		return null;

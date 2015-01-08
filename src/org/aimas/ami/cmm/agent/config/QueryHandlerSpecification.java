@@ -8,22 +8,16 @@ import com.hp.hpl.jena.rdf.model.Resource;
 
 public class QueryHandlerSpecification extends AgentSpecification {
 	private boolean isPrimary;
-	private AgentAddress assignedOrgMgrAddress;
 	
 	public QueryHandlerSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, 
 			boolean isPrimary, AgentAddress assignedOrgMgrAddress) {
-		super(agentAddress, AgentType.CTX_QUERY_HANDLER, controlPolicy);
+		super(agentAddress, AgentType.CTX_QUERY_HANDLER, controlPolicy, assignedOrgMgrAddress);
 		
 		this.isPrimary = isPrimary;
-		this.assignedOrgMgrAddress = assignedOrgMgrAddress;
     }
 
 	public boolean isPrimary() {
 		return isPrimary;
-	}
-	
-	public AgentAddress getAssignedManagerAddress() {
-		return assignedOrgMgrAddress;
 	}
 	
 	

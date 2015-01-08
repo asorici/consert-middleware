@@ -1,27 +1,26 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
 
-public class CMMEventResult {
+public class CMMOpEventResult {
 	private Exception error;
 	private Object result;
 	
-    public CMMEventResult(Exception error, Object result) {
+    public CMMOpEventResult(Exception error, Object result) {
 	    this.error = error;
 	    this.result = result;
     }
     
-    public CMMEventResult() {
+    public CMMOpEventResult() {
     	this(null, null);
     }
     
-    public CMMEventResult(Exception error) {
+    public CMMOpEventResult(Exception error) {
     	this(error, null);
     }
     
-    public CMMEventResult(Object result) {
+    public CMMOpEventResult(Object result) {
 	    this(null, result);
     }
-    
     
     
 	public Exception getError() {
@@ -35,7 +34,7 @@ public class CMMEventResult {
 	
 	
 	public boolean hasError() {
-		return error != null || result != null;
+		return error != null;
 	}
 	
 	

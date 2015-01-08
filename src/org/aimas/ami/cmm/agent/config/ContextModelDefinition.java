@@ -1,6 +1,10 @@
 package org.aimas.ami.cmm.agent.config;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
+
 import org.aimas.ami.cmm.vocabulary.OrgConf;
+import org.aimas.ami.contextrep.utils.ContextModelLoader;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -52,20 +56,55 @@ public class ContextModelDefinition {
 		return modelRulesFileOrURI;
 	}
 	
-	public static ContextModelDefinition fromConfigurationModel(OntModel cmmConfigModel, Resource contextModelResource) {
-		Resource modelDocumentManagerRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelDocumentManager).getResource();
-		Resource modelCoreRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelCoreDocument).getResource();
-		Resource modelAnnotationRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelAnnotationsDocument).getResource();
-		Resource modelConstraintsRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelConstraintsDocument).getResource();
-		Resource modelFunctionsRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelFunctionsDocument).getResource();
-		Resource modelRulesRes = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelRulesDocument).getResource();
+	public Dictionary<String, String> getContextModelFileDictionary() {
+		Dictionary<String, String> contextModelFileProps = new Hashtable<String, String>();
 		
-		String modelDocumentManagerFileOrURI = getFileOrURI(modelDocumentManagerRes);
-		String modelCoreFileOrURI = getFileOrURI(modelCoreRes);
-		String modelAnnotationsFileOrURI = getFileOrURI(modelAnnotationRes);
-		String modelConstraintsFileOrURI = getFileOrURI(modelConstraintsRes);
-		String modelFunctionsFileOrURI = getFileOrURI(modelFunctionsRes);
-		String modelRulesFileOrURI = getFileOrURI(modelRulesRes);
+		if (modelDocumentManagerFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_DOCMGR_KEY, modelDocumentManagerFileOrURI);
+	    
+	    if (modelCoreFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_CORE_URI_KEY, modelCoreFileOrURI);
+	    
+	    if (modelAnnotationsFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_ANNOTATION_URI_KEY, modelAnnotationsFileOrURI);
+	    
+	    if (modelConstraintsFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_CONSTRAINT_URI_KEY, modelConstraintsFileOrURI);
+	    
+	    if (modelFunctionsFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_FUNCTIONS_URI_KEY, modelFunctionsFileOrURI);
+	    
+	    if (modelRulesFileOrURI != null)
+	    	contextModelFileProps.put(ContextModelLoader.DOMAIN_ONT_RULES_URI_KEY, modelRulesFileOrURI);
+	
+	    return contextModelFileProps;
+	}
+	
+	public static ContextModelDefinition fromConfigurationModel(OntModel cmmConfigModel, Resource contextModelResource) {
+		Statement modelDocumentManagerStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelDocumentManager);
+		Statement modelCoreStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelCoreDocument);
+		Statement modelAnnotationStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelAnnotationsDocument);
+		Statement modelConstraintsStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelConstraintsDocument);
+		Statement modelFunctionsStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelFunctionsDocument);
+		Statement modelRulesStmt = cmmConfigModel.getProperty(contextModelResource, OrgConf.hasModelRulesDocument);
+		
+		String modelDocumentManagerFileOrURI = 
+				modelDocumentManagerStmt != null ? getFileOrURI(modelDocumentManagerStmt.getResource()) : null;
+		
+		String modelCoreFileOrURI = 
+				modelCoreStmt != null ? getFileOrURI(modelCoreStmt.getResource()) : null;
+		
+		String modelAnnotationsFileOrURI = 
+				modelAnnotationStmt != null ? getFileOrURI(modelAnnotationStmt.getResource()) : null;
+		
+		String modelConstraintsFileOrURI = 
+				modelConstraintsStmt != null ? getFileOrURI(modelConstraintsStmt.getResource()) : null;
+		
+		String modelFunctionsFileOrURI = 
+				modelFunctionsStmt != null ? getFileOrURI(modelFunctionsStmt.getResource()) : null;
+		
+		String modelRulesFileOrURI = 
+				modelRulesStmt != null ? getFileOrURI(modelRulesStmt.getResource()) : null;
 		
 		return new ContextModelDefinition(modelDocumentManagerFileOrURI, modelCoreFileOrURI, 
 				modelAnnotationsFileOrURI, modelConstraintsFileOrURI, modelFunctionsFileOrURI, modelRulesFileOrURI);

@@ -2,7 +2,7 @@ package org.aimas.ami.cmm;
 
 import jade.util.Event;
 
-import org.aimas.ami.cmm.agent.orgmgr.CMMEventResult;
+import org.aimas.ami.cmm.agent.orgmgr.CMMOpEventResult;
 import org.aimas.ami.cmm.api.CMMPlatformManagementService.CMMInstanceState;
 
 public class CMMStopInstanceOp extends CMMInstanceStateOp {
@@ -20,7 +20,7 @@ public class CMMStopInstanceOp extends CMMInstanceStateOp {
 			CMMPlatformRequestExecutor executor = cmmPlatformManager.getRequestExecutor(contextDomainInfo);
 			if (executor != null) {
 				Event stopEvent = executor.stopCMMInstance();
-				CMMEventResult stopResult = (CMMEventResult) stopEvent.waitUntilProcessed();
+				CMMOpEventResult stopResult = (CMMOpEventResult) stopEvent.waitUntilProcessed();
 				
 				if (stopResult.hasError()) {
 					throw stopResult.getError();

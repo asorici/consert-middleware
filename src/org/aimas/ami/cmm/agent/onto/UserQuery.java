@@ -9,7 +9,10 @@ package org.aimas.ami.cmm.agent.onto;
 * @version 2014/07/31, 13:46:14
 */
 public interface UserQuery extends jade.content.Predicate {
-
+	public static final String LOCAL_QUERY 	= "local";
+	public static final String DOMAIN_QUERY = "domain"; 
+	
+	
    /**
    * The URI of the ContextDomain value that defines the lower bound of the domain to pose the query to in the ContextDomain hieararchy.
    * Protege name: domain-lower-bound

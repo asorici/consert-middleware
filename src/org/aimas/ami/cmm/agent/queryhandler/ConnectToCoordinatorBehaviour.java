@@ -11,9 +11,12 @@ import org.aimas.ami.cmm.agent.onto.impl.DefaultQueryHandlerPresent;
 
 public class ConnectToCoordinatorBehaviour extends SimpleAchieveREInitiator {
     private static final long serialVersionUID = 5797596671426167715L;
-
-	public ConnectToCoordinatorBehaviour(CtxQueryHandler ctxQueryAgent) {
+    
+    private AID coordinator;
+    
+	public ConnectToCoordinatorBehaviour(CtxQueryHandler ctxQueryAgent, AID coordinator) {
 		super(ctxQueryAgent, null);
+		this.coordinator = coordinator;
 	}
 	
 	@Override
@@ -27,9 +30,7 @@ public class ConnectToCoordinatorBehaviour extends SimpleAchieveREInitiator {
 		
 		String conversationId = ctxQueryAgent.getName() + "-QueryHandlerPresent-" + System.currentTimeMillis();
 		connectRequest.setConversationId(conversationId);
-		
-		AID assignedCoord = spec.getAssignedManagerAddress().getAID();
-		connectRequest.addReceiver(assignedCoord);
+		connectRequest.addReceiver(coordinator);
 		
 		QueryHandlerPresent presenceContent = new DefaultQueryHandlerPresent();
 		presenceContent.setAgent(ctxQueryAgent.getAID());

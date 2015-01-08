@@ -1,5 +1,7 @@
 package org.aimas.ami.cmm.agent.onto;
 
+import jade.core.AID;
+
 
 
 /**
@@ -9,12 +11,16 @@ package org.aimas.ami.cmm.agent.onto;
 * @version 2014/07/31, 13:46:14
 */
 public interface DomainDescription extends jade.content.Predicate {
-
-   /**
-   * The detected ContextDomain.
-   * Protege name: domain
-   */
-   public void setDomain(ContextDomain value);
-   public ContextDomain getDomain();
-
+	
+	/**
+	 * The detected ContextDomain. Protege name: domain
+	 */
+	public void setDomain(ContextDomain value);
+	public ContextDomain getDomain();
+	
+	public void setCoordinator(AID value);
+	public AID getCoordinator();
+	
+	public void setQueryHandler(AID value);
+	public AID getQueryHandler();
 }

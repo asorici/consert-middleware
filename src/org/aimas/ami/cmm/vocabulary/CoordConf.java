@@ -79,6 +79,7 @@ public class CoordConf {
     
     public final static Property nrDerivations = m_model.createProperty( NS + "nrDerivations" );
     public final static Property nrQueries = m_model.createProperty( NS + "nrQueries" );
+    public final static Property nrSubscriptions = m_model.createProperty( NS + "nrSubscriptions" );
     public final static Property nrSuccessfulDerivations = m_model.createProperty( NS + "nrSuccessfulDerivations" );
     public final static Property nrSuccessfulQueries = m_model.createProperty( NS + "nrSuccessfulQueries" );
     public final static Property setsSchedulingType = m_model.createProperty( NS + "setsSchedulingType" );

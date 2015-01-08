@@ -39,13 +39,13 @@ public class DefaultRegisterCMMAgent implements RegisterCMMAgent {
    }
 
    /**
-   * Protege name: agentState
+   * Protege name: agentActive
    */
    private boolean agentActive;
    public void setAgentActive(boolean value) { 
     this.agentActive=value;
    }
-   public boolean isAgentActive() {
+   public boolean getAgentActive() {
      return this.agentActive;
    }
 
@@ -54,10 +54,10 @@ public class DefaultRegisterCMMAgent implements RegisterCMMAgent {
    * Protege name: agentType
    */
    private String agentType;
-   public void setAgentService(String value) { 
+   public void setAgentType(String value) { 
     this.agentType=value;
    }
-   public String getAgentService() {
+   public String getAgentType() {
      return this.agentType;
    }
 

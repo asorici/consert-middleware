@@ -173,14 +173,14 @@ public class UserQueryManager {
 				queryDesc.setDomain_lower_bound(domainLowerBoundURI);
 			}
 			else {
-				queryDesc.setDomain_lower_bound(userAgent.getApplicationAdaptor().getContextDomainValue());
+				queryDesc.setDomain_lower_bound("");
 			}
 			
 			if (domainUpperBoundURI != null) {
 				queryDesc.setDomain_upper_bound(domainUpperBoundURI);
 			}
 			else {
-				queryDesc.setDomain_upper_bound(userAgent.getApplicationAdaptor().getContextDomainValue());
+				queryDesc.setDomain_upper_bound("");
 			}
 			
 			queryDesc.setRepeatInterval(repeatInterval);

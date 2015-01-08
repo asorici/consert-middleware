@@ -1,10 +1,15 @@
 package org.aimas.ami.cmm.agent.queryhandler;
 
+import jade.core.AID;
 import jade.domain.FIPAAgentManagement.Property;
+import jade.lang.acl.ACLMessage;
 
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator.RegisterCMMAgentNotifier;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator;
+import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator.SearchCoordinatorListener;
 import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.api.CMMConfigException;
 
@@ -19,6 +24,7 @@ public class CtxQueryHandler extends CMMAgent {
     private QueryHandlerSpecification queryHandlerSpecification;
     
     private boolean connectedToCoordinator = false;
+    private AID ctxCoordinator;
     
     /* Query Manager */
     private QueryManager queryManager;
@@ -32,7 +38,14 @@ public class CtxQueryHandler extends CMMAgent {
 		return queryManager;
 	}
 	
+	AID getConnectedCoordinator() {
+		return ctxCoordinator;
+	}
+	
 	boolean connectedToCoordinator() {
+		if (ctxCoordinator == null)
+			return false;
+		
 		return connectedToCoordinator;
 	}
 	
@@ -54,9 +67,12 @@ public class CtxQueryHandler extends CMMAgent {
     		// retrieve specification and create sensed assertions manager
     		agentSpecification = QueryHandlerSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		queryHandlerSpecification = (QueryHandlerSpecification)agentSpecification;
-    		assignedOrgMgr = queryHandlerSpecification.getAssignedManagerAddress().getAID();
     		
-    		queryManager = new QueryManager(this);
+    		if (queryHandlerSpecification.hasAssignedManagerAddress()) {
+    			assignedOrgMgr = queryHandlerSpecification.getAssignedManagerAddress().getAID();
+    		}
+    		
+    		queryManager = new QueryManager(this, appIdentifier);
     	}
     	catch(CMMConfigException e) {
     		// if we have a local OrgMgr we must signal our initialization failure
@@ -72,12 +88,6 @@ public class CtxQueryHandler extends CMMAgent {
     	// ======== STEP 3:	setup the CtxQueryHandler specific permanent behaviours
     	setupQueryHandlerBehaviours();
     	
-    	// ======== STEP 4: connect to the CtxCoord by announcing presence. 
-    	// This step may in fact be more complex (involving an entire protocol to setup the CONSERT Engine QueryAdaptor), 
-    	// when we will operate in a decentralized hierarchical - multi-coordinator setting, 
-    	// but for this first version we only need to connect to the CtxCoord specified directly in the specification.
-    	doConnectToCoordinator();
-    	
     	// after this step initialization of the CtxSensor is complete, so we signal a successful init
 		signalInitializationOutcome(true);
 	}
@@ -92,7 +102,18 @@ public class CtxQueryHandler extends CMMAgent {
 	@Override
     protected void registerWithAssignedManager() {
 		if (assignedOrgMgr != null) {
-			addBehaviour(new RegisterCMMAgentInitiator(this));
+			// If there is an assigned OrgMgr we will find his associated coordinator agent
+			// after we register with him as a CtxQueryHandler.
+			addBehaviour(new RegisterCMMAgentInitiator(this, new RegisterCMMAgentNotifier() {
+				@Override
+				public void cmmAgentRegistered() {
+					findCoordinator();
+				}
+			}));
+		}
+		else {
+	    	// Find the CtxCoord with which this agent has to work
+	    	findCoordinator();
 		}
     }
 	
@@ -101,11 +122,29 @@ public class CtxQueryHandler extends CMMAgent {
 		addBehaviour(new QueryReceiver(this));
 		
 		// Register the UserRegistrationBehaviour
-		addBehaviour(new UserRegistrationBehaviour(this));
+		addBehaviour(new RequesterRegistrationResponder(this));
     }
 	
 	
-	private void doConnectToCoordinator() {
-	    addBehaviour(new ConnectToCoordinatorBehaviour(this));
+	private void findCoordinator() {
+	    SearchCoordinatorListener listener = new SearchCoordinatorListener() {
+			@Override
+			public void coordinatorAgentNotFound(ACLMessage msg) {
+				System.out.println(msg);
+			}
+			
+			@Override
+			public void coordinatorAgentFound(AID agentAID) {
+				ctxCoordinator = agentAID;
+				doConnectToCoordinator(ctxCoordinator);
+			}
+		};
+		
+		addBehaviour(new SearchCoordinatorInitiator(this, listener));
+    }
+	
+	
+	private void doConnectToCoordinator(AID coordinator) {
+	    addBehaviour(new ConnectToCoordinatorBehaviour(this, coordinator));
     }
 }

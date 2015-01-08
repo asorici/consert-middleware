@@ -2,7 +2,7 @@ package org.aimas.ami.cmm;
 
 import jade.util.Event;
 
-import org.aimas.ami.cmm.agent.orgmgr.CMMEventResult;
+import org.aimas.ami.cmm.agent.orgmgr.CMMOpEventResult;
 import org.aimas.ami.cmm.api.CMMPlatformManagementService.CMMInstanceState;
 import org.osgi.framework.Bundle;
 
@@ -21,7 +21,7 @@ public class CMMKillInstanceOp extends CMMInstanceStateOp {
 			CMMPlatformRequestExecutor executor = cmmPlatformManager.getRequestExecutor(contextDomainInfo);
 			if (executor != null) {
 				Event killEvent = executor.killCMMInstance();
-				CMMEventResult killResult = (CMMEventResult) killEvent.waitUntilProcessed();
+				CMMOpEventResult killResult = (CMMOpEventResult) killEvent.waitUntilProcessed();
 				
 				if (killResult.hasError()) {
 					throw killResult.getError();

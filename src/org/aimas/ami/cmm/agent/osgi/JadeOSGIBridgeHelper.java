@@ -1,4 +1,4 @@
-package org.aimas.ami.cmm.utils;
+package org.aimas.ami.cmm.agent.osgi;
 
 import jade.core.ServiceHelper;
 

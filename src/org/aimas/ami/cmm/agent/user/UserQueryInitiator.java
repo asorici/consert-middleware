@@ -1,13 +1,23 @@
 package org.aimas.ami.cmm.agent.user;
 
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.UnreadableException;
 import jade.proto.SimpleAchieveREInitiator;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.aimas.ami.cmm.agent.onto.UserQueryResult;
+import org.aimas.ami.contextrep.engine.api.ContextResultSet;
 import org.aimas.ami.contextrep.engine.api.QueryException;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 
 import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.ResultSetFactory;
+import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 
 public class UserQueryInitiator extends SimpleAchieveREInitiator {
     private static final long serialVersionUID = -559592994749114438L;
@@ -43,9 +53,10 @@ public class UserQueryInitiator extends SimpleAchieveREInitiator {
 		// The exception message for the failure is in the contentObject of the message
 		QueryResult result = null;
 		try {
-	         result = (QueryResult)msg.getContentObject();
+	         UserQueryResult qr = (UserQueryResult)myAgent.getContentManager().extractContent(msg);
+	         result = decodeResult(qr);
         }
-        catch (UnreadableException e) {
+        catch (Exception e) {
         	result = new QueryResult(query, new QueryException("Error decoding query result.", e));
         }
 		
@@ -56,12 +67,64 @@ public class UserQueryInitiator extends SimpleAchieveREInitiator {
 	protected void handleInform(ACLMessage msg) {
 		QueryResult result = null;
 		try {
-	         result = (QueryResult)msg.getContentObject();
+			UserQueryResult qr = (UserQueryResult)myAgent.getContentManager().extractContent(msg);
+	        result = decodeResult(qr);
         }
-        catch (UnreadableException e) {
+        catch (Exception e) {
         	result = new QueryResult(query, new QueryException("Error decoding query result.", e));
         }
 		
 		resultNotifier.notifyQueryResult(queryMessage, result);
 	}
+	
+	
+	// Auxiliary functions
+	/////////////////////////////////////////////////////////////////////////
+	private QueryResult decodeResult(UserQueryResult qr) {
+	    boolean isAsk = qr.getIsAsk();
+	    boolean askResult = qr.getAskResult();
+	    
+	    String errorMessage = qr.getErrorMessage();
+	    String resultSetString = qr.getQueryResultSet();
+	    
+	    if (!errorMessage.isEmpty()) {
+	    	return new QueryResult(query, new QueryException(errorMessage));
+	    }
+	    else {
+	    	if (isAsk) {
+	    		return new QueryResult(query, null, askResult);
+	    	}
+	    	else {
+	    		ContextResultSet rs = parseResultSet(resultSetString);
+	    		return new QueryResult(query, null, rs);
+	    	}
+	    }
+    }
+	
+	
+	private ContextResultSet parseResultSet(String resultSetString) {
+		ResultSet results = ResultSetFactory.fromXML(resultSetString);
+		List<String> resultVars = results.getResultVars();
+		final List<Binding> bindings = new ArrayList<Binding>();
+		
+		while (results.hasNext()) {
+			Binding binding = results.nextBinding();
+			bindings.add(detachBinding(binding));
+		}
+		
+		return new ContextResultSet(resultVars, bindings);
+    }
+	
+	
+	private Binding detachBinding(Binding binding) {
+		Iterator<Var> varsIt = binding.vars();
+		Binding initial = BindingFactory.binding();
+		
+		while (varsIt.hasNext()) {
+			Var var = varsIt.next();
+			initial = BindingFactory.binding(initial, var, binding.get(var));
+		}
+		
+		return initial;
+    }
 }

@@ -20,14 +20,15 @@ import org.aimas.ami.cmm.agent.AgentManagementService;
 import org.aimas.ami.cmm.agent.config.ApplicationSpecification;
 import org.aimas.ami.cmm.agent.config.CMMAgentContainer;
 import org.aimas.ami.cmm.agent.config.PlatformSpecification;
+import org.aimas.ami.cmm.agent.osgi.JadeOSGIBridgeService;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.api.CMMInstanceStateOpCallback;
 import org.aimas.ami.cmm.api.CMMOperationFuture;
 import org.aimas.ami.cmm.api.CMMPlatformManagementService;
 import org.aimas.ami.cmm.utils.AgentConfigLoader;
-import org.aimas.ami.cmm.utils.JadeOSGIBridgeService;
 import org.aimas.ami.cmm.utils.PlatformConfigLoader;
 import org.aimas.ami.contextrep.utils.BundleResourceManager;
+import org.apache.felix.dm.DependencyManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -49,6 +50,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	}
 	
 	private BundleContext cmmBundleContext;
+	private DependencyManager cmmDependencyManager;
 	
 	private CMMInstanceTracker cmmInstanceBundleTracker;
 	private BundleResourceManager defaultInstanceResourceManager;
@@ -63,11 +65,36 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	/////////////////////////////////////////////////////////////////////////
 	@Override
     public void start(BundleContext context) throws Exception {
+		// Save the OSGi related information
 		instance = this;
+		
+		cmmBundleContext = context;
+		cmmDependencyManager = new DependencyManager(context);
 		
 		cmmInstanceBundleTracker = new CMMInstanceTracker(context);
 		cmmInstanceBundleTracker.open();
 		
+		// Register this class as a CMMPlatformManagementService instance
+		context.registerService(CMMPlatformManagementService.class, this, null);
+    }
+	
+	
+	@Override
+    public void stop(BundleContext context) throws Exception {
+		// stop the CMM Platform
+		stopCMMPlatform();
+		
+		// close the CMM Instance Bundle Tracker
+		cmmInstanceBundleTracker.close();
+		
+		// lastly null out the OSGi context
+		cmmDependencyManager.clear();
+		cmmDependencyManager = null;
+		cmmBundleContext = null;
+    }
+	
+	@Override
+	public void startCMMPlatform() throws Exception {
 		// STEP 1: retrieve the default-instance bundle - this must exist as per design requirement
 		Bundle defaultInstanceBundle = cmmInstanceBundleTracker.getDefaultInstanceBundle();
 		if (defaultInstanceBundle == null) {
@@ -105,21 +132,21 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     		String defaultContextDomain = defaultAppSpecification.getLocalContextDomain().hasDomainValue() ? 
     				defaultAppSpecification.getLocalContextDomain().getDomainValue().getURI() : null;
     		
-    		CMMOperationFuture<Void> installTask = installCMMInstance(defaultApplicationId, defaultContextDimension, defaultContextDomain);
+    		CMMOperationFuture<Void> installTask = installProvisioningGroup(defaultApplicationId, defaultContextDimension, defaultContextDomain);
     		installTask.awaitOperation();
     	}
     	catch(CMMConfigException ex) {
+    		ex.printStackTrace();
     		System.out.println("There is no default CMM Agent Configuration - application must instantiate one");
     	}
-    }
-	
+	}
 	
 	@Override
-    public void stop(BundleContext context) throws Exception {
-		// TODO: stop all active CMM Instances
+	public void stopCMMPlatform() throws Exception {
+		// TODO: stop all active Provisioning Group Instances -- see if this can be done more nicely
 		for (CMMInstanceStateWrapper wrapper : cmmInstanceStateMap.values()) {
 			if (wrapper.getState() != CMMInstanceState.NOT_INSTALLED) {
-				CMMOperationFuture<Void> killTask = uninstallCMMInstance(wrapper.getApplicationId(), 
+				CMMOperationFuture<Void> killTask = uninstallProvisioningGroup(wrapper.getApplicationId(), 
 						wrapper.getContextDimensionURI(), wrapper.getContextDomainValueURI());
 				
 				killTask.awaitOperation(5, TimeUnit.SECONDS);
@@ -127,13 +154,12 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 			}
 		}
 		
-		// stop the CMM Instance State Operation Handler
-		cmmInstanceStateOpHandler.close();
-		
-		// close the CMM Instance Bundle Tracker
-		cmmInstanceBundleTracker.close();
-    }
-	
+		// stop the Provisioning Group Instance State Operation Handler
+		if (cmmInstanceStateOpHandler != null) {
+			cmmInstanceStateOpHandler.close();
+			cmmInstanceStateOpHandler = null;
+		}
+	}
 
 	private void validatePlatformSpecification(OntModel platformConfigModel) throws CMMConfigException {
 	    
@@ -152,9 +178,10 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 		props.setProperty(Profile.MAIN, Boolean.toString(isMainContainer));
 		props.setProperty(Profile.LOCAL_HOST, platformContainerSpec.getContainerHost());
 		props.setProperty(Profile.LOCAL_PORT, Integer.toString(platformContainerSpec.getContainerPort()));
+		props.setProperty(Profile.GUI, Boolean.toString(true));
 		
 		// if it is not a main container, indicate the host:port address of the main container
-		if (isMainContainer) {
+		if (!isMainContainer) {
 			CMMAgentContainer mainContainer = platformContainerSpec.getMainContainer();
 			props.setProperty(Profile.MAIN_HOST, mainContainer.getContainerHost());
 			props.setProperty(Profile.MAIN_PORT, Integer.toString(mainContainer.getContainerPort()));
@@ -186,6 +213,10 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 		return cmmBundleContext;
 	}
 	
+	public DependencyManager getDependencyManager() {
+		return cmmDependencyManager;
+	}
+	
 	// Application Info
 	/////////////////////////////////////////////////////////////////////////
 	public PlatformSpecification getPlatformSpecification() {
@@ -200,7 +231,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	
 	// CMM Instance State Management
 	/////////////////////////////////////////////////////////////////////////
-	public CMMInstanceState getCMMInstanceState(String applicationId, String contextDimensionURI, String contextDomainValueURI) {
+	public CMMInstanceState getProvisioningGroupState(String applicationId, String contextDimensionURI, String contextDomainValueURI) {
 		CMMInstanceStateWrapper stateWrapper = cmmInstanceStateMap.get(new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId)); 
 		
@@ -248,7 +279,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	}
 	
 	@Override
-    public void installCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
+    public void installProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI, 
     		CMMInstanceStateOpCallback operationCallback) {
 		// Create domain info wrapper
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
@@ -265,7 +296,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 	
 	@Override
-    public void startCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
+    public void startProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -274,7 +305,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 	
 	@Override
-    public void stopCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
+    public void stopProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -283,7 +314,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 	
 	@Override
-    public void uninstallCMMInstance(String applicationId, String contextDimensionURI, String contextDomainValueURI,
+    public void uninstallProvisioningGroup(String applicationId, String contextDimensionURI, String contextDomainValueURI,
     		CMMInstanceStateOpCallback operationCallback) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -293,7 +324,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
 	
 	
 	@Override
-    public CMMOperationFuture<Void> installCMMInstance(String applicationId, 
+    public CMMOperationFuture<Void> installProvisioningGroup(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -309,7 +340,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 	
 	@Override
-    public CMMOperationFuture<Void> startCMMInstance(String applicationId, 
+    public CMMOperationFuture<Void> startProvisioningGroup(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -318,7 +349,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 
 	@Override
-    public CMMOperationFuture<Void> stopCMMInstance(String applicationId, 
+    public CMMOperationFuture<Void> stopProvisioningGroup(String applicationId, 
             String contextDimensionURI, String contextDomainValueURI) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);
@@ -327,7 +358,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     }
 
 	@Override
-    public CMMOperationFuture<Void> uninstallCMMInstance(String applicationId, 
+    public CMMOperationFuture<Void> uninstallProvisioningGroup(String applicationId, 
     		String contextDimensionURI, String contextDomainValueURI) {
 		ContextDomainInfoWrapper contextDomainInfo = new ContextDomainInfoWrapper(contextDimensionURI, 
 				contextDomainValueURI, applicationId);

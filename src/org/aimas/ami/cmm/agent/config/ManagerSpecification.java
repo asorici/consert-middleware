@@ -37,7 +37,7 @@ public class ManagerSpecification extends AgentSpecification {
 	private ManagerType managerType;
 	
 	public ManagerSpecification(AgentAddress agentAddress, ManagerType managerType, AgentAddress parentManager) {
-	    super(agentAddress, AgentType.ORG_MGR, null);
+	    super(agentAddress, AgentType.ORG_MGR, null, null);
 	    this.parentManager = parentManager;
 	    this.managerType = managerType;
     }

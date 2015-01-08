@@ -7,19 +7,12 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 public class CoordinatorSpecification extends AgentSpecification {
-	private AgentAddress assignedOrgMgrAddress;
 	
 	public CoordinatorSpecification(AgentAddress agentAddress, AgentPolicy controlPolicy, 
-			AgentAddress managerAddress) {
+			AgentAddress assignedManagerAddress) {
 	    
-		super(agentAddress, AgentType.CTX_COORD, controlPolicy);
-		this.assignedOrgMgrAddress = managerAddress;
+		super(agentAddress, AgentType.CTX_COORD, controlPolicy, assignedManagerAddress);
     }
-	
-	
-	public AgentAddress getAssignedManagerAddress() {
-		return assignedOrgMgrAddress;
-	}
 	
 	
 	public static CoordinatorSpecification fromConfigurationModel(OntModel cmmConfigModel, Resource coordSpec) {

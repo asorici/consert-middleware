@@ -8,8 +8,10 @@ import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.aimas.ami.cmm.agent.CMMAgent;
-import org.aimas.ami.cmm.agent.config.QueryHandlerSpecification;
 import org.aimas.ami.cmm.agent.onto.AssertionCapability;
 import org.aimas.ami.cmm.agent.onto.AssertionDescription;
 import org.aimas.ami.cmm.agent.onto.EnableAssertions;
@@ -28,33 +29,40 @@ import org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionDescription;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultEnableAssertions;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultUserQueryResult;
 import org.aimas.ami.contextrep.engine.api.ContextResultSet;
+import org.aimas.ami.contextrep.engine.api.QueryException;
 import org.aimas.ami.contextrep.engine.api.QueryHandler;
 import org.aimas.ami.contextrep.engine.api.QueryResult;
 import org.aimas.ami.contextrep.model.ContextAssertion;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.query.ResultSetFormatter;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 
 public class UserQueryHandler {
 	
-	private QueryManager manager;
-	private AID user;
+	AID user;
+	QueryManager manager;
 	
-	private Map<String, UserQueryWrapper> registeredSubscriptions;
-	private Map<String, UserQueryWrapper> pendingQueries;
+	Map<String, UserQueryWrapper> registeredSubscriptions;
+	Map<String, DomainSubscriptionBehaviour> registeredDomainSubscriptions;
+	Map<String, UserQueryWrapper> pendingQueries;
 	
 	/* A mapping from a ContextAssertion to the list of subscription identifiers in which 
 	 * the ContextAssertion is present */
-	private Map<ContextAssertion, List<String>> subscriptionBodyMap;
+	Map<ContextAssertion, List<String>> subscriptionBodyMap;
 	
 	public UserQueryHandler(QueryManager manager, AID user) {
 		this.manager = manager;
 		this.user = user;
 	    
-	    registeredSubscriptions = new HashMap<String, UserQueryHandler.UserQueryWrapper>();
-	    pendingQueries = new ConcurrentHashMap<String, UserQueryHandler.UserQueryWrapper>();
+	    registeredSubscriptions = new HashMap<String, UserQueryWrapper>();
+	    registeredDomainSubscriptions = new HashMap<String, DomainSubscriptionBehaviour>();
+	    pendingQueries = new ConcurrentHashMap<String, UserQueryWrapper>();
 	    
 	    subscriptionBodyMap = new HashMap<ContextAssertion, List<String>>();
     }
@@ -63,11 +71,11 @@ public class UserQueryHandler {
 		return manager.getEngineQueryAdaptor();
 	}
 	
-	private Set<ContextAssertion> analyzeQuery(Query query) {
+	Set<ContextAssertion> analyzeQuery(Query query) {
 		return manager.getEngineQueryAdaptor().analyzeQuery(query, null);
 	}
 	
-	private Set<ContextAssertion> analyzeInactiveAssertions(Set<ContextAssertion> referencedAssertions) {
+	Set<ContextAssertion> analyzeInactiveAssertions(Set<ContextAssertion> referencedAssertions) {
 	    Set<ContextAssertion> inactiveAssertions = new HashSet<ContextAssertion>();
 	    
 	    for (ContextAssertion contextAssertion : referencedAssertions) {
@@ -111,7 +119,7 @@ public class UserQueryHandler {
     		// If we could not execute the query, we are going to return a FAILURE message performative
     		ACLMessage response = prepareQueryResponseMsg(queryWrapper.getInitialMessage(), ACLMessage.FAILURE);
     		try {
-	            UserQueryResult qr = encodeResult(result);
+	            UserQueryResult qr = encodeResultForMessage(result);
 	            manager.getCtxQueryAgent().getContentManager().fillContent(response, qr);
             }
             catch (Exception e) {
@@ -123,7 +131,7 @@ public class UserQueryHandler {
     	else {
     		// If we treated a subscription query check to see if we have a 
     		// time-based or change-based subscription. For a change-based subscription, see if
-    		// the new result differs than the cached one.
+    		// the new result differs from the cached one.
     		boolean sendInform = false;
     		if (queryWrapper.getPerformative() == ACLMessage.SUBSCRIBE && !queryWrapper.isTimeBasedUpdate()) {
     			if (result.isAsk() && queryWrapper.resultChanged(result.getAskResult())) {
@@ -135,11 +143,15 @@ public class UserQueryHandler {
     				sendInform = true;
     			}
     		}
+    		else {
+    			// If it is a time-based subscription or a simple query, we just send the result, i.e. we do no caching
+    			sendInform = true;
+    		}
     		
     		if (sendInform) {
 	    		ACLMessage response = prepareQueryResponseMsg(queryWrapper.getInitialMessage(), ACLMessage.INFORM);
 	    		try {
-	    			UserQueryResult qr = encodeResult(result);
+	    			UserQueryResult qr = encodeResultForMessage(result);
 	    			manager.getCtxQueryAgent().getContentManager().fillContent(response, qr);
 	    			
 	    			//System.out.println(response);
@@ -154,7 +166,7 @@ public class UserQueryHandler {
     }
 
     
-    private UserQueryResult encodeResult(QueryResult result) {
+    UserQueryResult encodeResultForMessage(QueryResult result) {
 	    UserQueryResult qr = new DefaultUserQueryResult();
 	    
 	    // set isAsk
@@ -182,6 +194,53 @@ public class UserQueryHandler {
 	    
 	    return qr;
     }
+    
+    QueryResult decodeResultFromMessage(Query initialQuery, UserQueryResult qr) {
+	    boolean isAsk = qr.getIsAsk();
+	    boolean askResult = qr.getAskResult();
+	    
+	    String errorMessage = qr.getErrorMessage();
+	    String resultSetString = qr.getQueryResultSet();
+	    
+	    if (!errorMessage.isEmpty()) {
+	    	return new QueryResult(initialQuery, new QueryException(errorMessage));
+	    }
+	    else {
+	    	if (isAsk) {
+	    		return new QueryResult(initialQuery, null, askResult);
+	    	}
+	    	else {
+	    		ContextResultSet rs = parseResultSet(resultSetString);
+	    		return new QueryResult(initialQuery, null, rs);
+	    	}
+	    }
+    }
+	
+	private ContextResultSet parseResultSet(String resultSetString) {
+		ResultSet results = ResultSetFactory.fromXML(resultSetString);
+		List<String> resultVars = results.getResultVars();
+		final List<Binding> bindings = new ArrayList<Binding>();
+		
+		while (results.hasNext()) {
+			Binding binding = results.nextBinding();
+			bindings.add(detachBinding(binding));
+		}
+		
+		return new ContextResultSet(resultVars, bindings);
+    }
+	
+	private Binding detachBinding(Binding binding) {
+		Iterator<Var> varsIt = binding.vars();
+		Binding initial = BindingFactory.binding();
+		
+		while (varsIt.hasNext()) {
+			Var var = varsIt.next();
+			initial = BindingFactory.binding(initial, var, binding.get(var));
+		}
+		
+		return initial;
+    }
+    
 
 	ACLMessage prepareQueryResponseMsg(ACLMessage initialMessage, int performative) {
     	ACLMessage reply = new ACLMessage(performative);
@@ -232,49 +291,131 @@ public class UserQueryHandler {
     public void executeQuery(ACLMessage userQueryMsg) {
     	UserQueryWrapper queryWrapper = buildWrapper(userQueryMsg);
     	if (queryWrapper != null) {
-    		// First, analyze query and see if we need to enable anything
-			Set<ContextAssertion> referencedAssertions = analyzeQuery(queryWrapper.getQueryContent());
-			Set<ContextAssertion> inactiveAssertions = analyzeInactiveAssertions(referencedAssertions);
-			
-			if (inactiveAssertions.isEmpty()) {
-				pendingQueries.put(userQueryMsg.getConversationId(), queryWrapper);
-				queryWrapper.executeQuery();
-			}
-			else {				
-				manager.getCtxQueryAgent().addBehaviour(new EnableAndExecuteBehaviour(queryWrapper, inactiveAssertions));
-			}
+    		// First, determine if we this query is addressed to us (local or our domain) or if it
+    		// needs to be forwarded to another CtxQueryHandler
+    		boolean executeLocally = true;
+    		
+    		if (!queryWrapper.isLocalQuery()) {
+	    		if (queryWrapper.isExactDomainQuery()) {
+	    			String queryDomainValueURI = queryWrapper.getExactDomainValue();
+	    			String ourDomainValueURI = manager.getCtxQueryAgent().getContextDomainValueURI();
+	    			
+	    			if (ourDomainValueURI != null && !ourDomainValueURI.equals(queryDomainValueURI)) {
+	    				// If we have an exact domain query request and the domain does not match
+	    				// ours, we will have to collaborate with the OrgMgr to see where to
+	    				// route the query
+	    				executeLocally = false;
+	    			}
+	    		}
+	    		else if (queryWrapper.isUpperBroadcastQuery()) {
+	    			// If we are dealing with an upperBroadcast, we will have to work with the OrgMgr to see:
+	    			// (i) to whom we have to route the query, (ii) if we have to execute it as well 
+	    			executeLocally = false;
+	    		}
+	    		else {
+	    			// TODO: implement the other cases as well: full domain-range query -- but this has
+	    			// to be re-thought in terms of domainRangeEntity limits instead of domainRangeValue limits.  
+	    			return;
+	    		}
+    		}
+    		
+    		if (executeLocally) {
+	    		// If we have to execute the query ourselves, analyze it and see if we need to enable anything first
+				Set<ContextAssertion> referencedAssertions = analyzeQuery(queryWrapper.getQueryContent());
+				Set<ContextAssertion> inactiveAssertions = analyzeInactiveAssertions(referencedAssertions);
+				
+				if (inactiveAssertions.isEmpty()) {
+					pendingQueries.put(userQueryMsg.getConversationId(), queryWrapper);
+					queryWrapper.executeQuery();
+				}
+				else {				
+					manager.getCtxQueryAgent().addBehaviour(new EnableAndExecuteBehaviour(queryWrapper, inactiveAssertions));
+				}
+    		}
+    		else {
+    			// If we have to forward the query to other CtxQueryHandlers (possibly ourself too, in the
+    			// case we have an upper broadcast in which our assigned OrgMgr determines that we have to
+    			// participate with answers) start a DomainQueryBehaviour
+    			manager.getCtxQueryAgent().addBehaviour(new DomainQueryBehaviour(manager.getCtxQueryAgent(), 
+    					this, queryWrapper));
+    		}
     	}
     }
-
 
 	
 	public void registerSubscription(ACLMessage userQueryMsg) {
 		UserQueryWrapper queryWrapper = buildWrapper(userQueryMsg);
     	if (queryWrapper != null) {
-    		// First, analyze query and see if we need to enable anything
-    		Set<ContextAssertion> referencedAssertions = analyzeQuery(queryWrapper.getQueryContent());
-    		Set<ContextAssertion> inactiveAssertions = analyzeInactiveAssertions(referencedAssertions);
+    		// First, determine if we this query is addressed to us (local or our domain) or if it
+    		// needs to be forwarded to another CtxQueryHandler
+    		boolean executeLocally = true;
     		
-    		for (ContextAssertion ca : referencedAssertions) {
-    			List<String> subsIdentifiers = subscriptionBodyMap.get(ca);
-    			if (subsIdentifiers == null) {
-    				subsIdentifiers = new LinkedList<String>();
-    				subsIdentifiers.add(userQueryMsg.getConversationId());
-    				subscriptionBodyMap.put(ca, subsIdentifiers);
-    			}
-    			else {
-    				subsIdentifiers.add(userQueryMsg.getConversationId());
-    			}
+    		if (!queryWrapper.isLocalQuery()) {
+    			if (queryWrapper.isExactDomainQuery()) {
+	    			String queryDomainValueURI = queryWrapper.getExactDomainValue();
+	    			String ourDomainValueURI = manager.getCtxQueryAgent().getContextDomainValueURI();
+	    			
+	    			if (ourDomainValueURI != null && !ourDomainValueURI.equals(queryDomainValueURI)) {
+	    				// If we have an exact domain query request and the domain does not match
+	    				// ours, we will have to collaborate with the OrgMgr to see where to
+	    				// route the query
+	    				executeLocally = false;
+	    			}
+	    		}
+	    		else if (queryWrapper.isUpperBroadcastQuery()) {
+	    			// If we are dealing with an upperBroadcast, we will have to work with the OrgMgr to see:
+	    			// (i) to whom we have to route the query, (ii) if we have to execute it as well 
+	    			executeLocally = false;
+	    		}
+	    		else {
+	    			// TODO: implement the other cases as well: full domain-range query -- but this has
+	    			// to be re-thought in terms of domainRangeEntity limits instead of domainRangeValue limits.  
+	    			return;
+	    		}
     		}
     		
-    		if (inactiveAssertions.isEmpty()) {
-    			registeredSubscriptions.put(userQueryMsg.getConversationId(), queryWrapper);
-				pendingQueries.put(userQueryMsg.getConversationId(), queryWrapper);
-				queryWrapper.executeQuery();
-			}
-			else {				
-				manager.getCtxQueryAgent().addBehaviour(new EnableAndExecuteBehaviour(queryWrapper, inactiveAssertions));
-			}
+    		if (executeLocally) {
+	    		// If we have to execute the query ourselves, analyze it and see if we need to enable anything first
+	    		Set<ContextAssertion> referencedAssertions = analyzeQuery(queryWrapper.getQueryContent());
+	    		Set<ContextAssertion> inactiveAssertions = analyzeInactiveAssertions(referencedAssertions);
+	    		
+	    		for (ContextAssertion ca : referencedAssertions) {
+	    			List<String> subsIdentifiers = subscriptionBodyMap.get(ca);
+	    			if (subsIdentifiers == null) {
+	    				subsIdentifiers = new LinkedList<String>();
+	    				subsIdentifiers.add(userQueryMsg.getConversationId());
+	    				subscriptionBodyMap.put(ca, subsIdentifiers);
+	    			}
+	    			else {
+	    				subsIdentifiers.add(userQueryMsg.getConversationId());
+	    			}
+	    		}
+	    		
+	    		if (inactiveAssertions.isEmpty()) {
+	    			registeredSubscriptions.put(userQueryMsg.getConversationId(), queryWrapper);
+					pendingQueries.put(userQueryMsg.getConversationId(), queryWrapper);
+					queryWrapper.executeQuery();
+				}
+				else {				
+					manager.getCtxQueryAgent().addBehaviour(new EnableAndExecuteBehaviour(queryWrapper, inactiveAssertions));
+				}
+	    		
+	    		// Lastly, use the CONSERT Engine QueryHandler to mark the registration of this query
+	    		// as a subscription
+	    		manager.getEngineQueryAdaptor().registerSubscription(queryWrapper.getQueryContent());
+    		}
+    		else {
+    			// If we have to forward the subscription to other CtxQueryHandlers (possibly ourself too, in the
+    			// case we have an upper broadcast in which our assigned OrgMgr determines that we have to
+    			// participate with answers) start a DomainSubscriptionBehaviour
+    			
+    			// We will register the subscription in the registeredDomainSubscriptions map, such
+    			// that when a cancellation request comes, we now how to resolve it.
+    			DomainSubscriptionBehaviour domainSubscriptionBehaviour = new DomainSubscriptionBehaviour(
+    					manager.getCtxQueryAgent(), this, queryWrapper);
+    			registeredDomainSubscriptions.put(userQueryMsg.getConversationId(), domainSubscriptionBehaviour);
+    			manager.getCtxQueryAgent().addBehaviour(domainSubscriptionBehaviour);
+    		}
     	}
     }
 
@@ -282,12 +423,29 @@ public class UserQueryHandler {
 	public void cancelSubscription(ACLMessage userQueryMsg) {
 	    String subscriptionIdentifier = userQueryMsg.getConversationId();
 	    
-	    pendingQueries.remove(subscriptionIdentifier);
-	    registeredSubscriptions.remove(subscriptionIdentifier);
-	    
-	    for (List<String> subsIdentifiers : subscriptionBodyMap.values()) {
-	    	subsIdentifiers.remove(subscriptionIdentifier);
+	    // When canceling, we first check to see if the subscription is for a domain query.
+	    // The local and domain subscriptions are disjoint: if the domain subscription involved a local
+	    // query as well, it will be deleted by the corresponding domainSubscriptionBehaviour
+	    if (registeredDomainSubscriptions.containsKey(subscriptionIdentifier)) {
+	    	DomainSubscriptionBehaviour domainSubscriptionBehaviour = 
+	    			registeredDomainSubscriptions.get(subscriptionIdentifier);
+	    	domainSubscriptionBehaviour.cancel();
+	    	// NOTE that this is a decoupled cancellation, i.e. the user requesting the cancellation
+	    	// receives confirmation of this fact, before all up- or down-stream cancellations have
+	    	// been processed.
 	    }
+	    else {
+	    	// For the local subscriptions, remove any pending queries, remove the subscription
+	    	// and unregister it from the CONSERT Engine QueryHandler
+	    	pendingQueries.remove(subscriptionIdentifier);
+		    UserQueryWrapper queryWrapper = registeredSubscriptions.remove(subscriptionIdentifier);
+		    manager.getEngineQueryAdaptor().unregisterSubscription(queryWrapper.getQueryContent());
+		    
+		    for (List<String> subsIdentifiers : subscriptionBodyMap.values()) {
+		    	subsIdentifiers.remove(subscriptionIdentifier);
+		    }
+	    }
+	    
 	    
 	    ACLMessage cancelConfirm = prepareQueryResponseMsg(userQueryMsg, ACLMessage.INFORM);
 	    manager.getCtxQueryAgent().addBehaviour(new SenderBehaviour(manager.getCtxQueryAgent(), cancelConfirm));
@@ -295,7 +453,7 @@ public class UserQueryHandler {
 	
 	// ========================== AUXILIARY WRAPPERS AND BEHAVIOURS ========================== //
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	private class UserQueryWrapper {
+	class UserQueryWrapper {
 		private ACLMessage initQueryMessage;
 		private UserQuery queryDescription;
 		private Query queryContent;
@@ -331,6 +489,14 @@ public class UserQueryHandler {
 			return initQueryMessage; 
 		}
 		
+		AID getSender() {
+	        return initQueryMessage.getSender();
+        }
+		
+		UserQuery getQueryDescription() {
+			return queryDescription;
+		}
+		
 		Query getQueryContent() {
 			return queryContent;
 		}
@@ -345,6 +511,40 @@ public class UserQueryHandler {
 		
 		boolean isTimeBasedUpdate() {
 			return queryDescription.getRepeatInterval() != 0;
+		}
+		
+		boolean isLocalQuery() {
+			return queryDescription.getQueryTarget().equals(UserQuery.LOCAL_QUERY);
+		}
+		
+		boolean isExactDomainQuery() {
+			String upperBound = queryDescription.getDomain_upper_bound();
+			String lowerBound = queryDescription.getDomain_lower_bound();
+			
+			return !upperBound.isEmpty() && !lowerBound.isEmpty() && upperBound.equals(lowerBound); 
+		}
+		
+		String getExactDomainValue() {
+			if (isExactDomainQuery()) {
+				return queryDescription.getDomain_upper_bound();
+			}
+			
+			return null;
+		}
+		
+		String getUpperDomainValue() {
+			return queryDescription.getDomain_upper_bound();
+		}
+		
+		String getLowerDomainValue() {
+			return queryDescription.getDomain_lower_bound();
+		}
+		
+		boolean isUpperBroadcastQuery() {
+			String upperBound = queryDescription.getDomain_upper_bound();
+			String lowerBound = queryDescription.getDomain_lower_bound();
+			
+			return !upperBound.isEmpty() && lowerBound.isEmpty();
 		}
 		
 		boolean resultChanged(ContextResultSet newSelectResult) {
@@ -394,8 +594,7 @@ public class UserQueryHandler {
 			int queryType = initQueryMessage.getPerformative();
 			String queryIdentifier = initQueryMessage.getConversationId();
 			
-			QueryExecBehaviour b = new QueryExecBehaviour(queryType, queryIdentifier, queryContent, 
-					UserQueryHandler.this);
+			QueryExecBehaviour b = new QueryExecBehaviour(queryType, queryIdentifier, queryContent, UserQueryHandler.this);
 			manager.getCtxQueryAgent().addBehaviour(b);
 		}
 	}
@@ -418,10 +617,12 @@ public class UserQueryHandler {
 		protected ACLMessage prepareRequest(ACLMessage msg){
 			ACLMessage enableAssertionsMsg = new ACLMessage(ACLMessage.REQUEST);
 			
-			QueryHandlerSpecification spec = (QueryHandlerSpecification)manager.getCtxQueryAgent().getAgentSpecification();
-			String conversationId = manager.getCtxQueryAgent().getName() + "-EnableAssertions-" + System.currentTimeMillis(); 
+			CtxQueryHandler ctxQueryAgent = manager.getCtxQueryAgent();
+			String conversationId = ctxQueryAgent.getName() + "-EnableAssertions-" + System.currentTimeMillis(); 
 			
-			enableAssertionsMsg.addReceiver(spec.getAssignedManagerAddress().getAID());
+			AID coordinatorAgent = ctxQueryAgent.getConnectedCoordinator();
+			
+			enableAssertionsMsg.addReceiver(coordinatorAgent);
 			enableAssertionsMsg.setConversationId(conversationId);
 			enableAssertionsMsg.setLanguage(CMMAgent.cmmCodec.getName());
 			enableAssertionsMsg.setOntology(CMMAgent.cmmOntology.getName());
@@ -440,7 +641,7 @@ public class UserQueryHandler {
 			}
 			
 			try {
-				Action enableAssertionsAction = new Action(spec.getAssignedManagerAddress().getAID(), msgContent);
+				Action enableAssertionsAction = new Action(coordinatorAgent, msgContent);
 	            manager.getCtxQueryAgent().getContentManager().fillContent(enableAssertionsMsg, enableAssertionsAction);
             }
             catch (Exception e) {
@@ -451,7 +652,7 @@ public class UserQueryHandler {
 		}
 		
 		@Override
-		protected void handleInform(ACLMessage msg){
+		protected void handleInform(ACLMessage msg) {
 			// The inform message is just a confirmation that the assertions have been activated.
 			// If the initial message is a SUBSCRIBE request, we can now register it and then execute
 			// the query.

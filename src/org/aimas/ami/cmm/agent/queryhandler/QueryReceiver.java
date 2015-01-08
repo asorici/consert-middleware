@@ -21,8 +21,12 @@ public class QueryReceiver extends SimpleBehaviour {
 			}
 			
 			private boolean matchesLanguage(ACLMessage msg) {
-				return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
+				if (msg.getLanguage() != null && msg.getOntology() != null) {
+					return msg.getLanguage().equals(CMMAgent.cmmCodec.getName()) &&
 						msg.getOntology().equals(CMMAgent.cmmOntology.getName());
+				}
+				
+				return false;
 			}
 			
 			private boolean matchesPerformative(ACLMessage msg) {

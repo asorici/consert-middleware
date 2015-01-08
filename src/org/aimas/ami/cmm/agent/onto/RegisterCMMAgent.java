@@ -16,16 +16,16 @@ public interface RegisterCMMAgent extends jade.content.AgentAction {
    public String getAppIdentifier();
 
    /**
-   * Protege name: agentState
+   * Protege name: agentActive
    */
    public void setAgentActive(boolean value);
-   public boolean isAgentActive();
+   public boolean getAgentActive();
 
    /**
    * The type of the CMMAgent that requests registration with an OrgMgr.
    * Protege name: agentType
    */
-   public void setAgentService(String value);
-   public String getAgentService();
+   public void setAgentType(String value);
+   public String getAgentType();
 
 }

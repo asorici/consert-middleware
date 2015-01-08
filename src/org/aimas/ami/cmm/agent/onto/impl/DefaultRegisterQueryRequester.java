@@ -9,17 +9,17 @@ import org.aimas.ami.cmm.agent.onto.*;
 * @author OntologyBeanGenerator v4.1
 * @version 2014/07/31, 13:46:14
 */
-public class DefaultRegisterUser implements RegisterUser {
+public class DefaultRegisterQueryRequester implements RegisterQueryRequester {
 
   private static final long serialVersionUID = 5438106203733924709L;
 
   private String _internalInstanceName = null;
 
-  public DefaultRegisterUser() {
+  public DefaultRegisterQueryRequester() {
     this._internalInstanceName = "";
   }
 
-  public DefaultRegisterUser(String instance_name) {
+  public DefaultRegisterQueryRequester(String instance_name) {
     this._internalInstanceName = instance_name;
   }
 
@@ -28,15 +28,15 @@ public class DefaultRegisterUser implements RegisterUser {
   }
 
    /**
-   * The CtxUser agent that needs to be registered.
-   * Protege name: user
+   * The CMM Agent (CtxUser, OrgMgr or another CtxQueryHandler) agent that needs to be registered.
+   * Protege name: queryRequester
    */
-   private jade.core.AID user;
-   public void setUser(jade.core.AID value) { 
-    this.user=value;
+   private jade.core.AID queryRequester;
+   public void setQueryRequester(jade.core.AID value) { 
+    this.queryRequester=value;
    }
-   public jade.core.AID getUser() {
-     return this.user;
+   public jade.core.AID getQueryRequester() {
+     return this.queryRequester;
    }
 
 }

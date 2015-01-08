@@ -21,9 +21,9 @@ public class ApplicationSpecification {
 	
 	private String appIdentifier;
 	private DeploymentType appDeploymentType;
-	private ContextDomain localContextDomain;
+	private ContextDomainSpecification localContextDomain;
 	
-	public ApplicationSpecification(String appIdentifier, DeploymentType appDeploymentType, ContextDomain localContextDomain) {
+	public ApplicationSpecification(String appIdentifier, DeploymentType appDeploymentType, ContextDomainSpecification localContextDomain) {
 	    this.appIdentifier = appIdentifier;
 	    this.appDeploymentType = appDeploymentType;
 	    this.localContextDomain = localContextDomain;
@@ -37,7 +37,7 @@ public class ApplicationSpecification {
 		return appDeploymentType;
 	}
 
-	public ContextDomain getLocalContextDomain() {
+	public ContextDomainSpecification getLocalContextDomain() {
 		return localContextDomain;
 	}
 	
@@ -47,7 +47,7 @@ public class ApplicationSpecification {
 		
 		String appIdentifier = appSpec.getProperty(OrgConf.appIdentificationName).getString();
 		DeploymentType appDeploymentType = DeploymentType.getFromResource(appSpec.getPropertyResourceValue(OrgConf.appDeploymentType));
-		ContextDomain localContextDomain = ContextDomain.fromConfigurationModel(cmmConfigModel, 
+		ContextDomainSpecification localContextDomain = ContextDomainSpecification.fromConfigurationModel(cmmConfigModel, 
 				appSpec.getPropertyResourceValue(OrgConf.hasContextDomain));
 		
 		return new ApplicationSpecification(appIdentifier, appDeploymentType, localContextDomain);

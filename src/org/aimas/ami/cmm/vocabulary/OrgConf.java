@@ -55,16 +55,21 @@ public class OrgConf {
     public final static Property hasDomainRangeEntity = m_model.createProperty( NS + "hasDomainRangeEntity" );
     public final static Property hasDomainRangeValue = m_model.createProperty( NS + "hasDomainRangeValue" );
     public final static Property hasContextModel = m_model.createProperty( NS + "hasContextModel" );
+    public final static Property hasDomainHierarchyProperty = m_model.createProperty( NS + "hasDomainHierarchyProperty" );
+    public final static Property hasDomainHierarchyDocument = m_model.createProperty( NS + "hasDomainHierarchyDocument" );
+    
     public final static Property hasModelDocumentManager = m_model.createProperty( NS + "hasModelDocumentManager" );
     public final static Property hasModelCoreDocument = m_model.createProperty( NS + "hasModelCoreDocument" );
     public final static Property hasModelAnnotationsDocument = m_model.createProperty( NS + "hasModelAnnotationsDocument" );
     public final static Property hasModelConstraintsDocument = m_model.createProperty( NS + "hasModelConstraintsDocument" );
     public final static Property hasModelFunctionsDocument = m_model.createProperty( NS + "hasModelFunctionsDocument" );
     public final static Property hasModelRulesDocument = m_model.createProperty( NS + "hasModelRulesDocument" );
+    public final static Property hasContextDomainUserDoc = m_model.createProperty( NS + "hasContextDomainUserDoc" );
     
     public final static Property hasAgentAddress = m_model.createProperty( NS + "hasAgentAddress" );
     public final static Property agentName = m_model.createProperty( NS + "agentName" );
     public final static Property agentContainer = m_model.createProperty( NS + "agentContainer" );
+    public final static Property agentAppIdentifier = m_model.createProperty( NS + "agentAppIdentifier" );
     
     //public final static Property assignedCoordinator = m_model.createProperty( NS + "assignedCoordinator" );
     public final static Property assignedOrgManager = m_model.createProperty( NS + "assignedOrgManager" );
@@ -80,7 +85,7 @@ public class OrgConf {
     
     //public final static Property hasEngineAdaptor = m_model.createProperty( NS + "hasEngineAdaptor" );
     //public final static Property hasQueryAdaptor = m_model.createProperty( NS + "hasQueryAdaptor" );
-    public final static Property hasQualifiedClassName = m_model.createProperty( NS + "hasQualifiedClassName" );
+    public final static Property hasQualifiedName = m_model.createProperty( NS + "hasQualifiedName" );
     public final static Property hasServiceName = m_model.createProperty( NS + "hasServiceName" );
     public final static Property usesAssertionAdaptor = m_model.createProperty( NS + "usesAssertionAdaptor" );
     public final static Property handlesModelPartition = m_model.createProperty( NS + "handlesModelPartition" );

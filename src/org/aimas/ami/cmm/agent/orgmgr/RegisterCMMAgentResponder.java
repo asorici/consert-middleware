@@ -44,8 +44,8 @@ public class RegisterCMMAgentResponder extends AchieveREResponder {
 			RegisterCMMAgent requestContent = (RegisterCMMAgent) contentAction.getAction();
 	        
 			String appIdentifier = requestContent.getAppIdentifier();
-			AgentType agentType = AgentType.fromServiceName(requestContent.getAgentService());
-			State agentState = requestContent.isAgentActive() ? State.ACTIVE : State.INACTIVE;
+			AgentType agentType = AgentType.fromServiceName(requestContent.getAgentType());
+			State agentState = requestContent.getAgentActive() ? State.ACTIVE : State.INACTIVE;
 			
 			if (agentType == AgentType.CTX_COORD) {
 				orgMgr.agentManager.setManagedCoordinator(request.getSender(), agentState);

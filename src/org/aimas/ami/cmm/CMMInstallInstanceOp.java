@@ -6,7 +6,7 @@ import jade.wrapper.AgentController;
 import org.aimas.ami.cmm.agent.config.AgentAddress;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification;
 import org.aimas.ami.cmm.agent.config.ManagerSpecification.ManagerType;
-import org.aimas.ami.cmm.agent.orgmgr.CMMEventResult;
+import org.aimas.ami.cmm.agent.orgmgr.CMMOpEventResult;
 import org.aimas.ami.cmm.agent.orgmgr.OrgMgr;
 import org.aimas.ami.cmm.api.CMMConfigException;
 import org.aimas.ami.cmm.api.CMMPlatformManagementService.CMMInstanceState;
@@ -58,27 +58,33 @@ public class CMMInstallInstanceOp extends CMMInstanceStateOp {
 			// whose sole role is to instantiate the agents and manage any deployment specification modifications
 			ManagerSpecification orgMgrSpec = ManagerSpecification.fromConfigurationModel(agentConfigModel);
 			if (orgMgrSpec == null) {
-				String orgMgrName = "OrgMgr" + "__" + applicationId + "__" + contextDimensionURI + "__" + contextDomainValueURI;
-				AgentAddress orgMgrAddress = new AgentAddress(orgMgrName, cmmPlatformManager.getPlatformSpecification().getPlatformAgentContainer());
+				String orgMgrName = "OrgMgr_Local";
+				AgentAddress orgMgrAddress = new AgentAddress(orgMgrName, cmmPlatformManager.getPlatformSpecification().getPlatformAgentContainer(), applicationId);
 				orgMgrSpec = new ManagerSpecification(orgMgrAddress, ManagerType.Central, null);
 			}
 			
 			// STEP 4: create the OrgMgr and start him
-			String orgMgrName = orgMgrSpec.getAgentAddress().getLocalName();
+			String orgMgrName = orgMgrSpec.getAgentLocalName();
+			
+			// create an event object to pass to the OrgMgr in order for him to signal when he is done initiating
+			Event orgMgrReady = new Event(0, this);
 			
 			// send the following elements as parameters of the OrgMgr: CMM Instance Resource Bundle location, OrgMgr type
-			Object[] orgMgrParams = new Object[] { cmmInstanceResourceBundle.getLocation(), orgMgrSpec.getManagerType() };
+			Object[] orgMgrParams = new Object[] { cmmInstanceResourceBundle.getLocation(), orgMgrSpec.getManagerType(), orgMgrReady };
 			
 			// We assume that nothing can go wrong in the OrgMgr creation step
 			AgentController orgMgrController = cmmPlatformManager.createNewAgent(orgMgrName, OrgMgr.class.getName(), orgMgrParams);
 			orgMgrController.start();
+			
+			// Now we wait for the OrgMgr to initialize
+			orgMgrReady.waitUntilProcessed();
 			
 			// STEP 5: use the CMMPlatformInterface to request that the CMM Instance be created
 			CMMPlatformRequestExecutor platformInterface = orgMgrController.getO2AInterface(CMMPlatformRequestExecutor.class);
 			cmmPlatformManager.setRequestExecutor(contextDomainInfo, platformInterface);
 			
 			Event initRequestEvent = platformInterface.createCMMInstance();
-			CMMEventResult cmmInitResult = (CMMEventResult)initRequestEvent.waitUntilProcessed();
+			CMMOpEventResult cmmInitResult = (CMMOpEventResult)initRequestEvent.waitUntilProcessed();
 			if (cmmInitResult.hasError()) {
 				throw cmmInitResult.getError();
 			}

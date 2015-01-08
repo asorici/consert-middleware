@@ -14,6 +14,7 @@ import java.util.Map;
 import org.aimas.ami.cmm.agent.AgentType;
 import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator;
+import org.aimas.ami.cmm.agent.RegisterCMMAgentInitiator.RegisterCMMAgentNotifier;
 import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator;
 import org.aimas.ami.cmm.agent.SearchCoordinatorInitiator.SearchCoordinatorListener;
 import org.aimas.ami.cmm.agent.config.SensingPolicy;
@@ -41,7 +42,6 @@ public class CtxSensor extends CMMAgent implements AssertionActiveListener {
     }
     
     /* Application unique identifier and agent specification */
-    private String appIdentifier;
     private SensorSpecification sensorSpecification;
     
     /* SensingManager, CtxSensor state and the CtxCoord currently connected to */
@@ -88,7 +88,10 @@ public class CtxSensor extends CMMAgent implements AssertionActiveListener {
     		// retrieve specification and create sensed assertions manager
     		agentSpecification = SensorSpecification.fromConfigurationModel(cmmConfigModel, agentSpecRes);
     		sensorSpecification = (SensorSpecification)agentSpecification;
-    		assignedOrgMgr = sensorSpecification.getAssignedManagerAddress().getAID();
+    		
+    		if (sensorSpecification.hasAssignedManagerAddress()) {
+    			assignedOrgMgr = sensorSpecification.getAssignedManagerAddress().getAID();
+    		}
     		
     		configureSensingManager(sensorSpecification.getSensingPolicies());
     		
@@ -111,11 +114,6 @@ public class CtxSensor extends CMMAgent implements AssertionActiveListener {
     	
     	// ======== STEP 3:	setup the CtxSensor specific permanent behaviors
     	setupSensorBehaviours();
-    	
-    	// ======== STEP 4: Find the CtxCoord by asking the assigned (or local) OrgMgr and then 
-    	// connect to the CtxCoord by publishing the proposal to supply updates of the sensed ContextAssertions.
-    	// If we do not find a coordinator, it means we are in dynamic mode, and we will receive an assignedOrgMgr
-    	findCoordinator();
     }
     
     
@@ -191,7 +189,18 @@ public class CtxSensor extends CMMAgent implements AssertionActiveListener {
 	@Override
     protected void registerWithAssignedManager() {
 		if (assignedOrgMgr != null) {
-			addBehaviour(new RegisterCMMAgentInitiator(this));
+			addBehaviour(new RegisterCMMAgentInitiator(this, new RegisterCMMAgentNotifier() {
+				@Override
+				public void cmmAgentRegistered() {
+					findCoordinator();
+				}
+			}));
+		}
+		else {
+	    	// Find the CtxCoord by asking the local OrgMgr and then connect to the CtxCoord by publishing 
+			// the proposal to supply updates of the sensed ContextAssertions. If we do not find  
+			// a coordinator, it means we are in dynamic mode, and we will receive an assignedOrgMgr
+	    	findCoordinator();
 		}
     }
 	
@@ -247,6 +256,8 @@ public class CtxSensor extends CMMAgent implements AssertionActiveListener {
 
 	
 	private void doConnectProposal(final AID coordinatorAID) {
+		System.out.println("[" + getClass().getSimpleName() + "]: " + "Connecting with coordinator: " + coordinatorAID);
+		
 		PublishAssertions publishContent = new DefaultPublishAssertions();
 		
 		Map<String, AssertionManager> managedAssertions = sensedAssertionsManager.getManagedAssertions();

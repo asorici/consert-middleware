@@ -11,21 +11,23 @@ public class AgentAddress {
 	private String agentLocalName;
 	private String agentMTPHost;
 	private int agentMTPPort;
+	private String agentAppIdentifier;
 	
 	private CMMAgentContainer agentContainer;
 	private AID agentID;
 	
 	
-	public AgentAddress(String agentLocalName, CMMAgentContainer agentContainer) {
+	public AgentAddress(String agentLocalName, CMMAgentContainer agentContainer, String agentAppIdentifier) {
 	    this.agentLocalName = agentLocalName;
 	    this.agentMTPHost = agentContainer.getMTPHost();
 	    this.agentMTPPort = agentContainer.getMTPPort();
-    
+	    
 	    this.agentContainer = agentContainer;
+	    this.agentAppIdentifier = agentAppIdentifier;
 	}
 	
 	public String getLocalName() {
-		return agentLocalName;
+		return agentLocalName + "__" + agentAppIdentifier;
 	}
 	
 	public String getMTPHost() {
@@ -45,14 +47,14 @@ public class AgentAddress {
 			// If we don't have an agent container, we assume the local name suffices 
 			// to construct the correct global AID
 			if (agentContainer == null) {
-				AID aid = new AID(agentLocalName, false);
+				AID aid = new AID(getLocalName(), false);
 				aid.addAddresses(getMTPAddress());
 				
 				agentID = aid;
 			}
 			
 			// Otherwise, use the platform name from the Container to construct the global AID
-			String globalAgentName = agentLocalName + "@" + agentContainer.getPlatformName();
+			String globalAgentName = getLocalName() + "@" + agentContainer.getPlatformName();
 			AID aid = new AID(globalAgentName, true);
 			aid.addAddresses(getMTPAddress());
 			
@@ -74,8 +76,9 @@ public class AgentAddress {
 		String agentLocalName = agentAddressResource.getProperty(OrgConf.agentName).getString();
 		CMMAgentContainer agentContainer = CMMAgentContainer.fromConfigurationModel(cmmConfigurationModel, 
 				agentAddressResource.getPropertyResourceValue(OrgConf.agentContainer));
+		String agentAppIdentifier = agentAddressResource.getProperty(OrgConf.agentAppIdentifier).getString();
 		
-		return new AgentAddress(agentLocalName, agentContainer);
+		return new AgentAddress(agentLocalName, agentContainer, agentAppIdentifier);
 	}
 
 	@Override

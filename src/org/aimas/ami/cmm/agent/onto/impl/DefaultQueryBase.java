@@ -5,13 +5,15 @@ import jade.util.leap.*;
 import org.aimas.ami.cmm.agent.onto.*;
 
 /**
+* Contains the number of query handlers to which a given query/subscription has to be forwarded.
+For each queryHandler, the adapted form of the query is indicated (e.g. for an upper limit broadcast query, the upper limit is always adapted during each hop).
 * Protege name: QueryBase
 * @author OntologyBeanGenerator v4.1
-* @version 2014/07/31, 13:46:14
+* @version 2014/12/16, 20:08:31
 */
 public class DefaultQueryBase implements QueryBase {
 
-  private static final long serialVersionUID = 5438106203733924709L;
+  private static final long serialVersionUID = 220153654612988791L;
 
   private String _internalInstanceName = null;
 
@@ -28,22 +30,21 @@ public class DefaultQueryBase implements QueryBase {
   }
 
    /**
-   * Indicates the address of a CtxQueryHandler agent that can be used to respond to the query that needs to be posed.
-   * Protege name: queryHandler
+   * Protege name: baseItems
    */
-   private List queryHandler = new ArrayList();
-   public void addQueryHandler(jade.core.AID elem) { 
-     queryHandler.add(elem);
+   private List baseItems = new ArrayList();
+   public void addBaseItem(QueryBaseItem elem) { 
+     baseItems.add(elem);
    }
-   public boolean removeQueryHandler(jade.core.AID elem) {
-     boolean result = queryHandler.remove(elem);
+   public boolean removeBaseItem(QueryBaseItem elem) {
+     boolean result = baseItems.remove(elem);
      return result;
    }
-   public void clearAllQueryHandler() {
-     queryHandler.clear();
+   public void clearAllBaseItems() {
+     baseItems.clear();
    }
-   public Iterator getAllQueryHandler() {return queryHandler.iterator(); }
-   public List getQueryHandler() {return queryHandler; }
-   public void setQueryHandler(List l) {queryHandler = l; }
+   public Iterator getAllBaseItems() {return baseItems.iterator(); }
+   public List getBaseItems() {return baseItems; }
+   public void setBaseItems(List l) {baseItems = l; }
 
 }
