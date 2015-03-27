@@ -84,7 +84,11 @@ public abstract class CMMAgent extends Agent {
 	}
 	
 	public AID getAssignedOrgManager() {
-		return assignedOrgMgr;
+		if (assignedOrgMgr != null) {
+			return assignedOrgMgr;
+		}
+		
+		return localOrgMgr;
 	}
 	
 	@Override

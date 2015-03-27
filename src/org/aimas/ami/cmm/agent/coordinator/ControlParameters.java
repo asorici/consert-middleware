@@ -127,7 +127,7 @@ public class ControlParameters {
 			}
 		}
 		
-		return specificUniquenessConstraintResolutionStrategy;
+		return specificValueConstraintResolutionStrategy;
 	}
 	
 	public Map<Resource, Integer> specificOntReasoningInterval() {

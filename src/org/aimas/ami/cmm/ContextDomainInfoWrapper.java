@@ -73,4 +73,17 @@ public class ContextDomainInfoWrapper {
         
         return true;
     }
+	
+	@Override
+	public String toString() {
+		if (applicationId == null) {
+			return "(DEFAULT)";
+		}
+		else if (contextDomainValueURI == null) {
+			return "(" + applicationId + ")";
+		}
+		else {
+			return "(" + applicationId + " -- " + contextDomainValueURI + ")";
+		}
+	}
 }

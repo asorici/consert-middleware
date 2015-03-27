@@ -64,6 +64,10 @@ public class CommandManager implements ApplicationControlAdaptor {
 		return engineStatsAdaptor;
 	}
 	
+	public boolean hasCommandRules() {
+		return commandRuleIndex.hasCommandRules();
+	}
+	
 	// SETUP
 	////////////////////////////////////////////////////////////////////////////////////
 	public CommandManager(CtxCoord coordAgent, CoordinatorSpecification specification, 
@@ -121,7 +125,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 		}
 		
 		Map<Resource, String> specificUniquenessConstraintResolution = controlParameters.specificUniquenessConstraintResolutionStrategy();
-		for (Resource assertionRes : specificIntegrityConstraintResolution.keySet()) {
+		for (Resource assertionRes : specificUniquenessConstraintResolution.keySet()) {
 			engineCommandAdaptor.setSpecificUniquenessConstraintResolution(assertionRes, specificUniquenessConstraintResolution.get(assertionRes));
 		}
 		
@@ -133,8 +137,6 @@ public class CommandManager implements ApplicationControlAdaptor {
 	
 	private void scheduleCommandRuleExecution() {
 		// This service will run once every 1/2 of RUN_WINDOW period.
-		// However, for the rules that reference any context model assertions, they will only be triggered if 
-		// there was an update to those assertions since the last execution.
 		long runWindow = controlParameters.defaultRunWindow();
 		long commandExecPeriod = runWindow / 2;
 		
@@ -151,7 +153,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 	}
 	
 	void resetAssertionChangeTracker() {
-		for (OntProperty commandRuleProp : commandRuleIndex.getCommandRuleProperties()) {
+		for (OntProperty commandRuleProp : commandRuleIndex.getCommandRuleGroups()) {
 			for (CommandRule commandRule : commandRuleIndex.getCommandRules(commandRuleProp)) {
 				for (Resource assertionRes : commandRule.getReferencedAssertions()) {
 					assertionChangedTracker.put(assertionRes, false);
@@ -206,7 +208,7 @@ public class CommandManager implements ApplicationControlAdaptor {
 				ARQFactory.set(new CommandARQFactory(dataset));
 				
 				// STEP 2: get all commandRules in order and execute them
-				for (OntProperty commandRuleProp : manager.commandRuleIndex.getCommandRuleProperties()) {
+				for (OntProperty commandRuleProp : manager.commandRuleIndex.getCommandRuleGroups()) {
 					for (CommandRule commandRule : manager.commandRuleIndex.getCommandRules(commandRuleProp)) {
 						boolean execute = true;
 						

@@ -178,6 +178,7 @@ public class CtxCoord extends CMMAgent {
 	        if (handler == null) {
 	        	throw new CMMConfigException("Could not instantiate CONSERT Engine component");
 	        }
+	        engineServiceTracker.close();
 	    }
         catch (InvalidSyntaxException e) {
 	        e.printStackTrace();
@@ -281,6 +282,13 @@ public class CtxCoord extends CMMAgent {
 		// Register the sensor update receiver
 		addBehaviour(new SensorUpdateReceiver(this));
         
+		// Register the profiled update responder
+		addBehaviour(new UserUpdateProfiledResponder(this));
+		
+		// Register the static update responder
+		addBehaviour(new UserUpdateStaticResponder(this));
+				
+		
 		// Register the QueryHandler registration behaviour
 		addBehaviour(new RegisterQueryHandlerResponder(this));
 		
@@ -288,7 +296,9 @@ public class CtxCoord extends CMMAgent {
 		addBehaviour(new EnableAssertionResponder(this));
 		
 		// Start the provisioning management service
-		commandManager.setCommandRuleServiceActive(true);
+		if (commandManager.hasCommandRules()) {
+			commandManager.setCommandRuleServiceActive(true);
+		}
     }
 
 }

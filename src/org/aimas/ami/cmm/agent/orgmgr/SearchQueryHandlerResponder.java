@@ -1,6 +1,8 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
 import jade.content.onto.basic.Action;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -36,15 +38,18 @@ public class SearchQueryHandlerResponder extends AchieveREResponder {
 	}
 	
 	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		return null;
+	}
+	
+	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		ACLMessage searchReplyMsg = request.createReply();
 		
 		try {
-			// TODO: normally here we should employ a decision based on the load assigned to each
-			// query handler. However, for now we only consider the existence of a single QueryHandler
-			// per ContextDomain. As a consequence, we just return the first query handler in the list.
-			ManagedAgentWrapper<?> managedAgent = orgMgr.agentManager.getManagedQueryHandlers().get(0);
+			// We only consider the existence of a single QueryHandler per ContextDomain, the one registered for the applicationId configured for this OrgMgr. 
+			ManagedAgentWrapper<?> managedAgent = orgMgr.agentManager.getManagedQueryHandler(orgMgr.appSpecification.getAppIdentifier());
 			searchReplyMsg.setPerformative(ACLMessage.INFORM);
 			
 			// create the FoundCoordinatorAgent predicate

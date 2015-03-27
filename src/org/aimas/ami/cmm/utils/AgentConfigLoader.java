@@ -61,7 +61,7 @@ public class AgentConfigLoader {
 			cmmConfStream = cmmResourceManager.getResourceAsStream(CMM_AGENT_CONFIG_FILE_RDF);
 			
 			if (cmmConfStream == null) { 
-				throw new CMMConfigException("Neither .ttl, nor .rdf versions of the CMM configuration file " + "etc/cmm/cmm-config" + " were found in resources.");
+				throw new CMMConfigException("Neither .ttl, nor .rdf versions of the CMM configuration file " + "etc/cmm/agent-config" + " were found in resources.");
 			}
 		}
 	}
@@ -128,5 +128,29 @@ public class AgentConfigLoader {
 	public OntModel load(Resource uriResource) throws CMMConfigException {
 		return load(uriResource.getURI());
 	}
-
+	
+	
+	public Model loadDocumentModel(String filename) throws CMMConfigException {
+		try {
+			Model m = ModelFactory.createDefaultModel();
+			
+			// do simple file type check since we know we only server XML or TTL based RDF files
+			String serializationLang = "RDF/XML";
+			if (filename.endsWith(".ttl")) {
+				serializationLang = "TTL";
+			}
+			
+			InputStream documentInput = cmmResourceManager.getResourceAsStream(filename);
+			m.read(documentInput, null, serializationLang);
+			
+			return m;
+		} 
+		catch(NotFoundException e) {
+			throw new CMMConfigException("The filename or URI " + filename + 
+					" could not be found within the resources managed by this loader.", e);
+		}
+		catch(JenaException e) {
+			throw new CMMConfigException("Syntax error for model loaded from filename or URI " + filename, e);
+		}
+	}
 }

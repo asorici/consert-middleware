@@ -2,6 +2,7 @@ package org.aimas.ami.cmm.agent.onto;
 
 
 
+
 /**
 * A message sent by a child OrgMgr to a parent OrgMgr to register as the manager of a Context Domain that is a child of the one managed by the parent OrgMgr,
 * Protege name: RegisterChildManager
@@ -42,4 +43,11 @@ public interface RegisterManager extends jade.content.AgentAction {
     */
     public void setQueryHandler(jade.core.AID value);
     public jade.core.AID getQueryHandler();
+	
+    /**
+     * The associated coordinator agent performing provisioning coordination for this domain.
+     * Protege name: coordinator
+     */
+    public void setCoordinator(jade.core.AID value);
+    public jade.core.AID getCoordinator();
 }

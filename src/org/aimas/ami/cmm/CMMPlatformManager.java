@@ -118,7 +118,7 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     	cmmInstanceStateOpHandler = new CMMInstanceStateOpHandler();
     	cmmInstanceStateOpHandler.start();
     	
-    	// STEP 4: now there should normally be a default CMM instance configuration (agent-config file), so we start looking for one
+    	// STEP 4: now there should normally be a default application configuration (agent-config file), so we start looking for one
     	// However, if we don't find one, there's no error, since the application still has the means to "call" for the instantiation of
     	// such an instance itself.
     	try {
@@ -136,8 +136,8 @@ public class CMMPlatformManager implements BundleActivator, CMMPlatformManagemen
     		installTask.awaitOperation();
     	}
     	catch(CMMConfigException ex) {
-    		ex.printStackTrace();
-    		System.out.println("There is no default CMM Agent Configuration - application must instantiate one");
+    		//ex.printStackTrace();
+    		System.out.println("[" + getClass().getSimpleName() + "] There is no default CMM Agent Configuration - application must instantiate one");
     	}
 	}
 	

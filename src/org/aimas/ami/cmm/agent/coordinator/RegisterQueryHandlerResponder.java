@@ -64,6 +64,11 @@ public class RegisterQueryHandlerResponder extends AchieveREResponder {
 	}
 	
 	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		return null;
+	}
+	
+	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) 
 			throws FailureException {
 		// For now we only send an acknowledge message. This method will get more complicated only when

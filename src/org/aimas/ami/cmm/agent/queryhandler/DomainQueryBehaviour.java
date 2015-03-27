@@ -153,6 +153,9 @@ public class DomainQueryBehaviour extends SequentialBehaviour {
 		protected ACLMessage prepareRequest(ACLMessage msg) {
 			msg = new ACLMessage(ACLMessage.REQUEST);
 			msg.addReceiver(orgMgr);
+			msg.setOntology(CMMAgent.cmmOntology.getName());
+			msg.setLanguage(CMMAgent.cmmCodec.getName());
+			
 			
 			String conversationId = "ResolveQueryBase" + "-" + ctxQueryAgent.getName() + "-" + System.currentTimeMillis();
 			msg.setConversationId(conversationId);

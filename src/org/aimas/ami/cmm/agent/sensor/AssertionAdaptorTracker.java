@@ -38,12 +38,15 @@ public class AssertionAdaptorTracker extends ServiceTracker<ContextAssertionAdap
 	@Override
 	public ContextAssertionAdaptor addingService(ServiceReference<ContextAssertionAdaptor> reference) {
 		assertionManager.setActive(true);
+		
+		//System.out.println("["+getClass().getSimpleName()+"] INFO: SETTING ASSERTION ADAPTOR SERVICE FOR: " + reference.getPropertyKeys());
+		
 		return super.addingService(reference);
 	}
 	
 	@Override
 	public void removedService(ServiceReference<ContextAssertionAdaptor> reference, ContextAssertionAdaptor adaptor) {
-		assertionManager.setActive(true);
+		assertionManager.setActive(false);
 		super.removedService(reference, adaptor);
 	}
 	

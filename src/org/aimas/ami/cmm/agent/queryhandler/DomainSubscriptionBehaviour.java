@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.QueryBase;
 import org.aimas.ami.cmm.agent.onto.QueryBaseItem;
 import org.aimas.ami.cmm.agent.onto.ResolveQueryBase;
@@ -41,6 +42,7 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
 		this.userQueryHandler = userQueryHandler;
 		this.domainQuery = domainQuery;
 		
+		
 		addSubBehaviour(new GetQueryBaseInitiator(queryAgent, queryAgent.getAssignedOrgManager()));
 		
 		subscriptionsReceiverBehaviour = new MakeSubscriptionsBehaviour(queryAgent); 
@@ -62,7 +64,10 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
 	}
 	
 	public void cancel() {
-		subscriptionsReceiverBehaviour.cancelSubscriptions();
+		// we only have to cancel anything if the domain subscription behavior is still runnable
+		if (this.isRunnable()) {
+			subscriptionsReceiverBehaviour.cancelSubscriptions();
+		}
 	}
 
 	// Behaviors in the sequence
@@ -82,6 +87,8 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
 		protected ACLMessage prepareRequest(ACLMessage msg) {
 			msg = new ACLMessage(ACLMessage.REQUEST);
 			msg.addReceiver(orgMgr);
+			msg.setOntology(CMMAgent.cmmOntology.getName());
+			msg.setLanguage(CMMAgent.cmmCodec.getName());
 			
 			String conversationId = "ResolveQueryBase" + "-" + ctxQueryAgent.getName() + "-" + System.currentTimeMillis();
 			msg.setConversationId(conversationId);
@@ -155,7 +162,7 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
         	// change the state
         	state = CANCEL_SUBCSCRIBE_QUERIES;
         	
-        	// awake the behaviour if it is blocked
+        	// awake the behavior if it is blocked
         	if (!this.isRunnable()) {
         		restart();
         	}
@@ -166,6 +173,15 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
 			switch(state) {
 				case SEND_SUBSCRIBE_QUERIES: {
 					QueryBase queryBase = (QueryBase)getParent().getDataStore().get(QUERY_BASE_ITEMS_KEY);
+					
+					// If we do not have to forward the subscription anywhere (e.g. we are a root domain queryHandler with no sub-domains related to the query)
+					// Finish the behavior immediately and silently
+					if (queryBase.getBaseItems().size() == 0) {
+						finished = true;
+						break;
+					}
+					
+					// Otherwise, perform the forwarding
 					for (int i = 0; i < queryBase.getBaseItems().size(); i++) {
 						QueryBaseItem queryBaseItem = (QueryBaseItem)queryBase.getBaseItems().get(i);
 						AID forwardQueryHandler = queryBaseItem.getQueryHandler();
@@ -271,13 +287,17 @@ public class DomainSubscriptionBehaviour extends SequentialBehaviour {
 		
 		@Override
 		protected void handleInform(ACLMessage msg) {
-			// Here we just forward the message
+			// Here we just forward the message, i.e. we replace the receiver of the message with the original query sender
+			msg.clearAllReceiver();
+			msg.addReceiver(domainQuery.getSender());
 			ctxQueryAgent.addBehaviour(new SenderBehaviour(ctxQueryAgent, msg));
 		}
 		
 		@Override
 		protected void handleFailure(ACLMessage msg) {
-			// Here we just forward the message
+			// Here we just forward the message, i.e. we replace the receiver of the message with the original query sender
+			msg.clearAllReceiver();
+			msg.addReceiver(domainQuery.getSender());
 			ctxQueryAgent.addBehaviour(new SenderBehaviour(ctxQueryAgent, msg));
 		}
 		

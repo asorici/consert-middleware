@@ -121,21 +121,21 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
 	}
 	
 	@Override
+	public void submitLocalQuery(Query query, QueryNotificationHandler notificationHandler)
+			throws DisconnectedQueryHandlerException {
+		submitQuery(query, notificationHandler, QueryTarget.LOCAL, null, null);
+	}
+	
+	@Override
 	public QueryResult submitExactDomainQuery(Query query, String domainURI, long timeout) 
 			throws DisconnectedQueryHandlerException {
 		return submitQuery(query, QueryTarget.DOMAIN, domainURI, domainURI, timeout);
 	}
 	
 	@Override
-	public QueryResult submitDomainQuery(Query query, String domainLowerBoundURI, 
-			String domainUpperBoundURI, long timeout)throws DisconnectedQueryHandlerException {
-		return submitQuery(query, QueryTarget.DOMAIN, domainLowerBoundURI, domainUpperBoundURI, timeout);
-	}
-	
-	@Override
-	public void submitLocalQuery(Query query, QueryNotificationHandler notificationHandler)
-			throws DisconnectedQueryHandlerException {
-		submitQuery(query, notificationHandler, QueryTarget.LOCAL, null, null);
+	public QueryResult submitDomainRangeQuery(Query query, String domainTypeLowerBoundURI, 
+			String domainTypeUpperBoundURI, long timeout)throws DisconnectedQueryHandlerException {
+		return submitQuery(query, QueryTarget.DOMAIN, domainTypeLowerBoundURI, domainTypeUpperBoundURI, timeout);
 	}
 	
 	@Override
@@ -145,9 +145,9 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
 	}
 	
 	@Override
-	public void submitDomainQuery(Query query, QueryNotificationHandler notificationHandler, 
-			String domainLowerBoundURI, String domainUpperBoundURI) throws DisconnectedQueryHandlerException {
-		submitQuery(query, notificationHandler, QueryTarget.DOMAIN, domainLowerBoundURI, domainUpperBoundURI);
+	public void submitDomainRangeQuery(Query query, QueryNotificationHandler notificationHandler, 
+			String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedQueryHandlerException {
+		submitQuery(query, notificationHandler, QueryTarget.DOMAIN, domainTypeLowerBoundURI, domainTypeUpperBoundURI);
 	}
 	
 	@Override
@@ -163,11 +163,10 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
 	}
 	
 	@Override
-	public String domainSubscribe(Query query, QueryNotificationHandler notificationHandler, 
-			int repeatInterval, String domainLowerBoundURI, String domainUpperBoundURI)
-			throws DisconnectedQueryHandlerException {
+	public String domainRangeSubscribe(Query query, QueryNotificationHandler notificationHandler, 
+			int repeatInterval, String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedQueryHandlerException {
 		return subscribe(query, notificationHandler, repeatInterval, QueryTarget.DOMAIN, 
-				domainLowerBoundURI, domainUpperBoundURI);
+				domainTypeLowerBoundURI, domainTypeUpperBoundURI);
 	}
 	
 	@Override
@@ -331,17 +330,94 @@ public class CtxUserAdaptor implements ApplicationUserAdaptor {
 	
 	//* ==================== PROFILED ASSERTIONS + ENTITY DESCRIPTION BROADCAST ==================== */
 	@Override
-    public void broadcastProfiledAssertion(ContextAssertionDescription assertionDescription,
-            UpdateRequest profiledAssertionUpdate, BroadcastTarget broadcastTarget, 
-            String contextDomainLimit) throws DisconnectedCoordinatorException {
-	    // TODO: future implementation
-		throw new UnsupportedOperationException("Not implemented, yet.");
+    public void broadcastProfiledAssertion(ContextAssertionDescription assertionDescription, UpdateRequest profiledAssertionUpdate, 
+    		String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedCoordinatorException {
+	    
+		if (userSensingManager.hasUpdateDestination()) {
+			// Create the UpdateProfiledAssertion message
+	    	UpdateProfiledAssertion updateProfiledContent = new DefaultUpdateProfiledAssertion();
+	    	updateProfiledContent.setAssertion(fromAdaptor(assertionDescription));
+	    	updateProfiledContent.setAssertionContent(profiledAssertionUpdate.toString());
+	    	
+	    	if (domainTypeLowerBoundURI == null) {
+	    		updateProfiledContent.setDomain_lower_bound("");
+	    	}
+	    	else {
+	    		updateProfiledContent.setDomain_lower_bound(domainTypeLowerBoundURI);
+	    	}
+	    	
+	    	if (domainTypeUpperBoundURI == null) {
+	    		updateProfiledContent.setDomain_upper_bound("");
+	    	}
+	    	else {
+	    		updateProfiledContent.setDomain_upper_bound(domainTypeUpperBoundURI);
+	    	}
+	    	
+	    	UserUpdateProfiledInitiator updateProfiledBehaviour = new UserUpdateProfiledInitiator(userAgent, updateProfiledContent);
+			userAgent.addBehaviour(updateProfiledBehaviour);
+		}
+		else {
+			throw new DisconnectedCoordinatorException();
+		}
+		
     }
 
 	@Override
-    public void broadcastEntityDescriptions(Model entityDescriptionsModel,
-            BroadcastTarget broadcastTarget, String contextDomainLimit) throws DisconnectedCoordinatorException {
-	    // TODO: future implementation
-		throw new UnsupportedOperationException("Not implemented, yet.");
+    public void broadcastEntityDescriptions(Model addedDescriptionsModel, Model deletedDescriptionsModel,
+    		String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedCoordinatorException {
+	    
+		if (userSensingManager.hasUpdateDestination()) {
+			// Create the UpdateRequest from the statements in the entityDescriptions model
+			UpdateRequest updateRequest = new UpdateRequest();
+			if (deletedDescriptionsModel != null) {
+				QuadDataAcc quads = new QuadDataAcc();
+				Node entityStore = Node.createURI(ConsertCore.ENTITY_STORE_URI);
+				
+				for (StmtIterator it = deletedDescriptionsModel.listStatements(); it.hasNext();) {
+					quads.addQuad(Quad.create(entityStore, it.next().asTriple()));
+				}
+				
+				Update deleteUpdate = new UpdateDataDelete(quads);
+				updateRequest.add(deleteUpdate);
+			}
+			
+			if (addedDescriptionsModel != null) {
+				QuadDataAcc quads = new QuadDataAcc();
+				Node entityStore = Node.createURI(ConsertCore.ENTITY_STORE_URI);
+				
+				for (StmtIterator it = addedDescriptionsModel.listStatements(); it.hasNext();) {
+					quads.addQuad(Quad.create(entityStore, it.next().asTriple()));
+				}
+				
+				Update addedUpdate = new UpdateDataDelete(quads);
+				updateRequest.add(addedUpdate);
+			}
+			
+			if (!updateRequest.getOperations().isEmpty()) {
+				UpdateEntityDescriptions entitiesUpdateContent = new DefaultUpdateEntityDescriptions();
+				entitiesUpdateContent.setEntityContents(updateRequest.toString());
+				
+				if (domainTypeLowerBoundURI == null) {
+					entitiesUpdateContent.setDomain_lower_bound("");
+		    	}
+		    	else {
+		    		entitiesUpdateContent.setDomain_lower_bound(domainTypeLowerBoundURI);
+		    	}
+		    	
+				if (domainTypeUpperBoundURI == null) {
+					entitiesUpdateContent.setDomain_upper_bound("");
+		    	}
+		    	else {
+		    		entitiesUpdateContent.setDomain_upper_bound(domainTypeUpperBoundURI);
+		    	}
+				
+				UserUpdateStaticInitiator updateStaticBehaviour = new UserUpdateStaticInitiator(userAgent, entitiesUpdateContent);
+				userAgent.addBehaviour(updateStaticBehaviour);
+			}
+		}
+		else {
+			throw new DisconnectedCoordinatorException();
+		}
+		
     }
 }

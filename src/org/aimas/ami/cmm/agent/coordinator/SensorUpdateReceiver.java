@@ -75,7 +75,10 @@ public class SensorUpdateReceiver extends SimpleBehaviour {
 	private void handleMessage(ACLMessage msg) {
 		// Get the content
 		try {
-			//System.out.println("["+ coordAgent.getName() +"]: receving AssertionUpdate from " + msg.getSender().getName() );
+			//if (coordAgent.getName().contains("SmartClassroom")) {
+			//	System.out.println("["+ coordAgent.getName() +"]: receving AssertionUpdate from " + msg.getSender().getName() );
+			//}
+			
 			AssertionUpdated assertionUpdate = (AssertionUpdated)coordAgent.getContentManager().extractContent(msg);
 	        coordAgent.getContextUpdateManager().insertAssertion(msg.getSender(), assertionUpdate);
 		}

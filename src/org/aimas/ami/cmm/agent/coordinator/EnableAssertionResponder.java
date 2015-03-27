@@ -200,7 +200,14 @@ public class EnableAssertionResponder extends AchieveREResponder {
 			}
 		}
     }
-
+	
+	
+	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		return null;
+	}
+	
+	
 	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) 
 			throws FailureException {

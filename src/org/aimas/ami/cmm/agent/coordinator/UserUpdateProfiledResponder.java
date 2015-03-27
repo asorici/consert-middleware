@@ -41,7 +41,8 @@ public class UserUpdateProfiledResponder extends AchieveREResponder {
 		try {
             Action contentAction = (Action)coordAgent.getContentManager().extractContent(request);
             UpdateProfiledAssertion profiledAssertionUpdate = (UpdateProfiledAssertion)contentAction.getAction();
-            boolean updateAllowed = coordAgent.getContextUpdateManager().updateProfiledAssertion(profiledAssertionUpdate);
+            
+            boolean updateAllowed = coordAgent.getContextUpdateManager().updateProfiledAssertion(request.getSender(), profiledAssertionUpdate);
             
             if (!updateAllowed) {
             	ACLMessage updateReplyMsg = request.createReply();

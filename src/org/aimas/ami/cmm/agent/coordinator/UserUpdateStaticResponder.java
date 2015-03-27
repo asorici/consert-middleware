@@ -41,7 +41,7 @@ public class UserUpdateStaticResponder extends AchieveREResponder {
 		try {
             Action contentAction = (Action)coordAgent.getContentManager().extractContent(request);
             UpdateEntityDescriptions entitiesUpdate = (UpdateEntityDescriptions)contentAction.getAction();
-            coordAgent.getContextUpdateManager().updateEntityDescriptions(entitiesUpdate);
+            coordAgent.getContextUpdateManager().updateEntityDescriptions(request.getSender(), entitiesUpdate);
 		}
         catch (Exception e) {
             e.printStackTrace();

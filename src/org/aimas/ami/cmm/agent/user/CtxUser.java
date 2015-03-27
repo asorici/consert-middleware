@@ -271,6 +271,12 @@ public class CtxUser extends CMMAgent {
                 	e.printStackTrace();
                 }
             }
+            
+            @Override
+            public void handleRefuse(ACLMessage msg) {
+            	// If we get a refuse message it means that there is no ContextDomain configuration
+            	// By default we do not need to do anything
+            }
 		});
 		
     }

@@ -12,13 +12,12 @@ import jade.proto.AchieveREResponder;
 
 import java.util.List;
 
-import org.aimas.ami.cmm.agent.onto.QueryBase;
-import org.aimas.ami.cmm.agent.onto.QueryBaseItem;
-import org.aimas.ami.cmm.agent.onto.ResolveQueryBase;
-import org.aimas.ami.cmm.agent.onto.UserQuery;
-import org.aimas.ami.cmm.agent.onto.impl.DefaultQueryBase;
+import org.aimas.ami.cmm.agent.onto.BroadcastBase;
+import org.aimas.ami.cmm.agent.onto.BroadcastBaseItem;
+import org.aimas.ami.cmm.agent.onto.ResolveBroadcastBase;
+import org.aimas.ami.cmm.agent.onto.impl.DefaultBroadcastBase;
 
-public class ResolveQueryBaseResponder extends AchieveREResponder {
+public class ResolveBroadcastBaseResponder extends AchieveREResponder {
     private static final long serialVersionUID = -3600787596799231557L;
 
 	@SuppressWarnings("serial")
@@ -29,7 +28,7 @@ public class ResolveQueryBaseResponder extends AchieveREResponder {
 				// We make a pure content match
 				try {
 	                Action contentAction = (Action)orgMgr.getContentManager().extractContent(msg);
-	                return contentAction.getAction() instanceof ResolveQueryBase;
+	                return contentAction.getAction() instanceof ResolveBroadcastBase;
 				}
                 catch (Exception e) {
 	                //e.printStackTrace();
@@ -41,11 +40,10 @@ public class ResolveQueryBaseResponder extends AchieveREResponder {
 	
 	private OrgMgr orgMgr;
 	
-	public ResolveQueryBaseResponder(OrgMgr orgMgr) {
+	public ResolveBroadcastBaseResponder(OrgMgr orgMgr) {
 	    super(orgMgr, prepareTemplate(orgMgr));
 	    this.orgMgr = orgMgr;
 	}
-	
 	
 	@Override
 	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
@@ -59,20 +57,23 @@ public class ResolveQueryBaseResponder extends AchieveREResponder {
 		
 		try {
             Action contentAction = (Action)orgMgr.getContentManager().extractContent(request);
-            ResolveQueryBase queryBaseRequest = (ResolveQueryBase)contentAction.getAction();
+            ResolveBroadcastBase broadcastBaseRequest = (ResolveBroadcastBase)contentAction.getAction();
             
-            UserQuery queryDesc = queryBaseRequest.getQuery();
-            AID receivedFromAgent = queryBaseRequest.getReceivedFromAgent();
+            String domainLowerBoundType = broadcastBaseRequest.getBroadcastLowerBound();
+            String domainUpperBoundType = broadcastBaseRequest.getBroadcastUpperBound();
+            AID receivedFromAgent = broadcastBaseRequest.getReceivedFromAgent();
             
-            List<QueryBaseItem> queryBaseItems = orgMgr.domainManager.resolveExactDomainQueryBase(queryDesc, receivedFromAgent);
-            System.out.println("Nr. of resolved query base items from OrgMgr " + orgMgr.getName() + ": " + queryBaseItems.size());
-            
-            QueryBase queryBase = new DefaultQueryBase();
-            for (QueryBaseItem item : queryBaseItems) {
-            	queryBase.addBaseItem(item);
+            List<BroadcastBaseItem> broadcastBaseItems = orgMgr.domainManager.resolveDomainRangeBroadcastBase(domainLowerBoundType, domainUpperBoundType, receivedFromAgent);
+            if (broadcastBaseItems.isEmpty()) {
+            	throw new FailureException("No query handlers available for requested domain limits.");
             }
             
-            orgMgr.getContentManager().fillContent(response, queryBase);
+            BroadcastBase broadcastBase = new DefaultBroadcastBase();
+            for (BroadcastBaseItem item : broadcastBaseItems) {
+            	broadcastBase.addBroadcastBaseItem(item);
+            }
+            
+            orgMgr.getContentManager().fillContent(response, broadcastBase);
             return response;
 		}
         catch (Exception e) {

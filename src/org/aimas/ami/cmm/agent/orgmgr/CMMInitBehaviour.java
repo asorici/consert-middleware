@@ -40,32 +40,34 @@ public class CMMInitBehaviour extends SequentialBehaviour {
     	this.cmmInitEvent = initEvent;
     	this.initializedAgents = new LinkedList<ManagedAgentWrapper<?>>();
     	
+    	String appIdentifier = orgMgr.appSpecification.getAppIdentifier();
+    	
     	// add the sub-behaviours
-    	ManagedAgentWrapper<CoordinatorSpecification> managedCoordinator = orgMgr.agentManager.getManagedCoordinator();
-    	if (managedCoordinator != null && managedCoordinator.isLocalAgent()) {
-    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedCoordinator, COORD_TIMEOUT));
+    	ManagedAgentWrapper<CoordinatorSpecification> managedLocalCoordinator = orgMgr.agentManager.getManagedCoordinator(appIdentifier);
+    	if (managedLocalCoordinator != null && managedLocalCoordinator.isLocalAgent()) {
+    		addSubBehaviour(new AgentInitBehaviour(orgMgr, managedLocalCoordinator, COORD_TIMEOUT));
     	}
     	
-    	List<ManagedAgentWrapper<QueryHandlerSpecification>> managedLocalQueryHandlers = orgMgr.agentManager.getManagedQueryHandlers();
-    	for (ManagedAgentWrapper<?> managedAgent : managedLocalQueryHandlers) {
-    		if (managedAgent.isLocalAgent()) {
-    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, QUERY_HANDLER_TIMEOUT));
-    		}
+    	ManagedAgentWrapper<QueryHandlerSpecification> managedLocalQueryHandler = orgMgr.agentManager.getManagedQueryHandler(appIdentifier);
+		if (managedLocalQueryHandler != null && managedLocalQueryHandler.isLocalAgent()) {
+			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedLocalQueryHandler, QUERY_HANDLER_TIMEOUT));
+		}
+    	
+    	
+    	List<ManagedAgentWrapper<SensorSpecification>> managedLocalSensors = orgMgr.agentManager.getManagedSensors(appIdentifier);
+    	if (managedLocalSensors != null) {
+	    	for (ManagedAgentWrapper<?> managedAgent : managedLocalSensors) {
+	    		if (managedAgent.isLocalAgent()) {
+	    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, SENSOR_TIMEOUT));
+	    		}
+	    	}
     	}
     	
-    	List<ManagedAgentWrapper<SensorSpecification>> managedLocalSensors = orgMgr.agentManager.getManagedSensors();
-    	for (ManagedAgentWrapper<?> managedAgent : managedLocalSensors) {
-    		if (managedAgent.isLocalAgent()) {
-    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, SENSOR_TIMEOUT));
-    		}
-    	}
-    	
-    	List<ManagedAgentWrapper<UserSpecification>> managedLocalUsers = orgMgr.agentManager.getManagedUsers();
-    	for (ManagedAgentWrapper<?> managedAgent : managedLocalUsers) {
-    		if (managedAgent.isLocalAgent()) {
-    			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedAgent, USER_TIMEOUT));
-    		}
-    	}
+    	ManagedAgentWrapper<UserSpecification> managedLocalUser = orgMgr.agentManager.getManagedUser(appIdentifier);
+		if (managedLocalUser != null && managedLocalUser.isLocalAgent()) {
+			addSubBehaviour(new AgentInitBehaviour(orgMgr, managedLocalUser, USER_TIMEOUT));
+		}
+	
     }
     
     @Override

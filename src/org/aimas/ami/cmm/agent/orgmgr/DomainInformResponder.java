@@ -1,6 +1,8 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
 import jade.content.onto.basic.Action;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -38,6 +40,16 @@ public class DomainInformResponder extends AchieveREResponder {
     }
 	
 	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		OrgMgr orgMgr = (OrgMgr)myAgent;
+		if (!orgMgr.domainManager.hasDimensionalityConfig()) {
+			throw new RefuseException("No ContextDomain configuration exists.");
+		}
+		
+		return null;
+	}
+	
+	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		
@@ -60,8 +72,8 @@ public class DomainInformResponder extends AchieveREResponder {
 		domainDesc.setDomain(domain);
 		
 		// Set also the coordinator and query responder for this context domain.
-		domainDesc.setCoordinator(orgMgr.agentManager.getManagedCoordinator().getAgentAID());
-		domainDesc.setQueryHandler(orgMgr.agentManager.getManagedQueryHandlers().get(0).getAgentAID());
+		domainDesc.setCoordinator(orgMgr.agentManager.getManagedCoordinator(orgMgr.appSpecification.getAppIdentifier()).getAgentAID());
+		domainDesc.setQueryHandler(orgMgr.agentManager.getManagedQueryHandler(orgMgr.appSpecification.getAppIdentifier()).getAgentAID());
 		
 		try {
 	        orgMgr.getContentManager().fillContent(domainInformMsg, domainDesc);

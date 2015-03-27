@@ -23,7 +23,7 @@ import com.hp.hpl.jena.rdf.model.StmtIterator;
 public class CommandRuleIndex {
 	private CommandManager commandManager;
 	
-	private List<OntProperty> commandRuleProperties;
+	private List<OntProperty> commandRuleGroups;
 	private Map<OntProperty, List<CommandRule>> commandRuleMap; 
 	
 	public CommandRuleIndex(CommandManager commandManager, OntModel controlModel) {
@@ -31,12 +31,16 @@ public class CommandRuleIndex {
 	    createIndex(controlModel);
     }
 	
-	public List<OntProperty> getCommandRuleProperties() {
-		return commandRuleProperties;
+	public List<OntProperty> getCommandRuleGroups() {
+		return commandRuleGroups;
 	}
 	
 	public List<CommandRule> getCommandRules(OntProperty commandRuleProperty) {
 		return commandRuleMap.get(commandRuleProperty);
+	}
+	
+	public boolean hasCommandRules() {
+		return commandRuleMap != null && !commandRuleMap.isEmpty(); 
 	}
 	
 	private void createIndex(OntModel controlModel) {
@@ -48,13 +52,13 @@ public class CommandRuleIndex {
 		System.out.println(hasCommandRule);
 		
 		List<? extends OntProperty> ruleProperties = hasCommandRule.listSubProperties(true).toList();
-		commandRuleProperties = orderCommmandRules(ruleProperties);
+		commandRuleGroups = orderCommmandRules(ruleProperties);
 		
 		// Next, identify the CommandRuleTemplates attached to each commandRule property
 		commandRuleMap = new HashMap<OntProperty, List<CommandRule>>();
 		Map<CommandWrapper, Map<String,RDFNode>> initialTemplateBindings = new HashMap<CommandWrapper, Map<String,RDFNode>>();
 		
-		for (OntProperty cmdProp : commandRuleProperties) {
+		for (OntProperty cmdProp : commandRuleGroups) {
 			List<CommandRule> commandRules = new LinkedList<CommandRule>();
 			
 			Map<Resource,List<CommandWrapper>> cls2Query = SPINQueryFinder.getClass2QueryMap(

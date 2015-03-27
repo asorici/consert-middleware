@@ -33,20 +33,20 @@ public interface ApplicationUserAdaptor {
 	public QueryResult submitLocalQuery(Query query, long timeout) 
 			throws DisconnectedQueryHandlerException;
 	
-	public QueryResult submitExactDomainQuery(Query query, String domainURI, long timeout)
+	public void submitLocalQuery(Query query, QueryNotificationHandler notificationHandler)
 			throws DisconnectedQueryHandlerException;
 	
-	public QueryResult submitDomainQuery(Query query, String domainLowerBoundURI, 
-			String domainUpperBoundURI, long timeout) throws DisconnectedQueryHandlerException;
-	
-	public void submitLocalQuery(Query query, QueryNotificationHandler notificationHandler)
+	public QueryResult submitExactDomainQuery(Query query, String domainURI, long timeout)
 			throws DisconnectedQueryHandlerException;
 	
 	public void submitExactDomainQuery(Query query, QueryNotificationHandler notificationHandler, 
 			String domainURI) throws DisconnectedQueryHandlerException;
 	
-	public void submitDomainQuery(Query query, QueryNotificationHandler notificationHandler, 
-			String domainLowerBoundURI, String domainUpperBoundURI) throws DisconnectedQueryHandlerException;
+	public QueryResult submitDomainRangeQuery(Query query, String domainTypeLowerBoundURI, 
+			String domainTypeUpperBoundURI, long timeout) throws DisconnectedQueryHandlerException;
+	
+	public void submitDomainRangeQuery(Query query, QueryNotificationHandler notificationHandler, 
+			String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedQueryHandlerException;
 	
 	public String localSubscribe(Query query, QueryNotificationHandler notificationHandler, 
 			int repeatInterval) throws DisconnectedQueryHandlerException;
@@ -54,8 +54,8 @@ public interface ApplicationUserAdaptor {
 	public String exactDomainSubscribe(Query query, QueryNotificationHandler notificationHandler, 
 			int repeatInterval, String domainURI) throws DisconnectedQueryHandlerException;
 	
-	public String domainSubscribe(Query query, QueryNotificationHandler notificationHandler, 
-			int repeatInterval, String domainLowerBoundURI, String domainUpperBoundURI) 
+	public String domainRangeSubscribe(Query query, QueryNotificationHandler notificationHandler, 
+			int repeatInterval, String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) 
 			throws DisconnectedQueryHandlerException;
 	
 	public void cancelSubscription(String subscriptionIdentifier);
@@ -127,45 +127,29 @@ public interface ApplicationUserAdaptor {
 	//* ==================== PROFILED ASSERTIONS + ENTITY DESCRIPTION BROADCAST ==================== */
 	/**
 	 * Broadcast a profiled ContextAssertion update along the ContextDomain hierarchy, to all CtxCoord agents that 
-	 * conform to the requirements set by <code>broadcastTarget</code> and <code>contextDomainLimit</code>.
+	 * conform to the ContextDomain <i>type</i> limits set by <code>domainTypeLowerBound</code> and <code>domainTypeUpperBound</code>.
 	 * @param assertionDescription	The description (assertion type + annotation types) of the updated ContextAssertion.
 	 * @param profiledAssertionUpdate	The named graph based SPARQL encoded assertion update contents.
-	 * @param broadcastTarget One of: 
-	 * <ul>
-	 * 		<li>ALL (send to all CtxCoord agents in the ContextDomain hierarchy formed on the 
-	 * 			ContextDimension corresponding to this CONSERT CMM instance)</li>
-	 * 		<li>SIBLINGS (send to all CtxCoord agents that are siblings on the ContextDomain hierarchy)</li>
-	 * 		<li>UP (send to all CtxCoord agents that are higher up in the <i>parent</i> relation formed on 
-	 * 			the ContextDomain hierarchy). Optionally stop at the limit set by <code>contextDomainLimit</code></li>
-	 * 		<li>DOWN (send to all CtxCoord agents that are lower down in the <i>child</i> relation formed on 
-	 * 			the ContextDomain hierarchy). Optionally stop at the tree-level on which 
-	 * 			<code>contextDomainLimit</code> is situated</li>
-	 * </ul>
-	 * @param contextDomainLimit	The URI of the ContextDomain Value that represents a limit for the 
-	 * <code>broadcastTarget</code> options, or <code>null</code> if no limit is placed.
+	 * @param domainTypeLowerBoundURI 	The URI of the ContextDomain <i>type</i> representing the lower bound on the dissemination depth in the domain hierarchy, 
+	 * 		or null if no suh limit is set. 
+	 * @param domainTypeUpperBoundURI	The URI of the ContextDomain <i>type</i> representing the upper bound on the dissemination height in the domain hierarchy, 
+	 * 		or null if no such limit is set.  
 	 */
 	public void broadcastProfiledAssertion(ContextAssertionDescription assertionDescription, 
-			UpdateRequest profiledAssertionUpdate, BroadcastTarget broadcastTarget, 
-			String contextDomainLimit) throws DisconnectedCoordinatorException;
+			UpdateRequest profiledAssertionUpdate, String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedCoordinatorException;
 	
 	/**
 	 * Broadcast EntityDescription information along the ContextDomain hierarchy, to all CtxCoord agents that 
-	 * conform to the requirements set by <code>broadcastTarget</code> and <code>contextDomainLimit</code>.
-	 * @param entityDescriptionsModel The JENA RDF Model containing the EntityDescription statements.
-	 * @param broadcastTarget One of: 
-	 * <ul>
-	 * 		<li>ALL (send to all CtxCoord agents in the ContextDomain hierarchy formed on the 
-	 * 			ContextDimension corresponding to this CONSERT CMM instance)</li>
-	 * 		<li>SIBLINGS (send to all CtxCoord agents that are siblings on the ContextDomain hierarchy)</li>
-	 * 		<li>UP (send to all CtxCoord agents that are higher up in the <i>parent</i> relation formed on 
-	 * 			the ContextDomain hierarchy). Optionally stop at the limit set by <code>contextDomainLimit</code></li>
-	 * 		<li>DOWN (send to all CtxCoord agents that are lower down in the <i>child</i> relation formed on 
-	 * 			the ContextDomain hierarchy). Optionally stop at the tree-level on which 
-	 * 			<code>contextDomainLimit</code> is situated</li>
-	 * </ul>
-	 * @param contextDomainLimit	The URI of the ContextDomain Value that represents a limit for the 
-	 * <code>broadcastTarget</code> options, or <code>null</code> if no limit is placed.
+	 * conform to the ContextDomain <i>type</i> limits set by <code>domainTypeLowerBound</code> and <code>domainTypeUpperBound</code>.
+	 * @param addedDescriptionsModel The JENA RDF Model containing the EntityDescription statements to be added. 
+	 * 		May be null.
+	 * @param deletedDescriptionsModel The JENA RDF Model containing the EntityDescription statements to be deleted. 
+	 * 		May be null. 
+	 * @param domainTypeLowerBoundURI 	The URI of the ContextDomain <i>type</i> representing the lower bound on the dissemination depth in the domain hierarchy, 
+	 * 		or null if no suh limit is set. 
+	 * @param domainTypeUpperBoundURI	The URI of the ContextDomain <i>type</i> representing the upper bound on the dissemination height in the domain hierarchy, 
+	 * 		or null if no such limit is set.
 	 */
-	public void broadcastEntityDescriptions(Model entityDescriptionsModel, 
-			BroadcastTarget broadcastTarget, String contextDomainLimit) throws DisconnectedCoordinatorException;
+	public void broadcastEntityDescriptions(Model addedDescriptionsModel, Model deletedDescriptionsModel,
+			String domainTypeLowerBoundURI, String domainTypeUpperBoundURI) throws DisconnectedCoordinatorException;
 }

@@ -65,21 +65,29 @@ public class RegisterManagerResponder extends AchieveREResponder {
 			
 			String domainEntityURI = registrationRequest.getDomainEntity();
 			String domainValueURI = registrationRequest.getDomainValue();
+			
 			AID mgrAgent = registrationRequest.getAgent();
+			AID domainCoordinator = registrationRequest.getCoordinator();
 			AID domainQueryResponder = registrationRequest.getQueryHandler();
+			
 			String relationType = registrationRequest.getRelationType();
 			
 			if (relationType.equals(RegisterManager.CHILD)) {
-				orgMgr.domainManager.registerChildManager(domainEntityURI, domainValueURI, mgrAgent, domainQueryResponder);
+				orgMgr.domainManager.registerChildManager(domainEntityURI, domainValueURI, mgrAgent, domainCoordinator, domainQueryResponder);
 			}
 			else if (relationType.equals(RegisterManager.ROOT)) {
-				orgMgr.domainManager.registerRootManager(domainEntityURI, domainValueURI, mgrAgent, domainQueryResponder);
+				orgMgr.domainManager.registerRootManager(domainEntityURI, domainValueURI, mgrAgent, domainCoordinator, domainQueryResponder);
 			}
 		}
 		catch(Exception e) {
 			throw new NotUnderstoodException("Child Manager registration request not understood. " + "Reason: " + e.getMessage());
 		}
 		
+		return null;
+	}
+	
+	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
 		return null;
 	}
 	
@@ -100,8 +108,8 @@ public class RegisterManagerResponder extends AchieveREResponder {
 		domainDesc.setDomain(domainInfo);
 		
 		// Set also the coordinator and query responder for this context domain.
-		domainDesc.setCoordinator(orgMgr.agentManager.getManagedCoordinator().getAgentAID());
-		domainDesc.setQueryHandler(orgMgr.agentManager.getManagedQueryHandlers().get(0).getAgentAID());
+		domainDesc.setCoordinator(orgMgr.agentManager.getManagedCoordinator(orgMgr.appSpecification.getAppIdentifier()).getAgentAID());
+		domainDesc.setQueryHandler(orgMgr.agentManager.getManagedQueryHandler(orgMgr.appSpecification.getAppIdentifier()).getAgentAID());
 		
 		try {
 	        orgMgr.getContentManager().fillContent(response, domainDesc);

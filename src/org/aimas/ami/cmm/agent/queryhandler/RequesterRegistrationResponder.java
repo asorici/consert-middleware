@@ -2,6 +2,8 @@ package org.aimas.ami.cmm.agent.queryhandler;
 
 import jade.content.onto.basic.Action;
 import jade.core.AID;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -67,6 +69,11 @@ public class RequesterRegistrationResponder extends AchieveREResponder {
 		CtxQueryHandler ctxQueryHandler = (CtxQueryHandler)myAgent;
 		ctxQueryHandler.getQueryManager().registerUser(user);
 		
+		return null;
+	}
+	
+	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
 		return null;
 	}
 	

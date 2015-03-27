@@ -100,4 +100,19 @@ public class DefaultRegisterManager implements RegisterManager {
 	public AID getQueryHandler() {
 		return queryHandler;
 	}
+	
+	/**
+	 * Protege name: coordinator
+	 */
+	private AID coordinator;
+	
+	@Override
+	public void setCoordinator(AID value) {
+		this.coordinator = value;
+	}
+	
+	@Override
+	public AID getCoordinator() {
+		return coordinator;
+	}
 }

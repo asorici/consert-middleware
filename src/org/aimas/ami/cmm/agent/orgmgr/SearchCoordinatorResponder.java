@@ -1,6 +1,8 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
 import jade.content.onto.basic.Action;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -36,12 +38,17 @@ public class SearchCoordinatorResponder extends AchieveREResponder {
 	}
 	
 	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		return null;
+	}
+	
+	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		ACLMessage searchReplyMsg = request.createReply();
 		
 		try {
-			ManagedAgentWrapper<?> managedAgent = orgMgr.agentManager.getManagedCoordinator();
+			ManagedAgentWrapper<?> managedAgent = orgMgr.agentManager.getManagedCoordinator(orgMgr.appSpecification.getAppIdentifier());
 			searchReplyMsg.setPerformative(ACLMessage.INFORM);
 			
 			// create the FoundCoordinatorAgent predicate

@@ -5,6 +5,7 @@ import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
 
+import org.aimas.ami.cmm.agent.CMMAgent;
 import org.aimas.ami.cmm.agent.onto.DomainDescription;
 import org.aimas.ami.cmm.agent.onto.RegisterManager;
 import org.aimas.ami.cmm.agent.onto.impl.DefaultRegisterManager;
@@ -28,6 +29,8 @@ public class RegisterManagerInitiator extends SimpleAchieveREInitiator {
 	protected ACLMessage prepareRequest(ACLMessage msg) {
 		msg = new ACLMessage(ACLMessage.REQUEST);
 		msg.addReceiver(targetManager);
+		msg.setOntology(CMMAgent.cmmOntology.getName());
+		msg.setLanguage(CMMAgent.cmmCodec.getName());
 		
 		String conversationId = "RegisterChildManager" + "-" + orgMgr.getName() + "-" + System.currentTimeMillis();
 		msg.setConversationId(conversationId);
@@ -37,9 +40,13 @@ public class RegisterManagerInitiator extends SimpleAchieveREInitiator {
 		requestContent.setDomainValue(orgMgr.domainManager.getDomainRangeValue().getURI());
 		requestContent.setAgent(orgMgr.getAID());
 		
-		// We take the first (and probably only one) query handler as the domain query responder
-		AID domainQueryResponder = orgMgr.agentManager.getManagedQueryHandlers().get(0).getAgentAID();
+		// We take query handler registered for the applicationId configured for this OrgMgr as the domain query responder
+		AID domainQueryResponder = orgMgr.agentManager.getManagedQueryHandler(orgMgr.appSpecification.getAppIdentifier()).getAgentAID();
 		requestContent.setQueryHandler(domainQueryResponder);
+		
+		// We take coordinator registered for the applicationId configured for this OrgMgr as the domain coordinator
+		AID domainCoordinator = orgMgr.agentManager.getManagedCoordinator(orgMgr.appSpecification.getAppIdentifier()).getAgentAID();
+		requestContent.setCoordinator(domainCoordinator);
 		
 		requestContent.setRelationType(relationType);
 		
@@ -62,13 +69,15 @@ public class RegisterManagerInitiator extends SimpleAchieveREInitiator {
 	        DomainDescription domainDesc = (DomainDescription)orgMgr.getContentManager().extractContent(msg);
 	        String domainEntityURI = domainDesc.getDomain().getDomainEntity();
 	        String domainValueURI = domainDesc.getDomain().getDomainValue();
+	        
+	        AID domainCoordinator = domainDesc.getCoordinator();
 	        AID domainQueryResponder = domainDesc.getQueryHandler();
 	        
 	        if (relationType.equals(RegisterManager.CHILD)) {
-	        	orgMgr.domainManager.setParentManagerDomain(domainEntityURI, domainValueURI, domainQueryResponder);
+	        	orgMgr.domainManager.setParentManagerDomain(domainEntityURI, domainValueURI, targetManager, domainCoordinator, domainQueryResponder);
 	        }
 	        else if (relationType.equals(RegisterManager.ROOT)) {
-	        	orgMgr.domainManager.registerRootManager(domainEntityURI, domainValueURI, targetManager, domainQueryResponder);
+	        	orgMgr.domainManager.registerRootManager(domainEntityURI, domainValueURI, targetManager, domainCoordinator, domainQueryResponder);
 	        }
 		}
         catch (Exception e) {

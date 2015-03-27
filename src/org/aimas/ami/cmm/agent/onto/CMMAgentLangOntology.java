@@ -112,10 +112,14 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     
     public static final String UPDATEENTITYDESCRIPTIONS_ENTITYCONTENTS="entityContents";
     public static final String UPDATEENTITYDESCRIPTIONS="UpdateEntityDescriptions";
+    public static final String UPDATEENTITYDESCRIPTIONS_DOMAIN_UPPER_BOUND="domain_upper_bound";
+    public static final String UPDATEENTITYDESCRIPTIONS_DOMAIN_LOWER_BOUND="domain_lower_bound";
     
+    public static final String UPDATEPROFILEDASSERTION="UpdateProfiledAssertion";
     public static final String UPDATEPROFILEDASSERTION_ASSERTIONCONTENT="assertionContent";
     public static final String UPDATEPROFILEDASSERTION_ASSERTION="assertion";
-    public static final String UPDATEPROFILEDASSERTION="UpdateProfiledAssertion";
+    public static final String UPDATEPROFILEDASSERTION_DOMAIN_UPPER_BOUND="domain_upper_bound";
+    public static final String UPDATEPROFILEDASSERTION_DOMAIN_LOWER_BOUND="domain_lower_bound";
     
     public static final String REGISTERMANAGER_AGENT="agent";
     public static final String REGISTERMANAGER_QUERYHANDLER="queryHandler";
@@ -136,6 +140,21 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     public static final String RESOLVEQUERYBASE_RECEIVEDFROMAGENT="receivedFromAgent";
     public static final String RESOLVEQUERYBASE="ResolveQueryBase";
     
+    public static final String BROADCASTBASEITEM_BROADCASTLOWERBOUND="broadcastLowerBound";
+    public static final String BROADCASTBASEITEM_BROADCASTUPPERBOUND="broadcastUpperBound";
+    public static final String BROADCASTBASEITEM_COORDINATOR="coordinator";
+    public static final String BROADCASTBASEITEM="BroadcastBaseItem";
+    
+    public static final String BROADCASTBASE_BROADCASTBASEITEM="broadcastBaseItem";
+    public static final String BROADCASTBASE="BroadcastBase";
+    
+    public static final String RESOLVEBROADCASTBASE="ResolveBroadcastBase";
+    public static final String RESOLVEBROADCASTBASE_RECEIVEDFROMAGENT="receivedFromAgent";
+    public static final String RESOLVEBROADCASTBASE_BROADCASTLOWERBOUND="broadcastLowerBound";
+    public static final String RESOLVEBROADCASTBASE_BROADCASTUPPERBOUND="broadcastUpperBound";
+    
+    
+    
    /**
    * Constructor
   */
@@ -154,7 +173,10 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     add(assertionCapabilitySchema, org.aimas.ami.cmm.agent.onto.impl.DefaultAssertionCapability.class);
     ConceptSchema queryBaseItemSchema = new ConceptSchema(QUERYBASEITEM);
     add(queryBaseItemSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultQueryBaseItem.class);
-
+    ConceptSchema broadcastBaseItemSchema = new ConceptSchema(BROADCASTBASEITEM);
+    add(broadcastBaseItemSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultBroadcastBaseItem.class);
+    
+    
     // adding AgentAction(s)
     AgentActionSchema publishAssertionsSchema = new AgentActionSchema(PUBLISHASSERTIONS);
     add(publishAssertionsSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultPublishAssertions.class);
@@ -203,6 +225,9 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     AgentActionSchema registerManagerSchema = new AgentActionSchema(REGISTERMANAGER);
     add(registerManagerSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultRegisterManager.class);
     
+    AgentActionSchema resolveBroadcastBaseSchema = new AgentActionSchema(RESOLVEBROADCASTBASE);
+    add(resolveBroadcastBaseSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultResolveBroadcastBase.class);
+    
     // adding AID(s)
 
     // adding Predicate(s)
@@ -228,7 +253,8 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     add(foundCoordinatorAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultFoundCoordinatorAgent.class);
     PredicateSchema foundQueryHandlerAgentSchema = new PredicateSchema(FOUNDQUERYHANDLERAGENT);
     add(foundQueryHandlerAgentSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultFoundQueryHandlerAgent.class);
-    
+    PredicateSchema broadcastBaseSchema = new PredicateSchema(BROADCASTBASE);
+    add(broadcastBaseSchema, org.aimas.ami.cmm.agent.onto.impl.DefaultBroadcastBase.class);
     
     // adding fields
     assertionAssignmentSchema.add(ASSERTIONASSIGNMENT_COORDINATOR, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
@@ -289,8 +315,13 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     foundQueryHandlerAgentSchema.add(FOUNDQUERYHANDLERAGENT_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     
     updateEntityDescriptionsSchema.add(UPDATEENTITYDESCRIPTIONS_ENTITYCONTENTS, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    updateEntityDescriptionsSchema.add(UPDATEENTITYDESCRIPTIONS_DOMAIN_LOWER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
+    updateEntityDescriptionsSchema.add(UPDATEENTITYDESCRIPTIONS_DOMAIN_UPPER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
+    
     updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_ASSERTION, assertionDescriptionSchema, ObjectSchema.MANDATORY);
     updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_ASSERTIONCONTENT, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_DOMAIN_LOWER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
+    updateProfiledAssertionSchema.add(UPDATEPROFILEDASSERTION_DOMAIN_UPPER_BOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.OPTIONAL);
     
     registerManagerSchema.add(REGISTERMANAGER_AGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     registerManagerSchema.add(REGISTERMANAGER_DOMAINENTITY, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
@@ -301,6 +332,16 @@ public class CMMAgentLangOntology extends jade.content.onto.Ontology  {
     queryBaseItemSchema.add(QUERYBASEITEM_QUERYHANDLER, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
     queryBaseItemSchema.add(QUERYBASEITEM_QUERYUPPERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     queryBaseItemSchema.add(QUERYBASEITEM_QUERYLOWERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    
+    broadcastBaseItemSchema.add(BROADCASTBASEITEM_COORDINATOR, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
+    broadcastBaseItemSchema.add(BROADCASTBASEITEM_BROADCASTUPPERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    broadcastBaseItemSchema.add(BROADCASTBASEITEM_BROADCASTLOWERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    
+    broadcastBaseSchema.add(BROADCASTBASE_BROADCASTBASEITEM, broadcastBaseItemSchema, 0, ObjectSchema.UNLIMITED);
+    
+    resolveBroadcastBaseSchema.add(RESOLVEBROADCASTBASE_RECEIVEDFROMAGENT, (ConceptSchema)getSchema(BasicOntology.AID), ObjectSchema.MANDATORY);
+    resolveBroadcastBaseSchema.add(RESOLVEBROADCASTBASE_BROADCASTLOWERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
+    resolveBroadcastBaseSchema.add(RESOLVEBROADCASTBASE_BROADCASTUPPERBOUND, (TermSchema)getSchema(BasicOntology.STRING), ObjectSchema.MANDATORY);
     
     // adding name mappings
 

@@ -139,31 +139,69 @@ public class ContextUpdateManager implements InsertionResultNotifier {
 	
 	// USER ENTITY DESCRIPTION + PROFILED ASSERTION UPDATE MANAGEMENT
 	//////////////////////////////////////////////////////////////////////////////
-	public void updateEntityDescriptions(UpdateEntityDescriptions entitiesUpdate) {
-		String updateRequestString = entitiesUpdate.getEntityContents();
-        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
-        
-        engineInsertionAdaptor.updateEntityDescriptions(updateRequest);
+	private boolean isBroadcast(UpdateProfiledAssertion profiledAssertionUpdate) {
+		String domainTypeLowerBound = profiledAssertionUpdate.getDomain_lower_bound();
+		String domainTypeUpperBound = profiledAssertionUpdate.getDomain_upper_bound();
+		
+		return (domainTypeUpperBound != null && !domainTypeUpperBound.isEmpty()) 
+				|| (domainTypeLowerBound != null && !domainTypeLowerBound.isEmpty());
+	}
+	
+	private boolean isBroadcast(UpdateEntityDescriptions entitiesUpdate) {
+		String domainTypeLowerBound = entitiesUpdate.getDomain_lower_bound();
+		String domainTypeUpperBound = entitiesUpdate.getDomain_upper_bound();
+		
+		return (domainTypeUpperBound != null && !domainTypeUpperBound.isEmpty()) 
+				|| (domainTypeLowerBound != null && !domainTypeLowerBound.isEmpty());
 	}
 	
 	
-	public boolean updateProfiledAssertion(UpdateProfiledAssertion profiledAssertionUpdate) {
-		AssertionDescription assertionDesc = profiledAssertionUpdate.getAssertion();
-		String updateRequestString = profiledAssertionUpdate.getAssertionContent();
+	public void updateEntityDescriptions(AID receivedFromAgent, UpdateEntityDescriptions entitiesUpdate) {
+		boolean isBroadcast = isBroadcast(entitiesUpdate);
 		
-        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
-        Resource assertionRes = ResourceFactory.createResource(assertionDesc.getAssertionType());
-        
-        AssertionEnableStatus status = coordAgent.getCommandManager().getEngineStatsAdaptor()
-        		.getAssertionEnableStatus(assertionRes);
-        
-        if (status.updatesEnabled()) {
-        	pendingInsertions.put(updateRequest, assertionRes);
-        	engineInsertionAdaptor.updateProfiledAssertion(updateRequest, this);
-        	return true;
-        }
-        
-        return false;
+		if (isBroadcast) {
+			// If it is a domain-range broadcast request, start a separate behavior that will forward the
+			// insertion request to all required coordinators in other CMUs.
+			coordAgent.addBehaviour(new DomainStaticBroadcastBehaviour(coordAgent, entitiesUpdate, receivedFromAgent));
+		}
+		else {
+			// Otherwise we must handle this locally
+			String updateRequestString = entitiesUpdate.getEntityContents();
+	        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
+	        
+	        engineInsertionAdaptor.updateEntityDescriptions(updateRequest);
+		}
+	}
+	
+	
+	public boolean updateProfiledAssertion(AID receivedFromAgent, UpdateProfiledAssertion profiledAssertionUpdate) {
+		boolean isBroadcast = isBroadcast(profiledAssertionUpdate);
+		
+		if (isBroadcast) {
+			// If it is a domain-range broadcast request, start a separate behavior that will forward the
+			// insertion request to all required coordinators in other CMUs.
+			coordAgent.addBehaviour(new DomainProfiledBroadcastBehaviour(coordAgent, profiledAssertionUpdate, receivedFromAgent));
+			
+			return true;
+		}
+		else {
+			// Otherwise we must handle this locally
+			AssertionDescription assertionDesc = profiledAssertionUpdate.getAssertion();
+			String updateRequestString = profiledAssertionUpdate.getAssertionContent();
+			
+	        UpdateRequest updateRequest = UpdateFactory.create(updateRequestString, Syntax.syntaxSPARQL_11);
+	        Resource assertionRes = ResourceFactory.createResource(assertionDesc.getAssertionType());
+	        
+	        AssertionEnableStatus status = coordAgent.getCommandManager().getEngineStatsAdaptor().getAssertionEnableStatus(assertionRes);
+	        
+	        if (status.updatesEnabled()) {
+	        	pendingInsertions.put(updateRequest, assertionRes);
+	        	engineInsertionAdaptor.updateProfiledAssertion(updateRequest, this);
+	        	return true;
+	        }
+	        
+	        return false;
+		}
 	}
 	
 	// SENSOR ASSERTION UPDATE
@@ -206,8 +244,7 @@ public class ContextUpdateManager implements InsertionResultNotifier {
 		// Remove the updated Assertion from the pending inserts.
 		// If no errors occurred, notify the command manager of its update.
 		Resource updatedAssertionResource = pendingInsertions.remove(insertResult.getInsertRequest());
-		if (!insertResult.hasConstraintViolations() && !insertResult.hasExecError() 
-				&& updatedAssertionResource != null) {
+		if (!insertResult.hasConstraintViolations() && !insertResult.hasExecError() && updatedAssertionResource != null) {
 			coordAgent.getCommandManager().notifyAssertionUpdated(updatedAssertionResource);
 		}
     }

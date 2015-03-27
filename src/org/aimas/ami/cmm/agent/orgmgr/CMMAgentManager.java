@@ -19,11 +19,13 @@ public class CMMAgentManager {
 		ACTIVE, INACTIVE
 	}
 	
-	/* There is only one CtxCoordinator per OrgMgr (i.e. per ContextDomain) */
-	private ManagedAgentWrapper<CoordinatorSpecification> managedCoordinator;
+	/* There can be only one CtxCoordinator per applicationId that registers with this OrgMgr (the different applicationIDs
+	 * come from the one beloning to the CMU managing this ContextDomain + the ones from mobile node CMUs for which this 
+	 * OrgMgr becomes the __assigned__ one) */
+	private Map<String, ManagedAgentWrapper<CoordinatorSpecification>> managedCoordinators;
 	
-	/* There can be one or more CtxQueryHandlers (a linear scaling) per OrgMgr (i.e. per ContextDomain) */
-	private ManagedAgentList<QueryHandlerSpecification> managedQueryHandlers;
+	/* There can be only one CtxQueryHandler per applicationId that registers with this OrgMgr */
+	private Map<String, ManagedAgentWrapper<QueryHandlerSpecification>> managedQueryHandlers;
 	
 	/* There can be one CtxUser per applicationId, that registers with the OrgMgr */
 	private Map<String, ManagedAgentWrapper<UserSpecification>> managedUsers;
@@ -33,26 +35,27 @@ public class CMMAgentManager {
 	private Map<String, ManagedAgentList<SensorSpecification>> managedSensors;
 	
 	public CMMAgentManager() {
-		managedQueryHandlers = new ManagedAgentList<QueryHandlerSpecification>();
+		managedCoordinators = new HashMap<String, ManagedAgentWrapper<CoordinatorSpecification>>();
+		managedQueryHandlers = new HashMap<String, ManagedAgentWrapper<QueryHandlerSpecification>>();
 		managedUsers = new HashMap<String, ManagedAgentWrapper<UserSpecification>>();
 		managedSensors = new HashMap<String, ManagedAgentList<SensorSpecification>>();
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////
-	public void setManagedCoordinator(CoordinatorSpecification spec, AgentController controller) {
-		managedCoordinator = new ManagedAgentWrapper<CoordinatorSpecification>(controller, spec);
+	public void setManagedCoordinator(String applicationId, CoordinatorSpecification spec, AgentController controller) {
+		managedCoordinators.put(applicationId, new ManagedAgentWrapper<CoordinatorSpecification>(controller, spec));
 	}
 	
-	public void setManagedCoordinator(AID agentAID, State agentState) {
-		managedCoordinator = new ManagedAgentWrapper<CoordinatorSpecification>(agentAID, agentState);
+	public void setManagedCoordinator(String applicationId, AID agentAID, State agentState) {
+		managedCoordinators.put(applicationId, new ManagedAgentWrapper<CoordinatorSpecification>(agentAID, agentState));
 	}
 	
-	public void addManagedQueryHandler(QueryHandlerSpecification spec, AgentController controller) {
-		managedQueryHandlers.add(new ManagedAgentWrapper<QueryHandlerSpecification>(controller, spec));
+	public void setManagedQueryHandler(String applicationId, QueryHandlerSpecification spec, AgentController controller) {
+		managedQueryHandlers.put(applicationId, new ManagedAgentWrapper<QueryHandlerSpecification>(controller, spec));
 	}
 	
-	public void addManagedQueryHandler(AID agentAID, State agentState) {
-		managedQueryHandlers.add(new ManagedAgentWrapper<QueryHandlerSpecification>(agentAID, agentState));
+	public void setManagedQueryHandler(String applicationId, AID agentAID, State agentState) {
+		managedQueryHandlers.put(applicationId, new ManagedAgentWrapper<QueryHandlerSpecification>(agentAID, agentState));
 	}
 	
 	
@@ -86,12 +89,12 @@ public class CMMAgentManager {
 	
 	// Get agents 
 	//////////////////////////////////////////////////////////////////////////////////////
-	public ManagedAgentWrapper<CoordinatorSpecification> getManagedCoordinator() {
-		return managedCoordinator;
+	public ManagedAgentWrapper<CoordinatorSpecification> getManagedCoordinator(String applicationId) {
+		return managedCoordinators.get(applicationId);
 	}
 	
-	public List<ManagedAgentWrapper<QueryHandlerSpecification>> getManagedQueryHandlers() {
-		return managedQueryHandlers;
+	public ManagedAgentWrapper<QueryHandlerSpecification> getManagedQueryHandler(String applicationId) {
+		return managedQueryHandlers.get(applicationId);
 	}
 	
 	public List<ManagedAgentWrapper<SensorSpecification>> getManagedSensors() {
@@ -106,20 +109,20 @@ public class CMMAgentManager {
 		return agentList;
 	}
 	
-	public List<ManagedAgentWrapper<UserSpecification>> getManagedUsers() {
-		return new LinkedList<ManagedAgentWrapper<UserSpecification>>(managedUsers.values());
-	}
-	
-	// Get specific agents
-	//////////////////////////////////////////////////////////////////////////////////////
-	public ManagedAgentWrapper<QueryHandlerSpecification> getManagedQueryHandler(AID agentAID) {
-		return managedQueryHandlers.getByAID(agentAID);
-	}
-	
 	public List<ManagedAgentWrapper<SensorSpecification>> getManagedSensors(String applicationId) {
 		return managedSensors.get(applicationId);
 	}
 	
+	public List<ManagedAgentWrapper<UserSpecification>> getManagedUsers() {
+		return new LinkedList<ManagedAgentWrapper<UserSpecification>>(managedUsers.values());
+	}
+	
+	public ManagedAgentWrapper<UserSpecification> getManagedUser(String applicationId) {
+		return managedUsers.get(applicationId);
+	}
+	
+	// Get specific agents
+	//////////////////////////////////////////////////////////////////////////////////////
 	public ManagedAgentWrapper<SensorSpecification> getManagedSensor(AID agentAID) {
 		for (String applicationId : managedSensors.keySet()) {
 			ManagedAgentList<SensorSpecification> appAgentList = managedSensors.get(applicationId);
@@ -139,11 +142,6 @@ public class CMMAgentManager {
 		
 		return null;
 	}
-	
-	public ManagedAgentWrapper<UserSpecification> getManagedUser(String applicationId) {
-		return managedUsers.get(applicationId);
-	}
-	
 	
 	//////////////////////////////////////////////////////////////////////////////////////
 	private static class ManagedAgentList<T extends AgentSpecification> extends LinkedList<ManagedAgentWrapper<T>> {

@@ -428,7 +428,7 @@ public class UserQueryHandler {
 	    // query as well, it will be deleted by the corresponding domainSubscriptionBehaviour
 	    if (registeredDomainSubscriptions.containsKey(subscriptionIdentifier)) {
 	    	DomainSubscriptionBehaviour domainSubscriptionBehaviour = 
-	    			registeredDomainSubscriptions.get(subscriptionIdentifier);
+	    			registeredDomainSubscriptions.remove(subscriptionIdentifier);
 	    	domainSubscriptionBehaviour.cancel();
 	    	// NOTE that this is a decoupled cancellation, i.e. the user requesting the cancellation
 	    	// receives confirmation of this fact, before all up- or down-stream cancellations have

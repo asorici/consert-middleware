@@ -1,6 +1,8 @@
 package org.aimas.ami.cmm.agent.orgmgr;
 
 import jade.content.onto.basic.Action;
+import jade.domain.FIPAAgentManagement.NotUnderstoodException;
+import jade.domain.FIPAAgentManagement.RefuseException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.MessageTemplate.MatchExpression;
@@ -36,6 +38,11 @@ public class RegisterCMMAgentResponder extends AchieveREResponder {
 	}
 	
 	@Override
+	protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
+		return null;
+	}
+	
+	@Override
 	protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) {
 		OrgMgr orgMgr = (OrgMgr)myAgent;
 		
@@ -48,10 +55,10 @@ public class RegisterCMMAgentResponder extends AchieveREResponder {
 			State agentState = requestContent.getAgentActive() ? State.ACTIVE : State.INACTIVE;
 			
 			if (agentType == AgentType.CTX_COORD) {
-				orgMgr.agentManager.setManagedCoordinator(request.getSender(), agentState);
+				orgMgr.agentManager.setManagedCoordinator(appIdentifier, request.getSender(), agentState);
 			}
 			else if (agentType == AgentType.CTX_QUERY_HANDLER) {
-				orgMgr.agentManager.addManagedQueryHandler(request.getSender(), agentState);
+				orgMgr.agentManager.setManagedQueryHandler(appIdentifier, request.getSender(), agentState);
 			}
 			else if (agentType == AgentType.CTX_SENSOR) {
 				orgMgr.agentManager.addManagedSensor(appIdentifier, request.getSender(), agentState);

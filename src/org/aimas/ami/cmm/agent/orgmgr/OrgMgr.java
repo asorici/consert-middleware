@@ -112,6 +112,9 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		
 		// 6) Resolve Query Base Responder
 		addBehaviour(new ResolveQueryBaseResponder(this));
+		
+		// 7) Resolve Broadcast Base Responder
+		addBehaviour(new ResolveBroadcastBaseResponder(this));
     }
 
 
@@ -131,7 +134,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 			
 			DFService.register(this, parentName, getOrgMgrDFDescription());
 			addParent(parentName, getOrgMgrDFDescription());
-			System.out.println("Agent: " + getName() + " federated with default df.");
+			//System.out.println("Agent: " + getName() + " federated with default df.");
 			
 		}
 		catch (FIPAException fe) {
@@ -209,9 +212,10 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
         	throw new CMMConfigException("Failed to configure and initialize CMM Agents", e);
         }
 		
-		// instantiate the domain management helper and register behaviours that connect the OrgMgr
+		// instantiate the domain management helper and register behaviors that connect the OrgMgr
 		// to other domain manager agents
 		domainManager = new DomainManagementHelper(this, appSpecification.getLocalContextDomain());
+		
 		if (myType == ManagerType.Node && mySpecification.getParentManagerAddress() != null) {
 			AID targetManager = mySpecification.getParentManagerAddress().getAID();
 			addBehaviour(new RegisterManagerInitiator(this, RegisterManager.CHILD, targetManager));
@@ -235,7 +239,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 		setupCoordinator(cmmConfigModel, context);
 		
 		// setup all CtxQueryHandlers
-		setupQueryHandlers(cmmConfigModel, context);
+		setupQueryHandler(cmmConfigModel, context);
 		
 		// setup all CtxSensors
 		setupSensors(cmmConfigModel, context);
@@ -272,12 +276,12 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 			}
 			
 			AgentController coordController = getContainerController().createNewAgent(agentLocalName, CtxCoord.class.getName(), args);
-			agentManager.setManagedCoordinator(coordSpec, coordController);
+			agentManager.setManagedCoordinator(appSpecification.getAppIdentifier(), coordSpec, coordController);
 		}
     }
 	
 	
-	private void setupQueryHandlers(OntModel cmmConfigModel, BundleContext context) throws Exception {
+	private void setupQueryHandler(OntModel cmmConfigModel, BundleContext context) throws Exception {
 		// Every agent receives 4 arguments:
 		//		- 1: the OSGi Platform relative CMM Instance Resource Bundle location
 		// 		- 2: the URI that represents their Specification resource in the configuration file
@@ -303,7 +307,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 			}
 			
 			AgentController queryController = getContainerController().createNewAgent(agentLocalName, CtxQueryHandler.class.getName(), args);
-			agentManager.addManagedQueryHandler(queryHandlerSpec, queryController);
+			agentManager.setManagedQueryHandler(appSpecification.getAppIdentifier(), queryHandlerSpec, queryController);
 		}
     }
 	
@@ -398,6 +402,7 @@ public class OrgMgr extends df implements CMMPlatformRequestExecutor {
 	        doCMMConfiguration(cmmBundleLocation);
         }
         catch (CMMConfigException e) {
+        	e.printStackTrace();
         	initCMMEvent.notifyProcessed(new CMMOpEventResult(e));
         }
     	
